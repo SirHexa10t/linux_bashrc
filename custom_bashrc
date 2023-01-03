@@ -131,7 +131,6 @@ alias rebuild_boot='sudo update-grub'
 # rebuild RAMFS to apply changes like in modprobe (blacklisting services)
 alias rebuild_ramfs='sudo update-initramfs -u'
 
-
 # ----- cheatsheets
 
 # TODO - command grep. "command_like <expression>"
@@ -709,15 +708,15 @@ function launch_vm_w_lookingglass() {
     while [ $valid -eq 0 ]
     do
         vm_names=$(virsh list --all --name)
-        echo "Choose the name of the VM you want to launch:"
+        becho "Choose the name of the VM you want to launch:"
         virsh list --all
-        echo "============================================"
+        becho "============================================"
 
         read -p "Enter the name of the VM: " vm_name  # Read the user's input
         if echo $(virsh list --all --name) | grep -w -q "$vm_name"; then  # match whole word (case sensitive), quietly
             valid=1
         else
-            echo "Invalid VM name"
+            recho "Invalid VM name"
         fi
     done
 
@@ -733,22 +732,37 @@ function launch_vm_w_lookingglass() {
     portnum=${portnum:=5900}  # default if empty
 
     # Show user the parameters and ask for approval (quit if disapproved)
-    echo "Please authorize the following. Note: no two running VMs may have the same looking-glass session-file or VNC-port at the same time"
+    becho "Please authorize the following. Note: no two running VMs may have the same looking-glass session-file or VNC-port at the same time"
     if _prompt_yn "VM: $vm_name, looking-glass_name: $shmem_name, VNC-port: $portnum. Launch with these parameters?"; then echo "Starting..."; else echo "Quitting. If the details were off, modify your VM's xml file (easiest through VM Manager)" && return ; fi
 
-    echo "Making sure os-virtual-drive file's volume is mounted"
+    becho "Making sure os-virtual-drive file's volume is mounted"
     mount_media_by_uuid "$QEMU_VOLUME_UUID"
 
-    echo "Creating looking-glass session file:" && ls -alF "$lg_file"
+    becho "Creating looking-glass session file:" && ls -alF "$lg_file"
     sudo touch "$lg_file" && sudo chown $(whoami):kvm "$lg_file" && sudo chmod 660 "$lg_file"
 
-    # run the vm
-    echo "Starting VM: $vm_name"
-    virsh start "$vm_name"
+    # run the vm (if needed)
+    vm_state=$(virsh domstate "$vm_name")
+    if [ "$vm_state" == "running" ]; then
+        gecho "$vm_name is already running."
+    elif [ "$vm_state" == "shut off" ]; then
+        virsh start "$vm_name" && gecho "starting $vm_name"
+    elif [ "$vm_state" == "paused" ]; then
+        virsh resume "$vm_name" && gecho "resuming $vm_name"
+    else
+        recho "Can't handle VM state: $vm_state"
+        if [ "$vm_state" == "blocked" ]; then recho "the VM '$vm_name' is blocked on resource";
+        elif [ "$vm_state" == "shutdown" ]; then recho "$vm_name is still shutting down";
+        elif [ "$vm_state" == "crashed" ]; then recho "the VM '$vm_name' has crashed";
+        elif [ "$vm_state" == "pmsuspended" ]; then recho "the VM '$vm_name' is in a suspended state as a result of power management";
+        else recho "Error: VM state isn't defined (fix this function)"
+        fi
+        return 1
+    fi
     
     # run looking glass client
     # experimental -S : Prevent the screensaver from starting  , win:size=1920x1080 : Initial window size at startup (default is 1024x768)
-    echo "Starting looking-glass client"
+    becho "Starting looking-glass client"
     "$LOOKING_GLASS_CLIENT" -f "$lg_file" -p $portnum -k -S & disown # -k : enable FPS & UPS display  ; -S : prevent host going to sleep
 
 }
@@ -832,6 +846,19 @@ EOT
 
 # Visuals
 # =======
+
+# echo in bright red
+function recho () {
+	echo -e "\033[1m\033[31m${@}\033[0m"
+}
+# echo in bright green
+function gecho () {
+	echo -e "\033[1m\033[32m${@}\033[0m"
+}
+# echo in bright blue
+function becho () {
+	echo -e "\033[1m\033[34m${@}\033[0m"
+}
 
 function _draw_formatted () {
     : 'runs printf with a specific assortment of color names'
