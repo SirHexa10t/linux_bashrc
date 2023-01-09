@@ -113,7 +113,7 @@ alias devs_basic='lsblk -a -o NAME,MODE,FSTYPE,MOUNTPOINT,SIZE,FSUSE%,LABEL,TYPE
 alias devs_identifiers='lsblk -a -o PATH,LABEL,UUID,PTUUID,PARTUUID,SERIAL | awk '\''NR==1 || ($1 !~ "loop[0-9]")'\'''
 
 # display devices comprehensively. Not continuously at the same lines, to prevent the lines' overflow 
-alias devs_full='echo "$(tput setaf 1)Devices general detail:$(tput sgr0)" && devs_basic && echo "$(tput setaf 2)Devices identifiers:$(tput sgr0)" && devs_identifiers'
+alias devs_full='becho "Devices general detail:" && devs_basic && gecho "Devices identifiers:" && devs_identifiers'
 
 # TODO - merge df -i with lsblk to get inodes
 # join <(df -h | tail -n+2 | sort -k1,1) <(lsblk -o NAME,SIZE,TYPE | tail -n+2 | sort -k1,1) -1 1 -2 1
@@ -144,6 +144,13 @@ alias i_forgor='remindme'
 
 # Reminders for linux system tools and command options
 alias howdoi_linux='echo "
+>> Packages
+* sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
+* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for "no prompt")
+* sudo dpkg -r <package>  # remove a package installed from a .deb file
+* apt list  # list all packages in followed repositories
+*   apt list --installed  # list installed packages
+*   dpkg -l  # show all installed packages in table format
 >> Messing around with the system itself
 * reboot  # reboots the system (gracefully)
 * sudo systemctl start sshd  # start ssh service for external access
@@ -156,7 +163,7 @@ alias howdoi_linux='echo "
 * crontab -e  # edit routine-scheduled tasks
 >> Some nice tools/commands you could need often
 * tmux  :  terminal session/pane-manager - see more in the tmux cheatsheet
-* wget  :  dowload files
+* wget  :  download files
 * curl  :  communicate through HTTP(S)/(S)FTP/SCP - make any request (but if you just want to download something, you should probably use wget)
 * netstat  :  get network related info (such as port usage and active connections)
 * sudo nvidia-xconfig  # create new xorg config, used by nvidia driver
@@ -190,6 +197,7 @@ alias howdoi_bash_terminal_tools='echo "
 * htop  # show real-time processes/resource-usage
 * diff <file1> <file2>  # get the text difference between 2 files
 * pdftk <file1> <file2> <file3> cat output merged.pdf"  # create a unified pdf file 
+* xournal <pdf_filepath>  # edit a pdf file with option to add signatures
 "'
 
 # Reminders for microsoft-format handling tools
@@ -202,7 +210,8 @@ alias howdoi_microsoft='echo "
 
 # Reminders for android-related tools
 alias howdoi_android='echo "
-* scrcpy -r <filename.mp4> : save a video recording of your connected android device activity (needs USB-Debug and File-Transfer mode)
+* scrcpy  # run daemon that casts the connected Android device screen onto a window, and shares the clicks within it back to the Android device
+* scrcpy -r <filename.mp4>  # save a video recording of your connected android device activity (needs USB-Debug and File-Transfer mode)
 "'
 
 # Reminders for vm tools and command options (mostly stuff you can't do through Virtual Machine Manager)
@@ -702,7 +711,7 @@ ftext () {
 # Interactive launchers/creators
 # ==============================
 
-
+#TODO - offer to choose a vm by number [1-n]. Need to create a function like y_n one that gets a dicitonary as an argument 
 function launch_vm_w_lookingglass() {
     valid=0
     while [ $valid -eq 0 ]
@@ -738,9 +747,10 @@ function launch_vm_w_lookingglass() {
     becho "Making sure os-virtual-drive file's volume is mounted"
     mount_media_by_uuid "$QEMU_VOLUME_UUID"
 
-    becho "Creating looking-glass session file:" && ls -alF "$lg_file"
+    becho "Creating looking-glass session file: $lg_file"
     sudo touch "$lg_file" && sudo chown $(whoami):kvm "$lg_file" && sudo chmod 660 "$lg_file"
-
+    [ -f "$lg_file" ] && ls -alF "$lg_file"  # todo - print colored (green?)?
+    
     # run the vm (if needed)
     vm_state=$(virsh domstate "$vm_name")
     if [ "$vm_state" == "running" ]; then
@@ -813,8 +823,8 @@ ExecStart=<command that starts the service>
 # who should automatically start this service. multi-user.target is common, it's the state in which multiple users can log in
 ; WantedBy=multi-user.target  
 EOT
-        # offer template adjustment
-        if _prompt_yn "Include guiding comments in the template?"; then echo "Leaving in comments."; else initial_str=$(grep -v "^#" <<< "$initial_str") ; fi
+    # offer template adjustment
+    if _prompt_yn "Include guiding comments in the template?"; then echo "Leaving in comments."; else initial_str=$(grep -v "^#" <<< "$initial_str") ; fi
     else 
         initial_str='';
     fi
@@ -846,18 +856,26 @@ EOT
 
 # Visuals
 # =======
-
-# echo in bright red
+# TODO - detect if the terminal is bright instead of dark? If it's white, the colored prints should be darker; so you should remove the "\033[1m" prefix
+# echo in red
 function recho () {
+    # echo "$(tput setaf 1)${@}$(tput sgr0)"
 	echo -e "\033[1m\033[31m${@}\033[0m"
 }
-# echo in bright green
+# echo in green
 function gecho () {
+    # echo "$(tput setaf 2)${@}$(tput sgr0)"
 	echo -e "\033[1m\033[32m${@}\033[0m"
 }
-# echo in bright blue
+# echo in blue
 function becho () {
-	echo -e "\033[1m\033[34m${@}\033[0m"
+	# echo "$(tput setaf 4)${@}$(tput sgr0)"
+    echo -e "\033[1m\033[34m${@}\033[0m"
+}
+# echo in yellow
+function yecho () {
+	# echo "$(tput setaf 3)${@}$(tput sgr0)"
+    echo -e "\033[1m\033[33m${@}\033[0m"
 }
 
 function _draw_formatted () {
