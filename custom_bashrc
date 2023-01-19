@@ -91,6 +91,9 @@ alias lll='ls -tarlushFN --color=always --time-style=long-iso --group-directorie
 # just shorter grep, case insensitive (i), and no regex involved (F)
 alias g='grep -iF --color=auto'
 
+# take ownership of file (add file-name after this command)
+alias claim='sudo chown $USER:$USER'
+
 # grepped history
 alias hg='history | grep -iF --color=auto'
 
@@ -269,6 +272,12 @@ TODO - create functions that run these commands interactively (like listing, the
 "'
 
 
+# function aliases (alternate names)
+# ==================================
+
+alias whatismyip="whatsmyip"
+
+
 # server administration
 # =====================
 
@@ -321,6 +330,7 @@ function _count_lines () {
     echo "$1" | wc -l
 }
 
+# useful for drawings or neat concatenating of tables like so: 'paste <(_pad_end_w_spaces "$(df -h)") <(_pad_end_w_spaces "$(df -hi)") <(_pad_end_w_spaces "$(df -hi)")'
 # add spaces to the end of lines so that the block of text would be a rectangle; i.e. end uniformly on the same column. Use like so:  _pad_end_w_spaces "$(lsblk)"
 function _pad_end_w_spaces() {
     awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "$1"
@@ -438,7 +448,7 @@ function revoke_exe_mod () {
 function prepare_ntfs_for_writable_mount () {
     lsblk -o UUID,NAME,FSTYPE,LABEL | awk 'NR==1 || $3 == "ntfs"'
 
-    read -p "Choose a UUID to clean (with chkdsk) from the above device-list: " uuid  # Read the user's input
+    read -p "Choose a UUID to fix (with chkdsk) from the above device-list: " uuid  # Read the user's input
     
     lsblk -o UUID,NAME,FSTYPE,LABEL | awk -v uuid="$uuid" 'NR==1 || $1 == uuid'
     if _prompt_yn "Are you sure this is the right device?"; then echo "Running. Don't touch the device until we're done..."; else echo "Quitting." && return ; fi
@@ -503,7 +513,6 @@ netinfo () {
 # netstat -ln | grep :22
 
 # IP address lookup
-alias whatismyip="whatsmyip"
 function whatsmyip () {
 	# Dumps a list of all IP addresses for every device
 	# /sbin/ifconfig |grep -B1 "inet addr" |awk '{ if ( $1 == "inet" ) { print $2 } else if ( $2 == "Link" ) { printf "%s:" ,$1 } }' |awk -F: '{ print $1 ": " $3 }';
@@ -535,33 +544,75 @@ resources () {
 
 
 # TODO - add data from lsblk
-function device_utilization() { : 'list currently-mounted devices'
-    filter_fs='/dev/'
+# get comprehensive overview of devices/volumes
+function devs_overview() {
+    df_results=$(df -h -x tmpfs --output=source,fstype,itotal,ipcent,size,pcent,file,target)
+    df_title=$(echo "$df_results" | head -n1)
+    df_content=$(echo "$df_results" | tail -n+2 | sort -k1,1)
+    df_results=$(echo -e "${df_title}\n${df_content}")  # reattaching (now the contents are sorted)
 
-    # get the sizes and inodes info (which aren't displayable together for some reason), make sure that the titles have no space
-    sizes_listing=`df -hT | sed -e 's|Mounted on|Mounted_on|'`
-    inodes_listing=`df -hi | sed -e 's|Mounted on|Mounted_on|'`
+    df_devices=$(echo "$df_content" | awk 'NR>1 {print $1}')
+    lsblk_devices=$(lsblk -o PATH | tail -n+2 | sort)
+    unmounted_devices=$(comm -23 <(echo "$lsblk_devices") <(echo "$df_devices"))  # devices in lsblk but not df
+    # lsblk_unmounted=$(lsblk -d $(paste -sd ' ' <<< "$unmounted_devices") -o PATH,MODE,FSTYPE,SIZE,LABEL,TYPE,PTTYPE,MODEL,STATE --sort PATH) 
+    lsblk_unmounted=$(lsblk -o PATH,MODE,FSTYPE,SIZE,FSUSE%,LABEL,TYPE,PTTYPE,MODEL,STATE --sort PATH) 
+
+    becho 'same:'
+    lsblk -d $(paste -sd ' ' <<< "$df_devices") -o PATH,LABEL,MODE,TYPE,PTTYPE,MODEL,STATE --sort PATH
+
+    becho 'mounted volumes (df):'
+    echo "$df_results"
+    # lsblk -d $(paste -sd ' ' <<< "$df_devices") -o PATH,FSTYPE,SIZE,LABEL,MODE,TYPE,PTTYPE,MODEL,STATE --sort PATH
+
+    becho 'non-mounted volumes (lsblk):'
+    echo "$lsblk_unmounted"
+
+# lsblk -d $(paste -sd ' ' <<< "$unmounted_devices") -o NAME,TYPE,SIZE
+
+    # lsblk -d $(paste -sd ' ' <<< "$unmounted_devices") -o NAME,MODE,FSTYPE,MOUNTPOINT,SIZE,FSUSE%,LABEL,TYPE,PTTYPE,MODEL,STATE
+
+# alias devs_basic='lsblk -a -o NAME,MODE,FSTYPE,MOUNTPOINT,SIZE,FSUSE%,LABEL,TYPE,PTTYPE,MODEL,STATE | awk '\''NR==1 || ($1 !~ "loop[0-9]")'\'''
+
+
+
+    # um_devices_str=$(echo "$unmounted_devices" | tr '\n' ' ')
+    # um_devices_str=("$unmounted_devices")
     
-    declare -A inodes_map=()  # construct hashset: ['Mounted on']=(Inodes Iused Ifree)
-    # get the inodes data
-    while read iline || [[ -n $iline ]]; do
-        arr=($iline)
-        data=("${arr[1]}" "${arr[2]}" "${arr[3]}" "${arr[4]}")  # the inode columns: "Inodes IUsed IFree IUse%"
-        mnt_name="${arr[5]}"  # the mount location (will be used as key)
-        inodes_map+=(["$mnt_name"]=${data[@]})
-    done <<< "$inodes_listing"
+    #echo "$um_devices_str"
+    
+    # echo "$um_devices_str"
+    # lsblk -d "${um_devices_str[@]}" -o NAME,TYPE,SIZE
 
-    # print the sizes data with the inodes data aggregation
-    ret_str=''
-    while read sline || [[ -n $sline ]]; do
-        sarr=($sline)
-        common_col="${sarr[6]}"  # has the same "Mounted on" column as the other query
-        idata=(${inodes_map[$common_col]})
-        # put the inodes data right before the last column
-        ret_str+="${sarr[@]:0:6} ${idata[@]} ${sarr[-1]}"$'\n'
-    done <<< "$sizes_listing"
+    # "$(lsblk -d $unmounted_devices -o NAME,TYPE,SIZE)"  # sort of works
 
-    echo "$ret_str" | column -t | grep -e "^Filesystem" -e "^${filter_fs}"
+
+
+    # filter_fs='/dev/'
+
+    # # get the sizes and inodes info (which aren't displayable together for some reason), make sure that the titles have no space
+    # sizes_listing=`df -hT | sed -e 's|Mounted on|Mounted_on|'`
+    # inodes_listing=`df -hi | sed -e 's|Mounted on|Mounted_on|'`
+    
+    # declare -A inodes_map=()  # construct hashset: ['Mounted on']=(Inodes Iused Ifree)
+    # # get the inodes data
+    # while read iline || [[ -n $iline ]]; do
+    #     arr=($iline)
+    #     data=("${arr[1]}" "${arr[2]}" "${arr[3]}" "${arr[4]}")  # the inode columns: "Inodes IUsed IFree IUse%"
+    #     mnt_name="${arr[5]}"  # the mount location (will be used as key)
+    #     inodes_map+=(["$mnt_name"]=${data[@]})
+    # done <<< "$inodes_listing"
+
+    # # print the sizes data with the inodes data aggregation
+    # ret_str=''
+    # while read sline || [[ -n $sline ]]; do
+    #     sarr=($sline)
+    #     common_col="${sarr[6]}"  # has the same "Mounted on" column as the other query
+    #     idata=(${inodes_map[$common_col]})
+    #     # put the inodes data right before the last column
+    #     ret_str+="${sarr[@]:0:6} ${idata[@]} ${sarr[-1]}"$'\n'
+    # done <<< "$sizes_listing"
+
+    # echo "$ret_str" | column -t | grep -e "^Filesystem" -e "^${filter_fs}"
 }
 
 
@@ -676,13 +727,14 @@ args:
 
     recolor_grep="grep -iF --color=always \"$exp\""  # appent this grep just to color the output... Sorry, I'm bad at bash T_T
 
-    echo "matching filenames:"
-    echo "==================="
+    becho "matching filenames:"
+    becho "==================="
     _sudo_if_necessary "find \"$dir\" -iname \"*$exp*\"" | eval "$recolor_grep"
 
-    echo "matching file contents:"
-    echo "======================="
+    becho "matching file contents:"
+    becho "======================="
     all_results=$(_sudo_if_necessary "grep -e \"$exp\" -Inir \"$dir\" --color=never")  # No colors. Coloring is done at this stage because otherwise it'll add to the string's length
+    #TODO - simplify. Save results, if-awk, echo with eval recolor
     if [ $(expr "$text_limit" + 0) -gt 0 ]; then
         [ -n "$verbose" ] && becho "filtering with maximum result length: $text_limit" 
         echo "$all_results" | awk "length(\$0) <= $text_limit" | eval "$recolor_grep"
