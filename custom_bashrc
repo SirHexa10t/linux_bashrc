@@ -28,6 +28,7 @@
 QEMU_VOLUME_UUID='A80899A4089971D4'
 LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
 
+HISTTIMEFORMAT="%Y-%m-%d %T  "  # makes "history" command display the time the command ran at
 
 # My binds
 #################################################################################
@@ -123,7 +124,17 @@ alias devs_full='becho "Devices general detail:" ; devs_basic ; gecho "Devices i
 # join <(df -h | tail -n+2 | sort -k1,1) <(lsblk -o PATH,SIZE,TYPE | tail -n+2 | sort -k1,1) -1 1 -2 1 | awk '{print $1, $3, $4, $6}'
 
 
-# ----- System management
+# Service/Application handling
+# ============================
+
+# run docker desktop
+alias run_docker_desktop='systemctl --user start docker-desktop'
+
+# TODO - define "sudocker" - run docker desktop as sudo so that it'll find all containers
+
+
+# System management
+# =================
 
 # upgrade your system.
 alias updatengrade='sudo apt update && sudo apt-get full-upgrade -y && sudo apt-get autoremove -y'
@@ -134,7 +145,8 @@ alias rebuild_boot='sudo update-grub'
 # rebuild RAMFS to apply changes like in modprobe (blacklisting services)
 alias rebuild_ramfs='sudo update-initramfs -u'
 
-# ----- cheatsheets
+# Cheatsheets
+# =================
 
 # TODO - command grep. "command_like <expression>"
 
@@ -151,10 +163,13 @@ alias howdoi_linux='echo "
 * sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
 * sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for "no prompt")
 * sudo dpkg -r <package>  # remove a package installed from a .deb file
+* sudo dpkg --purge <package>  # purge a package installed from a .deb file
+* dpkg-query --list <package>  # print info related to installed package (autocompletes the name), works for all installations including from .deb
 * apt list  # list all packages in followed repositories
 *   apt list --installed  # list installed packages
 *   dpkg -l  # show all installed packages in table format
 >> Messing around with the system itself
+* ufw allow 21115:21119/tcp  # change firewall rules - in this case, allow ports 21115 to 21119 (including) on tcp
 * reboot  # reboots the system (gracefully)
 * sudo systemctl start sshd  # start ssh service for external access
 * udisksctl mount --block-device=/dev/<device-name>  # Mount a device the way nemo would. No need for mkdir (and nemo can dismount it right), no harm in calling while unnecessary, automatically uses LABEL to mount at /media/<username>/
@@ -199,8 +214,13 @@ alias howdoi_bash_terminal='echo "
 alias howdoi_bash_terminal_tools='echo "
 * htop  # show real-time processes/resource-usage
 * diff <file1> <file2>  # get the text difference between 2 files
+"'
+
+# common media file operations
+alias howdoi_media_and_docs='echo "
 * pdftk <file1> <file2> <file3> cat output merged.pdf"  # create a unified pdf file 
 * xournal <pdf_filepath>  # edit a pdf file with option to add signatures
+* ffmpeg -i <input.mp4> -c copy -an <output.mp4>  # get a video copy without the audio
 "'
 
 # Reminders for microsoft-format handling tools
@@ -335,6 +355,7 @@ alias arrange_monitors='nvidia-settings --load-config-only && nvidia-settings --
 # My functions
 #################################################################################
 
+# TODO - a "checksum" function that gets both file to checksum and the checksum-result file, determines which is which, runs the appropriate checksum on the file and compares with the result file; prints the match result 
 
 # Common commands - just for the use of other functions
 # =====================================================
