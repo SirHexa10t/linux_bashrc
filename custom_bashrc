@@ -435,6 +435,13 @@ function mkdir () {
 # Maintenance and Update Operations
 # =================================
 
+function install_deb_from_url () {
+    pkg_name=$(echo "$1" | awk -F/ '{print $NF}')  # get the string after last '/'
+    installation_msg="Installed debian (.deb) package: $pkg_name. If you want to remove it, run: 'sudo dpkg -r $pkg_name'"
+    wget "$1" && sudo gdebi -n "./$pkg_name" && echo "$installation_msg"  # download and install
+    rm "$pkg_name"  # remove .deb file
+}
+
 function add_to_path () {
     # check if given arg is already in PATH
     if [[ $PATH == *$1* ]]; then
