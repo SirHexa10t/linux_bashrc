@@ -231,6 +231,23 @@ alias howdoi_vm='echo "
 * qemu-img create -f qcow2 -F qcow2 -b <path_to_src_disk.qcow2> <path_to_output_disk.qcow2>  # snapshot a single disk
 "'
 
+# Reminders for docker
+alias howdoi_docker='echo "
+>> view (might need to run sudo to find all)
+* docker ps -a  # list ALL containers
+* docker images -a  # list all images
+* docker volume ls  # list all volumes
+* sudo docker inspect <container_name_or_id>  # view container details 
+>> managing container states
+* docker-compose -f <yml_file> up  # Start a conteiner using a yaml/yml file. Use -d to make it run in the background
+>> removal
+* docker system prune -a  # remove all images/containers/volumes/networks. The flag -a also remove unused images
+* docker rmi <image(s)>  # remove images ; to remove all images:   docker rmi $(docker images -a -q)
+* docker rm <container_id(s)_or_name(s)>  # remove container(s) ; to force-remofe, add -f ; to remove all stopped containers:   docker rm $(docker ps -a -f status=exited -f status=created -q)
+* docker volume rm <volume_name(s)>  # remove volume(s)
+* docker run --rm <image_name>  # run an image and remove its container when it exits
+"'
+
 
 # Reminders for the basics of systemd
 alias howdoi_systemd='echo "
@@ -271,6 +288,18 @@ TODO - create a script thatll establish tmux workspaces when logging into your u
 TODO - create functions that run these commands interactively (like listing, then letting the user pick a number, then go there...)
 "'
 
+# Reminders for some neat time-saving GUI tricks
+alias howdoi_shortcut='echo "
+* Terminal CTRL+L : clear screen
+* Built-in Nemo [space] :  select (click) a file/folder, and press [space] to get a summary/preview; press again to close
+* Custom Gnome-Nemo CTRL+SHIT+T :  open Terminal at current Nemo location
+* Built-in Gnome CTRL+ALT+T :  open Terminal
+* Built-in Gnome(?) CTRL+ALT+[backspace] :  log out of current session (resets your GUI)
+* Built-in Debian(?) CTRL+ALT+F1 :  enter TTY mode (terminal without anything graphic to lock/interrupt you)
+* Built-in Debian(?) CTRL+ALT+F7 :  exit TTY mode
+* Evded installation LCTRL+RCTRL  :  switch mouse and keyboard (and maybe other things) between guest/host. Wont work if you gave the VM your USB device directly.
+"'
+
 
 # function aliases (alternate names)
 # ==================================
@@ -289,17 +318,6 @@ alias list_users="awk -F: '\$3 >= 1000 && \$1 != \"nobody\" {print \$1}' /etc/pa
 # ======
 
 alias arrange_monitors='nvidia-settings --load-config-only && nvidia-settings --assign CurrentMetaMode="HDMI-0: nvidia-auto-select +1920+1080, DP-0: nvidia-auto-select +1920+0, DP-2: nvidia-auto-select +3840+1080, DP-4: 1920x1080_240 +0+1080"'
-
-# Reminders for some neat time-saving GUI tricks
-alias howdoi_shortcut='echo "
-* Built-in Nemo [space] :  select (click) a file/folder, and press [space] to get a summary/preview; press again to close
-* Custom Gnome-Nemo CTRL+SHIT+T :  open Terminal at current Nemo location
-* Built-in Gnome CTRL+ALT+T :  open Terminal
-* Built-in Gnome(?) CTRL+ALT+[backspace] :  log out of current session (resets your GUI)
-* Built-in Debian(?) CTRL+ALT+F1 :  enter TTY mode (terminal without anything graphic to lock/interrupt you)
-* Built-in Debian(?) CTRL+ALT+F7 :  exit TTY mode
-* Evded installation LCTRL+RCTRL  :  switch mouse and keyboard (and maybe other things) between guest/host. Wont work if you gave the VM your USB device directly.
-"'
 
 
 # Legacy
