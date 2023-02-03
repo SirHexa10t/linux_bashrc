@@ -104,6 +104,9 @@ alias anew='exec bash'
 # Show current network connections to the server
 alias ipview="netstat -anpl | grep :80 | awk {'print \$5'} | cut -d\":\" -f1 | sort | uniq -c | sort -n | sed -e 's/^ *//' -e 's/ *\$//'"
 
+# get own IP
+alias whatsmyip="becho 'My private IPs:'; echo \"$(ip addr show | grep inet | grep -v inet6 | awk '{print $2}' | cut -d/ -f1)\" && becho 'My IPv4:' ; dig @resolver4.opendns.com myip.opendns.com +short "
+
 # Get basic hardware and system list
 alias sysinfo_short='echo "For simpler neat hardware specs, run \"neofetch\" or \"screenfetch\""; inxi -bD'
 
@@ -145,6 +148,7 @@ alias rebuild_boot='sudo update-grub'
 # rebuild RAMFS to apply changes like in modprobe (blacklisting services)
 alias rebuild_ramfs='sudo update-initramfs -u'
 
+
 # Cheatsheets
 # =================
 
@@ -161,7 +165,7 @@ alias i_forgor='remindme'
 alias howdoi_linux='echo "
 >> Packages
 * sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
-* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for "no prompt")
+* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for \"no prompt\")
 * sudo dpkg -r <package>  # remove a package installed from a .deb file
 * sudo dpkg --purge <package>  # purge a package installed from a .deb file
 * dpkg-query --list <package>  # print info related to installed package (autocompletes the name), works for all installations including from .deb
@@ -169,7 +173,6 @@ alias howdoi_linux='echo "
 *   apt list --installed  # list installed packages
 *   dpkg -l  # show all installed packages in table format
 >> Messing around with the system itself
-* ufw allow 21115:21119/tcp  # change firewall rules - in this case, allow ports 21115 to 21119 (including) on tcp
 * reboot  # reboots the system (gracefully)
 * sudo systemctl start sshd  # start ssh service for external access
 * udisksctl mount --block-device=/dev/<device-name>  # Mount a device the way nemo would. No need for mkdir (and nemo can dismount it right), no harm in calling while unnecessary, automatically uses LABEL to mount at /media/<username>/
@@ -267,6 +270,23 @@ alias howdoi_docker='echo "
 * docker run --rm <image_name>  # run an image and remove its container when it exits
 "'
 
+# Reminders for docker
+alias howdoi_network='echo "
+>> Own network info
+* ip addr  # display own networking interfaces
+* sudo netstat -tulpn  # display active network connections and filter by port number
+>> Seeking addresses
+* dig \"amazon.com\" +short  # resolve dns address (or addresses, in case content-distribution-networks are involved)
+>> Firewall and incoming requests
+* UFW config-file: /etc/ufw/ufw.conf  :  to monitor incoming requests, set in it: LOGLEVEL=debug , then run \"sudo ufw reload\" (no-interruption reset; if it wont work run: \"sudo service ufw restart\"), and then \"sudo tail -f /var/log/ufw.log\" to monitor
+* ufw allow 21115:21119/tcp  # change firewall rules (by ports or src address) - in this case, allow ports 21115 to 21119 (including) on tcp
+* sudo tcpdump -i any -n  # capture traffic on all networks for all ports
+* sudo tcpdump -i [interface] -n \"src host [external_IP] and dst port [dst_port]\"  # detailed monitoring
+*   detailed monitoring example 1:  sudo tcpdump -i enp5s0 -n \"dst port 21118\"
+*   detailed monitoring example 2:  sudo tcpdump -i any -n \"tcp and (dst port 21115 or dst port 21116 or dst port 21117 or dst port 21118 or dst port 21119)\"
+"'
+
+
 
 # Reminders for the basics of systemd
 alias howdoi_systemd='echo "
@@ -274,7 +294,7 @@ alias howdoi_systemd='echo "
 * sudo systemctl daemon-reload  # rescan and reload service files
 * sudo systemctl <start/stop/restart/status> <myservice>.service  # manage the state of the service or check its running-status
 * sudo systemctl <enable/disable> example.service  # allow/disallow service to run after boot
-* journalctl -u <service_name.service>  # check the logs of a systemd service. Can also specify how to view them; example:   journalctl -u ssh --since "1 hour ago" --until now -f
+* journalctl -u <service_name.service>  # check the logs of a systemd service. Can also specify how to view them; example:   journalctl -u ssh --since \"1 hour ago\" --until now -f
 "'
 
 
@@ -283,16 +303,16 @@ alias howdoi_tmux='echo "tmux offers split-panes and sessions for terminals.
 >> Good for managing a server:
 +tmux terminals persist even after disconnection. They keep running until restart the server or send a closure command.
 +tmux windows can be named, listed and looked up.
-+tmux can accomodate multiple users on the same terminal simultanously; good for assistance/collaboration and for doing jobs that need a "lock" (having a channel where certain jobs run, so people would know if someone elses job is underway and should be allowed to finish first)
->> Quick explanation: tmux has sessions. Each session can have various windows, each window (has a number and name) is a "screen" thats visible at the moment and has vertically/horizontally added panes 
++tmux can accomodate multiple users on the same terminal simultanously; good for assistance/collaboration and for doing jobs that need a \"lock\" (having a channel where certain jobs run, so people would know if someone elses job is underway and should be allowed to finish first)
+>> Quick explanation: tmux has sessions. Each session can have various windows, each window (has a number and name) is a \"screen\" thats visible at the moment and has vertically/horizontally added panes 
 +For simplicity you can just have a SINGLE SESSION and manage all your windows there. Its easier to navigate windows, thanks to the green bar listing them at the bottom.
 +If a window has only need for a SINGLE TERMINAL (lets say the window is called \"grub_config\"), you can keep it simple and avoid adding extra panes. Add panes to multi-faceted things, like a project which has code, git-management, assets, runtime area etc.
 > Sessions:
 * tmux  # create a new tmux session
 * CTRL+B, D  : leave (detach) current session
 * tmux ls  # view all existing tmux sessions (+ info about creation date and number of windows)
-* tmux rename-session -t <0/1/2/3/.../past_name> <name>  # rename session (using number/name from "tmux ls")
-* tmux attach -t <0/1/2/3/.../name>  # connect (attach) to an existing tmux session (using number/name from "tmux ls")
+* tmux rename-session -t <0/1/2/3/.../past_name> <name>  # rename session (using number/name from \"tmux ls\")
+* tmux attach -t <0/1/2/3/.../name>  # connect (attach) to an existing tmux session (using number/name from \"tmux ls\")
 * tmux kill-session -t <0/1/2/3/.../name>  # kill specified session
 > Windows:
 * CTRL+B, <0/1/2/3/...>  : go to window number
@@ -300,7 +320,7 @@ alias howdoi_tmux='echo "tmux offers split-panes and sessions for terminals.
 * CTRL+B, ,  :  rename current window
 > Panes:
 * CTRL+B, %  :  create a new pane to the right
-* CTRL+B, "  :  create a new pane to the bottom
+* CTRL+B, \"  :  create a new pane to the bottom
 * CTRL+B, <left/right/up/down>  :  move focus to other pane
 * exit  # close pane. If last pane, close window.
 TODO - create a script thatll establish tmux workspaces when logging into your user (so youd have things ready for debugging or coding and such)
@@ -322,8 +342,6 @@ alias howdoi_shortcut='echo "
 
 # function aliases (alternate names)
 # ==================================
-
-alias whatismyip="whatsmyip"
 
 
 # server administration
@@ -539,39 +557,6 @@ function check_drive_volume () {
 # Info: Stats
 # ===========
 
-# TODO fix?:
-#-Network-Functions..... doesn't work--------------------------------------
-
-# Show current network information
-netinfo () {
-	echo "--------------- Network Information ---------------"
-	/sbin/ifconfig | awk /'inet addr/ {print $2}'
-	echo ""
-	/sbin/ifconfig | awk /'Bcast/ {print $3}'
-	echo ""
-	/sbin/ifconfig | awk /'inet addr/ {print $4}'
-
-	/sbin/ifconfig | awk /'HWaddr/ {print $4,$5}'
-	echo "---------------------------------------------------"
-}
-
-# TODO - this does the job (tells you if you're listening to :22), just make it work on a given (user choice of port number) argument 
-# netstat -ln | grep :22
-
-# IP address lookup
-function whatsmyip () {
-	# Dumps a list of all IP addresses for every device
-	# /sbin/ifconfig |grep -B1 "inet addr" |awk '{ if ( $1 == "inet" ) { print $2 } else if ( $2 == "Link" ) { printf "%s:" ,$1 } }' |awk -F: '{ print $1 ": " $3 }';
-
-	# Internal IP Lookup
-	echo -n "Internal IP: " ; /sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'
-
-	# External IP Lookup
-	echo -n "External IP: " ; wget http://smart-ip.net/myip -O - -q
-}
-
-
-
 resources () {
     #!/bin/bash
 
@@ -662,7 +647,8 @@ function devs_overview() {
 }
 
 
-all_active_users () { : 'get a list of users and their resource-usage stats'
+# get a list of users and their resource-usage stats
+function all_active_users () {
     #!/bin/bash
     cpu_count=$(lscpu | grep "^CPU(s):" | awk '{print4s 
      $2}')
@@ -680,6 +666,15 @@ all_active_users () { : 'get a list of users and their resource-usage stats'
         done
 }
 
+function network_search () {
+    if [ -z "$1" ]; then echo "You didn't provide anything to filter by. Aborting." && return 1 ; fi
+    
+    if [[ $1 =~ ^[0-9]+$ ]]; then  # numerical - filter as a port number
+        sudo netstat -tulpn | grep ":$1"
+    else  # non-numerical, look-up as a substring
+        sudo netstat | grep "$1"
+    fi
+}
 
 # TODO
 # TODO - support --inodes
@@ -788,21 +783,6 @@ args:
         echo "$all_results" | eval "$recolor_grep"  # print with no filtering by length
     fi
 }
-
-# TODO - remove? integrate into supergrep?
-# Searches for text in all files in the current folder
-ftext () {
-	# -i case-insensitive
-	# -I ignore binary files
-	# -H causes filename to be printed
-	# -r recursive search
-	# -n causes line number to be printed
-	# optional: -F treat search term as a literal, not a regular expression
-	# optional: -l only print filenames and not the matching lines ex. grep -irl "$1" *
-	grep -iIHrn --color=always "$1" . | less -r
-}
-
-
 
 
 
@@ -1013,8 +993,6 @@ function _draw_formatted () {
     # mystr=$(sed exp <<< mystr)
 
 #sed -r "s/_WS([0-9]+)_/$(printf '%*s' \"\1\")/" <<< wwwwwwww_WS2_aaaaaaaaaaa
-￼
-
 
     # replace key-names with coloring-values within the text
     text_to_draw=$1
