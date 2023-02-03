@@ -180,10 +180,10 @@ alias howdoi_linux='echo "
 * visudo  # edit the /etc/sudoers file (only if you know what you are doing)
 * crontab -e  # edit routine-scheduled tasks
 >> Some nice tools/commands you could need often
-* tmux  :  terminal session/pane-manager - see more in the tmux cheatsheet
-* wget  :  download files
+* tmux  # terminal session/pane-manager - see more in the tmux cheatsheet
+* wget <url>  # download files
 * curl  :  communicate through HTTP(S)/(S)FTP/SCP - make any request (but if you just want to download something, you should probably use wget)
-* netstat  :  get network related info (such as port usage and active connections)
+* netstat  # get network related info (such as port usage and active connections)
 * sudo nvidia-xconfig  # create new xorg config, used by nvidia driver
 >> logs (to tail a logfile in real-time run: \"tail -f <logfile>\", or to get last 100 lines: \"tail -100 <logfile>\" )
 * log-file: /var/log/boot.log  :  System boot log
@@ -192,13 +192,12 @@ alias howdoi_linux='echo "
 * log-file: /var/log/kern.log  :  log for kernel ring buffer
 "'
 
-
+#TODO - add a 1-line add-user command (with no prompts needed), with/without superuser privileges
 # Reminders for user/groups management
 alias howdoi_users='echo "
-TODO - add a 1-line add-user command (with no prompts needed), with/without superuser privileges
-* groups <username>  :  display the groups of a user
-* usermod -aG <groupA,groupB,groupC> <username>  :  add user to group(s). You can even add to group sudo.
-* getent group  :  list all groups and their user-members
+* groups <username>  # display the groups of a user
+* usermod -aG <groupA,groupB,groupC> <username>  # add user to group(s). You can even add to group sudo.
+* getent group  # list all groups and their user-members
 "'
 
 # Reminders for the basic gimmicks of bash
@@ -206,8 +205,8 @@ alias howdoi_bash_terminal='echo "
 * man <command>  # read the manual of the command
 * help  # list built-in Bash commands
 * sudo !!  # rerun last command with sudo permissions
-* add "& disown" after a command to have it run in its own thread so that it wont stop when the terminal closes
-* add "2> /dev/null" after a command to throw away warning/error messages it might bring up
+* add \"& disown\" after a command to have it run in its own thread so that it wont stop when the terminal closes
+* add \"2> /dev/null\" after a command to throw away warning/error messages it might bring up
 "'
 
 # Reminders for the basic gimmicks of bash
@@ -218,7 +217,7 @@ alias howdoi_bash_terminal_tools='echo "
 
 # common media file operations
 alias howdoi_media_and_docs='echo "
-* pdftk <file1> <file2> <file3> cat output merged.pdf"  # create a unified pdf file 
+* pdftk <file1> <file2> <file3> cat output <merged_name.pdf>  # create a unified pdf file 
 * xournal <pdf_filepath>  # edit a pdf file with option to add signatures
 * ffmpeg -i <input.mp4> -c copy -an <output.mp4>  # get a video copy without the audio
 "'
@@ -228,7 +227,7 @@ alias howdoi_microsoft='echo "
 * lnkinfo <lnk-file>  # display link info
 * dos2unix <file>  # convert files from windows to unix encoding
 * sudo ntfsfix <device> -v  # run check-disk on NTFS device
-* ldmtool  : Read dynamic disks by running "sudo ldmtool create all", and then mounting with \"mount -t ntfs /dev/mapper/<volume_name>\"
+* ldmtool  #  Read dynamic disks by running \"sudo ldmtool create all\", and then mounting with \"mount -t ntfs /dev/mapper/<volume_name>\"
 "'
 
 # Reminders for android-related tools
@@ -289,12 +288,12 @@ alias howdoi_tmux='echo "tmux offers split-panes and sessions for terminals.
 +For simplicity you can just have a SINGLE SESSION and manage all your windows there. Its easier to navigate windows, thanks to the green bar listing them at the bottom.
 +If a window has only need for a SINGLE TERMINAL (lets say the window is called \"grub_config\"), you can keep it simple and avoid adding extra panes. Add panes to multi-faceted things, like a project which has code, git-management, assets, runtime area etc.
 > Sessions:
-* tmux  :  create a new tmux session
-* CTRL+B, D  :  leave (detach) current session
-* tmux ls  :  view all existing tmux sessions (+ info about creation date and number of windows)
-* tmux rename-session -t <0/1/2/3/.../past_name> <name>  :  rename session (using number/name from "tmux ls")
-* tmux attach -t <0/1/2/3/.../name>  :  connect (attach) to an existing tmux session (using number/name from "tmux ls")
-* tmux kill-session -t <0/1/2/3/.../name>  :  kill specified session
+* tmux  # create a new tmux session
+* CTRL+B, D  : leave (detach) current session
+* tmux ls  # view all existing tmux sessions (+ info about creation date and number of windows)
+* tmux rename-session -t <0/1/2/3/.../past_name> <name>  # rename session (using number/name from "tmux ls")
+* tmux attach -t <0/1/2/3/.../name>  # connect (attach) to an existing tmux session (using number/name from "tmux ls")
+* tmux kill-session -t <0/1/2/3/.../name>  # kill specified session
 > Windows:
 * CTRL+B, <0/1/2/3/...>  : go to window number
 * CTRL+B, C  :  create a new window
@@ -303,7 +302,7 @@ alias howdoi_tmux='echo "tmux offers split-panes and sessions for terminals.
 * CTRL+B, %  :  create a new pane to the right
 * CTRL+B, "  :  create a new pane to the bottom
 * CTRL+B, <left/right/up/down>  :  move focus to other pane
-* exit  :  close pane. If last pane, close window.
+* exit  # close pane. If last pane, close window.
 TODO - create a script thatll establish tmux workspaces when logging into your user (so youd have things ready for debugging or coding and such)
 TODO - create functions that run these commands interactively (like listing, then letting the user pick a number, then go there...)
 "'
@@ -357,6 +356,8 @@ alias arrange_monitors='nvidia-settings --load-config-only && nvidia-settings --
 
 # TODO - a "checksum" function that gets both file to checksum and the checksum-result file, determines which is which, runs the appropriate checksum on the file and compares with the result file; prints the match result 
 
+# TODO - create a "if no parameter given, use "." (local) by default" private-function
+
 # Common commands - just for the use of other functions
 # =====================================================
 
@@ -382,7 +383,7 @@ function _get_dev_name_from_uuid () {
 }
 
 
-# TODO - convert all ':' to # in the function documentations
+
 # adds y/n prompt. Call like this:  if prompt_yn "are you sure you want to do that?"; then echo "alright..."; else echo "then lets call it off" && return ; fi
 function _prompt_yn() {   
     response=""
@@ -412,7 +413,6 @@ function _wait_n_seconds () {
 
 
 
-# TODO - create a "if no parameter given, use "." (local) by default" private-function
 
 
 # Basic functionalities override !
