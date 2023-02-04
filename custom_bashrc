@@ -745,13 +745,11 @@ args:
     becho "matching file contents:"
     becho "======================="
     all_results=$(_sudo_if_necessary "grep -e \"$exp\" -Inir \"$dir\" --color=never")  # No colors. Coloring is done at this stage because otherwise it'll add to the string's length
-    #TODO - simplify. Save results, if-awk, echo with eval recolor
-    if [ $(expr "$text_limit" + 0) -gt 0 ]; then
+    if [ $(expr "$text_limit" + 0) -gt 0 ]; then  # if there's a limit for result length
         [ -n "$verbose" ] && becho "filtering with maximum result length: $text_limit" 
-        echo "$all_results" | awk "length(\$0) <= $text_limit" | eval "$recolor_grep"
-    else
-        echo "$all_results" | eval "$recolor_grep"  # print with no filtering by length
+        all_results=$(echo "$all_results" | awk "length(\$0) <= $text_limit")
     fi
+    echo "$all_results" | eval "$recolor_grep"  # print with no filtering by length
 }
 
 
