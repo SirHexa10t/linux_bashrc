@@ -367,8 +367,6 @@ alias arrange_monitors='nvidia-settings --load-config-only && nvidia-settings --
 
 # TODO - a "checksum" function that gets both file to checksum and the checksum-result file, determines which is which, runs the appropriate checksum on the file and compares with the result file; prints the match result 
 
-# TODO - create a "if no parameter given, use "." (local) by default" private-function
-
 # Common commands - just for the use of other functions
 # =====================================================
 
@@ -632,14 +630,40 @@ function network_search () {
     fi
 }
 
-# TODO
-# TODO - support --inodes
-# function whatsinhere () {  : 'Reports all local files size and inner-files count. Sorts by size'
-#     function _count_files() { : 'recursively count files in given dir (default is location command is ran at)'
-#         find "${1:-.}" -type f | wc -l
-#     }
-#     files_size='du -chd 1 | sort -h'
-# }
+# Reports all local files size and inner-files count. Sortable by size with "-s"
+function explore () {
+    location=${1:-.}  # use given address, default to current location
+    location=$(readlink -f "$location")  # use absolute path (and use no '/' at the end)
+
+    folders=""
+    files=""
+    total_files=0  # Files (recursive) counter. Can technically just recount current dir, but the results might not be cached
+
+    filenames=$(find "$location" -maxdepth 1 -type f,d,l)  # get files (files, dirs, links) in given dir
+    filenames=$(echo "$filenames" | grep -vw "^$location$")  # throw out the given location (exact match from line start to end)
+
+    [ -z "${filenames}" ] && return 1  # nothing to iterate over
+
+    while IFS= read -r filename; do
+        size=$(du -sh "$filename" | cut -f1)  # determine size (same command for files/folders)
+        inodes=$(du -s --inodes "$filename" | cut -f1)
+        count=$(find "$filename" -type f,l | wc -l)  # count files and links found. It's just '1' for a file, but the code's shorter this way
+        total_files=$(($total_files + $count))
+
+        # handle as dir or file
+        if [ -d "$filename" ]; then folders+="$size\t$count\t$inodes\t$filename/\n";
+        else files+="$size\t$count\t$inodes\t$filename\n";
+        fi
+    done <<< "$filenames"
+
+    headers=$(becho "total_size\tfile_count\tinodes\tname")
+    data="${folders[@]}${files[@]}"    
+    [[ " $* " =~ " -s " ]] && data=$(echo -e "${data}" | sort -h)  # if flag -s specified, sort ; first datum is size, so that's what we sort by
+    echo -e "${headers}\n${data}" | column -t -s $'\t'  # separate nicely with tabs
+    echo "current dir total files: $total_files"
+    echo "current dir total size: $(du -sh "$location" | cut -f1)"
+    echo "current dir inodes use: $(du -s --inodes "$location" | cut -f1)"
+}
 
 
 # Info: Lookup
