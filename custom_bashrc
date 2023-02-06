@@ -20,8 +20,6 @@
 # Defaults        env_keep += "BASH_FUNC_*"
 
 
-# aliases work as "command (re)placements", i.e. they'll replace words that are commands but not args
-
 
 # My settings
 #################################################################################
@@ -64,6 +62,9 @@ bind -x '"\C-x": "arrange_monitors"$\r$\n'
 
 # My keyword shortcuts
 #################################################################################
+
+# aliases work as "command (re)placements", i.e. they'll replace words that are commands but not args
+
 
 # Basic functionalitiy override !
 # ===============================
@@ -336,6 +337,7 @@ alias howdoi_shortcut='echo "
 # server administration
 # =====================
 
+# TODO - delete? Is this redundent with the 
 # list users that have password access
 alias list_users="awk -F: '\$3 >= 1000 && \$1 != \"nobody\" {print \$1}' /etc/passwd"
 
@@ -589,24 +591,67 @@ function devs() {
 }
 
 
+
+list_human_users() {
+    users=$(ps -eo user= | sort | uniq)  # all users
+    
+    for user in $users; do
+      # Get the home directory for the user from the /etc/passwd file
+      home=$(grep "^$user:" /etc/passwd | awk -F: '{print $6}')
+      
+      # Check if the home directory exists and is a subdirectory of /home/
+      if [ -d "$home" ] && [ "${home#/home/}" != "$home" ]; then  # The user is likely a human user
+          echo $user
+      fi
+    done
+    echo "root"  # always assume root might be humanly-used somewhere
+}
+
 # TODO - check / refactor
 # get a list of users and their resource-usage stats
-function all_active_users () {
+function user_resource_allocation () {
     #!/bin/bash
-    cpu_count=$(lscpu | grep "^CPU(s):" | awk '{print4s 
-     $2}')
-    printf "# CPUs count(threads, not cores): $cpu_count \n"
-    printf "# Possibly bottlenecking on a single thread when a user's CPU reaches %0.3f %% \n" $((100/"$cpu_count"))
-    printf "\t\tUSER\t%%_CPU_USED\t%%_RAM_USED\n"
-    ps axo user:20,pid,pcpu,pmem | awk '
-        {cpuarr[$1]+=$3 ; memarr[$1]+=$4} 
-        # get all users CPU and RAM
-        END {for (i in memarr) print i, cpuarr[i], memarr[i]}' | sort -k2 -nr \
-        | while read name cpu ram shell rest ; do
-            if [ -d "/home/$name" ]; then   # only keep  "human" users
-                 printf "\r%20s \t%4f \t%10f\n" $name $cpu $ram
-            fi
-        done
+    thread_count=$(nproc)
+    bottleneck_threshold=$(echo "scale=3; 100/$thread_count" | bc -l)
+
+    becho "Computing units count: $thread_count"
+    becho "If your overall CPU usage reaches ${bottleneck_threshold}%, your CPU is possibly bottlenecked on a single thread."
+
+    declare -A husers
+    human_users=$(get_human_users)
+    for user in $human_users; do husers[$user]=1; done
+
+
+    res_users=$(ps -eo user= | sort | uniq)
+    for user in $res_users; do
+        prnt_cmd=$(( -n "${husers[$name]}" )) && echo "gecho" || echo "echo"  # ternary for choice of command to use - if user is human, print colored
+
+        cpu_usage=$(ps -u $user -o %cpu= | awk '{cpu+=$1} END {print cpu}')  # user's CPU usage
+        mem_usage=$(ps -u $user -o %mem= | awk '{mem+=$1} END {print mem}')  # user's RAM usage
+
+
+        # Print the results
+        printf "User: %s\tCPU Usage: %.2f%%\tRAM Usage: %.2f%%\n" $user $cpu_usage $mem_usage
+    done
+
+
+
+
+
+    # cpu_count=$(lscpu | grep "^CPU(s):" | awk '{print4s 
+    #  $2}')
+    # printf "# CPUs count(threads, not cores): $cpu_count \n"
+    # printf "# Possibly bottlenecking on a single thread when a user's CPU reaches %0.3f %% \n" $((100/"$cpu_count"))
+    # printf "\t\tUSER\t%%_CPU_USED\t%%_RAM_USED\n"
+    # ps axo user:20,pid,pcpu,pmem | awk '
+    #     {cpuarr[$1]+=$3 ; memarr[$1]+=$4} 
+    #     # get all users CPU and RAM
+    #     END {for (i in memarr) print i, cpuarr[i], memarr[i]}' | sort -k2 -nr \
+    #     | while read name cpu ram shell rest ; do
+    #         if [ -d "/home/$name" ]; then   # only keep  "human" users
+    #              printf "\r%20s \t%4f \t%10f\n" $name $cpu $ram
+    #         fi
+    #     done
 }
 
 
@@ -902,72 +947,110 @@ EOT
 
 # Visuals
 # =======
+function _repeat_space_n_times () {
+    printf "%${1}s" | tr ' ' " "
+}
+function _underline () {
+    char=${2:-'-'}  # determine which char to repeat in underline
+    input_string_length=${#1}
+    
+    line=$(printf "%${input_string_length}s" | tr ' ' "$char")  # Create a line of the specified character with the same length as the input string
+
+    echo "$1"
+    echo "$line"
+
+    # echo -e "\033[32maaa\033[0m"  -  prints aaa in green
+    # echo -e "\033[$34m\033[32maaa\033[0m"  -  prints aaa in green, with underline
+}
+
 # TODO - detect if the terminal is bright instead of dark? If it's white, the colored prints should be darker; so you should remove the "\033[1m" prefix
+# echo in color, use like this: _colored_echo "<=uline=><=red=>" "color me"  # recolors red and underlined
+function _colored_echo () {
+    # apply colors (arg 1) to all lines
+    formatted=$(echo -e "${@:2}" | while read -r line; do echo "${1}${line}"; done)
+    _draw_formatted "$formatted\n"
+}
 # echo in red
 function recho () {
-    # echo "$(tput setaf 1)${@}$(tput sgr0)"
-	echo -e "\033[1m\033[31m${@}\033[0m"
+    _colored_echo '<=red=>' "${@}"
 }
 # echo in green
 function gecho () {
-    # echo "$(tput setaf 2)${@}$(tput sgr0)"
-	echo -e "\033[1m\033[32m${@}\033[0m"
+    _colored_echo '<=green=>' "${@}"
 }
 # echo in blue
 function becho () {
-	# echo "$(tput setaf 4)${@}$(tput sgr0)"
-    echo -e "\033[1m\033[34m${@}\033[0m"
+	_colored_echo '<=blue=>' "${@}"
 }
 # echo in yellow
 function yecho () {
-	# echo "$(tput setaf 3)${@}$(tput sgr0)"
-    echo -e "\033[1m\033[33m${@}\033[0m"
+	_colored_echo '<=yellow=>' "${@}"
+}
+# underlinedecho in red
+function ruecho () {
+    _colored_echo '<=red=><=bold=><=uline=>' "${@}"
+}
+# underlined echo in green
+function guecho () {
+	_colored_echo '<=green=><=bold=><=uline=>' "${@}"
+}
+# underlined echo in blue
+function buecho () {
+    _colored_echo '<=blue=><=bold=><=uline=>' "${@}"
+}
+# underlined echo in yellow
+function yuecho () {
+    _colored_echo '<=yellow=><=bold=><=uline=>' "${@}"
 }
 
+# runs printf with a specific assortment of color names
 function _draw_formatted () {
-    : 'runs printf with a specific assortment of color names'
-    # the char before the ';' is 0:regular , 1: bold, 3: italic, 2: dark, 4:underline, 5: slow-blink, 6: fast-blink, 7: reverse, 8: hide, 9: cross-out
-    # the tens-digit before the 'm' is 3:regular , 1: bold, 4:background, 9: bright, 10: bright background
-    # the singles-digit before the 'm' is 0:Black, 1:Red, 2:Green, 3:Yellow, 4:Blue, 5:Purple, 6:Cyan, 7:White
-    # https://stackoverflow.com/questions/5947742/how-to-change-the-output-color-of-echo-in-linux
     declare -A colors=(
-    # regular
-    [_Black_]='\033[0;30m' [_Red_]='\033[0;31m' [_Green_]='\033[0;32m' [_Yellow_]='\033[0;33m' [_Blue_]='\033[0;34m' [_Purple_]='\033[0;35m' [_Cyan_]='\033[0;36m' [_White_]='\033[0;37m'
-    # bold
-    [_BBlack_]='\033[1;30m' [_BRed_]='\033[1;31m' [_BGreen_]='\033[1;32m' [_BYellow_]='\033[1;33m' [_BBlue_]='\033[1;34m' [_BPurple_]='\033[1;35m' [_BCyan_]='\033[1;36m' [_BWhite_]='\033[1;37m'
-    # intense
-    [_IBlack_]='\033[0;90m' [_IRed_]='\033[0;91m' [_IGreen_]='\033[0;92m' [_IYellow_]='\033[0;93m' [_IBlue_]='\033[0;94m' [_IPurple_]='\033[0;95m' [_ICyan_]='\033[0;96m' [_IWhite_]='\033[0;97m'
-    # bold intense
-    [_BIBlack_]='\033[1;90m' [_BIRed_]='\033[1;91m' [_BIGreen_]='\033[1;92m' [_BIYellow_]='\033[1;93m' [_BIBlue_]='\033[1;94m' [_BIPurple_]='\033[1;95m' [_BICyan_]='\033[1;96m' [_BIWhite_]='\033[1;97m'
-    # dark
-    [_DBIBlack_]='\033[2;90m' [_DRed_]='\033[2;31m' [_DYellow_]='\033[2;33m' [_DBIWhite_]='\033[2;97m'
+    # colors
+    [<=black=>]='\033[30m' [<=red=>]='\033[31m' [<=green=>]='\033[32m' [<=yellow=>]='\033[33m' [<=blue=>]='\033[34m' [<=purple=>]='\033[35m' [<=cyan=>]='\033[36m' [<=grey=>]='\033[37m'
+    # bright colors (work like regulat when stylized bold)
+    [<=b_black=>]='\033[90m' [<=b_red=>]='\033[91m' [<=b_green=>]='\033[92m' [<=b_yellow=>]='\033[93m' [<=b_blue=>]='\033[94m' [<=b_purple=>]='\033[95m' [<=b_cyan=>]='\033[96m' [<=b_grey=>]='\033[97m'
+    # highlights / markers (can be switched with text color using 7m). If you want to "hide" text as a solid block of color run the same colors for both (i.e. \033[43m\033[33m)
+    [<=h_black=>]='\033[40m' [<=h_red=>]='\033[41m' [<=h_green=>]='\033[42m' [<=h_yellow=>]='\033[43m' [<=h_blue=>]='\033[44m' [<=h_purple=>]='\033[45m' [<=h_cyan=>]='\033[46m' [<=h_grey=>]='\033[47m'
+    # bright backgrounds (highlights)
+    [<=bh_black=>]='\033[100m' [<=bh_red=>]='\033[101m' [<=bh_green=>]='\033[102m' [<=bh_yellow=>]='\033[103m' [<=bh_blue=>]='\033[104m' [<=bh_purple=>]='\033[105m' [<=bh_cyan=>]='\033[106m' [<=bh_grey=>]='\033[107m'
+    # stylizing
+    [<=bold=>]='\033[1m' [<=dark=>]='\033[2m' [<=italic=>]='\033[3m' [<=uline=>]='\033[4m' [<=flicker=>]='\033[5m' [<=fast_flicker=>]='\033[6m' [<=switch_fg_bg=>]='\033[7m' [<=hidden=>]='\033[8m' [<=crossed=>]='\033[9m'
+    # reset
+    [<=reset=>]='\033[0m'
     )
-    _NC_='\033[0;0m'  # no color (reset)
-    # _WS_='O'  # '⠀'  # whitespace - accepting with number for repetition: _WS_, _WS1_, _WS2_, _WS3_, ...
-
-    # TODO replace with number of spaces. This is how it'd be done in python:
-    # match "--\d+--"
-    # get group 1
-    # replace with 
-    # with f"--{int(group1) * n}--"
-
-    # And this is theoretically how it'd be done directly in Bash:
-    # sed -i 's/--\([0-9]\+\)--/\1/g' file.txt
-    # doesn't work; tested:
-    # mystr="this is a string with--10--a need for--3--space"
-    # sed 's/--\([0-9]\+\)--/\1/g' <<< "$mystr"
-
-    # technically if it worked, it should be saved like so:
-    # mystr=$(sed exp <<< mystr)
-
-#sed -r "s/_WS([0-9]+)_/$(printf '%*s' \"\1\")/" <<< wwwwwwww_WS2_aaaaaaaaaaa
 
     # replace key-names with coloring-values within the text
+    # ------------------------------------------------------
     text_to_draw=$1
-    text_to_draw="${text_to_draw//_NC_/$_NC_}"  # replace no-color on its own, because otherwise we'd replace it with 2 consecutive color resets (still works, but isn't right)
-    for str in "${!colors[@]}"; do
-        text_to_draw="${text_to_draw//$str/${_NC_}${colors[$str]}}"
+
+    # add resets
+    reset_key='<=reset=>'
+    reset_value="${colors[$reset_key]}"
+    reset_value_escaped=$(printf "%q" "$reset_value")  # for sed. It needs pre-reset string.
+    regex_tag='<=[a-zA-Z_]+=>'
+    regex_ws_tag='<=([0-9]+)WS=>'
+    text_to_draw="${text_to_draw//$reset_key/$reset_value}"  # replace reset on its own, because otherwise we'd replace it with 2 consecutive color resets (still works, but isn't right)
+    text_to_draw=$(echo "$text_to_draw" | sed -r "s/($regex_tag)/$reset_value_escaped\1/g")  # put reset before each color tag
+    text_to_draw=$(echo "$text_to_draw" | sed -r "s/($regex_tag)($reset_value_escaped)($regex_tag)/\1\3/g")  # delete reset in between tags (to avoid canceling-out the prior tag)
+    text_to_draw=$(echo "$text_to_draw" | sed -r "s/($regex_ws_tag)/$reset_value_escaped\1/g")  # put reset before spaces-insert
+    text_to_draw=$(echo "$text_to_draw" | sed -r "s/$/&$reset_value_escaped/g")  # add resets at the ends of lines
+
+    # insert whitespaces
+    repeated_char=' '
+    while [[ "$text_to_draw" =~ '<='([0-9]+)'WS=>' ]]; do  # while there's still a whitespace-tag
+        num="${BASH_REMATCH[1]}"
+        numtag="<=${num}WS=>"
+        repeats=$(printf "%${num}s" | tr " " "$repeated_char")  # create a sequence of <num> spaces
+        text_to_draw="${text_to_draw//$numtag/$repeats}"
     done
+
+    # swap-in all the colors (replace keys with values)
+    for str in "${!colors[@]}"; do
+        text_to_draw="${text_to_draw//$str/${colors[$str]}}"
+    done
+
+    echo "$text_to_draw"
 
     printf "$text_to_draw"
 
@@ -975,74 +1058,51 @@ function _draw_formatted () {
 
 # TODO - make a drawing convention that adds in spaces
 function draw_hentai () {
-    HY='_IYellow_'  # Hair Yellow
-    HYD='_Yellow_'  # Hair Yellow Dark
-    S='_NC_'  # skin
-    SD='_Red_'  # Skin Dark
-    EW='_IWhite_'  # Eyes white
-    W='_White_' # $IWhite  # teeth White
-    WD=$S  # $White  # teeth White Dark
-    WS='_DBIWhite_'  # White Shirt
-    WSD='_DBIBlack_'  # White Shirt Dark
-    G='_DRed_'  # Glove and eyebrows Brown
-    GD='_DBIBlack_'  # Glove Brown Dark
-    D='_DBIBlack_'  # dark
-    NC='_NC_'
+    HY='<=b_yellow=>'  # Hair Yellow
+    HYD='<=yellow=>'  # Hair Yellow Dark
+    S='<=reset=>'  # skin
+    SD='<=b_red=>'  # Skin Dark
+    EW='<=b_grey=>'  # Eyes white
+    W='<=grey=>'  # teeth White
+    WD=$S  # teeth White Dark
+    WS='<=dark=><=b_grey=>'  # White Shirt
+    WSD='<=b_black=>'  # White Shirt Dark
+    G='<=dark=><=red=>'  # Glove and eyebrows Brown
+    GD='<=b_black=>'  # Glove Brown Dark
+    D='<=dark=><=b_black=>'  # dark
+    
+    declare -A SPR # whitespaces that'll reset colors in drawing
+    for num in {1..25}; do SPR[$num]="<=${num}WS=>"; done
+    declare -A SP # whitespaces. just spaces.
+    for num in {1..25}; do SP[$num]="$(_repeat_space_n_times ${num})"; done
+    WS_unconventional='⠀'
 
     # don't try to peek at the drawing here, go run the command in terminal
     read -r -d '' surprise << EOM
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$HY⠰⡘⡸⢏$HYD⠼⠋$HY⡀⣱$HYD⢏⣾⣿⣿⣿⣿⣿⣿⣿⣧⠻⣿⣿⣷⣦$HY⡪⡳⠹⣷⣀⣀$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$HY⢀⣽⣿⡶⣢⢸$HYD⡇⡏⣾⣿⠹⣿⣆⢻⣿⣇⢿⣿⣷⡙⠿⣿⣿⣿⣮$HY⠢⣽⡯⡑⠂$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$HY⢘⣷⡱$HYD⣾⡟⠊⠧⠈⠟⢿⣧⢙⠻⣇⠙⢿⣎⢛⡻⠿⠦⠐⠩⠭⣭⣷⡜$HY⢷⡌⠄$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$HY⠢⠴⣾⣛$HYD⢱⣿⡑$S⡀$HYD⡀⠄$S⢸$SD⢧$HYD⠹⠸⠁⣈⠀⣰$SD⠌⣥$HYD⡈⢙⣿⠻⢛$SD⠭$HYD⠻⣿⡄$HY⡸⣧$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$HY⠠⢪⣇$HYD⠀⣇⢳⠀$S⣇⢻⡄$HYD⠆⡁$EW⠀⠀$HYD⠁$EW⣀$SD⠀⢾⣿⣿⣶⠀⣰⢁⡛⠇$HYD⢿⣿$HY⢸⡇$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$HY⠁⢸⢻$HYD⡰$S⠀$G⠈⠐$S⠩⠸⣄⠀⠢⣀$EW⠃$S⣀⣴⣿⣷⣮$SD⢻⣿⢠⡟⠠⢛⡘$HYD⢸⡏$HY⡞⠤$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$HY⢀⡌$HYD⠀⡴⣆$EW⠠$S⠀⣠⣷⣵⣿⣿⣿⣿⣿⣿⣿⣿$SD⣿⣿⣿⡿⠒⢅$HYD⣴⣿⠃$HY⢎⢩⡄⡀$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$HYD⠃⠿$S⢸⣿⡇⢙⠿⠛⣻⣿⣿⣿⡿⣿⡇$SD⣿⣿⣿⡇$HYD⠰⣾⣿⣿$HY⢸⠈⠃⠉⠁$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$S⢿⣿⡶⠬⡾⠿⣛⣛⢛⢰⣿⡇$SD⣿⣿⣿⡇⢧$HYD⡉⠻⢿$HY⠂⢃$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$S⠈⢻⣿⣆$W⠋⠉$D⣀⣀⠂$WD$S⣾⣿$SD⢸⣿⣿⠛⠀⠸⠁⠆$HYD⣾⣦$HY⡲⡒⠂$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$S⠙⢿⣇$W⠘⠻⢕$S⣴⣿⡏$SD⣾⠟⣡⠆⠄⠀⠀⠀$HYD⠹⠟⠃$HY⢈⠷⡀$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$G⣀⣀⣠$S⢠⡀$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$S⠈⢻⣟⠫⢍⣰⡿$SD⢐⣥⣾⠟⠀⠀⠀⠀⠀⠀⠀⠀⠀$HY⢠⠈$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀$G⣠⠠⠴⠦$S⣻⣿⠌$SD⣴⠀⣐⣺⣿⠷$NC⠀⠀⠀⠀⠀⠀⠀$S⠛⠿⠟$SD⣩⣴⣿⠿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$HY⢸⡆$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀$G⣀⡌⢦⡙$S⠰⠿⠟$SD⢁⢡$GD⣾$SD⠸⣿⠏$NC⠀⠀⠀⠀⠀⠀⠀⠀$WS⢤⣶⣆$SD⠇⣼⠟⠁⠀$SD⢀⣀⣀⡤⠤⣤$WSD⣶⣶⠆⠀⠀$HY⠸⠇$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀$G⣼⢻⡟⣪$S⡘$SD⠿⠉$SD⣸$GD⡿⠘⠋$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀$WS⡄⠦⠠⡀$WSD⠹⡄⠀⠀⠴⣾⠿⠙⠉⠁⠀⢹⣿⡇$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀$G⣠⣰⣿⠄$SD⠘⣿⠍$GD⢰⢣⡿⠃$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀$WS⢇⢠⢀$WSD⠀⠀⠁⣄⠀⢀⣰⡀⢀⠤⡆⠠⠀⠃⠀⠀⢀⣴⣶⣿⢿⣿⣿⣿⡶⠖⠒⠢$NC⠀⠀⠀⠀
-$G⣀⣿⠟$GD⣴⣿⣿⣦⡣⠡⠀⠛$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀$WS⣀⣠⣭⣭⣵⣮⡙⢾⣷⡆$WSD⠐⣿⣷⣾⣿⣿⣗⡤⡴⠐⠀⣠⣴⣿⣿⣿⣿⡿⠟⠋$NC⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-$G⣼⡟$GD⣸⣿⣿⠋⠁$NC⠀⠀⠀⠀⠀⠀⠀⠀$WS⣀⣬⣶⣾⣿⣿⣿⣿⣿⣿⣿⡿⡊⢋⣉⣬⣬$WSD⡰⣿⣿⡟⠋⢁⣠⣶⣿⣿⣿⣿⣿⣿⠫⠃$NC⠀⠀⠀⠀⠀⠀⠀⠀$WSD⣀⣤⣾⣿$NC
-⠀⠀$GD⠈⠉$NC⠀⠀⠀⠀⠀⠀⠀⠀$WS⢀⣴⢇⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⢠⣾⣿⣿⣿⣿⣿⣎$WSD⠻⣿⣿⣿⣿⣿⣿⣿⣿⡿⠿⠇$NC⠀⠀⠀⠀⠀⠀⠀$WSD⢀⣤⣾⣿⣿⣿⢿$NC
-_NC_\x59\x4f\x55\x20\x57\x45\x52\x45\x20\x45\x58\x50\x45\x43\x54\x49\x4e\x47\x20\x4c\x45\x57\x44\x53\x2c\x20\x42\x55\x54\x20\x49\x54\x20\x57\x41\x53\x20\x4d\x45\x2c\x20\x44\x49\x4f\x21
+${SPR[17]}$HY⠰⡘⡸⢏$HYD⠼⠋$HY⡀⣱$HYD⢏⣾⣿⣿⣿⣿⣿⣿⣿⣧⠻⣿⣿⣷⣦$HY⡪⡳⠹⣷⣀⣀<=10WS=>
+${SPR[17]}$HY⢀⣽⣿⡶⣢⢸$HYD⡇⡏⣾⣿⠹⣿⣆⢻⣿⣇⢿⣿⣷⡙⠿⣿⣿⣿⣮$HY⠢⣽⡯⡑⠂
+${SPR[17]}$HY⢘⣷⡱$HYD⣾⡟⠊⠧⠈⠟⢿⣧⢙⠻⣇⠙⢿⣎⢛⡻⠿⠦⠐⠩⠭⣭⣷⡜$HY⢷⡌⠄
+${SPR[15]}$HY⠢⠴⣾⣛$HYD⢱⣿⡑$S⡀$HYD⡀⠄$S⢸$SD⢧$HYD⠹⠸⠁⣈${SP[1]}⣰$SD⠌⣥$HYD⡈⢙⣿⠻⢛$SD⠭$HYD⠻⣿⡄$HY⡸⣧
+${SPR[16]}$HY⠠⢪⣇$HYD${SP[1]}⣇⢳${SP[1]}$S⣇⢻⡄$HYD⠆⡁$EW${SP[2]}$HYD⠁$EW⣀$SD${SP[1]}⢾⣿⣿⣶${SP[1]}⣰⢁⡛⠇$HYD⢿⣿$HY⢸⡇
+${SPR[16]}$HY⠁⢸⢻$HYD⡰$S${SP[1]}$G⠈⠐$S⠩⠸⣄${SP[1]}⠢⣀$EW⠃$S⣀⣴⣿⣷⣮$SD⢻⣿⢠⡟⠠⢛⡘$HYD⢸⡏$HY⡞⠤
+${SPR[17]}$HY⢀⡌$HYD${SP[1]}⡴⣆$EW⠠$S${SP[1]}⣠⣷⣵⣿⣿⣿⣿⣿⣿⣿⣿$SD⣿⣿⣿⡿⠒⢅$HYD⣴⣿⠃$HY⢎⢩⡄⡀
+${SPR[20]}$HYD⠃⠿$S⢸⣿⡇⢙⠿⠛⣻⣿⣿⣿⡿⣿⡇$SD⣿⣿⣿⡇$HYD⠰⣾⣿⣿$HY⢸⠈⠃⠉⠁
+${SPR[23]}$S⢿⣿⡶⠬⡾⠿⣛⣛⢛⢰⣿⡇$SD⣿⣿⣿⡇⢧$HYD⡉⠻⢿$HY⠂⢃
+${SPR[23]}$S⠈⢻⣿⣆$W⠋⠉$D⣀⣀⠂$S⣾⣿$SD⢸⣿⣿⠛${SP[1]}⠸⠁⠆$HYD⣾⣦$HY⡲⡒⠂
+${SPR[25]}$S⠙⢿⣇$W⠘⠻⢕$S⣴⣿⡏$SD⣾⠟⣡⠆⠄${SP[3]}$HYD⠹⠟⠃$HY⢈⠷⡀
+${SPR[11]}$G⣀⣀⣠$S⢠⡀${SPR[10]}$S⠈⢻⣟⠫⢍⣰⡿$SD⢐⣥⣾⠟${SP[9]}$HY⢠⠈
+${SPR[8]}$G⣠⠠⠴⠦$S⣻⣿⠌$SD⣴${SP[1]}⣐⣺⣿⠷${SPR[7]}$S⠛⠿⠟$SD⣩⣴⣿⠿⠁${SP[10]}$HY⢸⡆
+${SPR[6]}$G⣀⡌⢦⡙$S⠰⠿⠟$SD⢁⢡$GD⣾$SD⠸⣿⠏${SPR[8]}$WS⢤⣶⣆$SD⠇⣼⠟⠁${SP[1]}$SD⢀⣀⣀⡤⠤⣤$WSD⣶⣶⠆${SP[2]}$HY⠸⠇
+${SPR[5]}$G⣼⢻⡟⣪$S⡘⠿$SD⠉⣸$GD⡿⠘⠋${SPR[9]}$WS⡄⠦⠠⡀$WSD⠹⡄${SP[2]}⠴⣾⠿⠙⠉⠁${SP[1]}⢹⣿⡇
+${SPR[3]}$G⣠⣰⣿⠄$SD⠘⣿⠍$GD⢰⢣⡿⠃${SPR[11]}$WS⢇⢠⢀$WSD${SP[2]}⠁⣄${SP[1]}⢀⣰⡀⢀⠤⡆⠠${SP[1]}⠃⠀⠀⢀⣴⣶⣿⢿⣿⣿⣿⡶⠖⠒⠢
+$G⣀⣿⠟$GD⣴⣿⣿⣦⡣⠡${SP[1]}⠛${SPR[9]}$WS⣀⣠⣭⣭⣵⣮⡙⢾⣷⡆$WSD⠐⣿⣷⣾⣿⣿⣗⡤⡴⠐${SP[1]}⣠⣴⣿⣿⣿⣿⡿⠟⠋
+$G⣼⡟$GD⣸⣿⣿⠋⠁${SPR[8]}$WS⣀⣬⣶⣾⣿⣿⣿⣿⣿⣿⣿⡿⡊⢋⣉⣬⣬$WSD⡰⣿⣿⡟⠋⢁⣠⣶⣿⣿⣿⣿⣿⣿⠫⠃${SPR[8]}$WSD⣀⣤⣾⣿
+${SPR[2]}$GD⠈⠉${SPR[8]}$WS⢀⣴⢇⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⢠⣾⣿⣿⣿⣿⣿⣎$WSD⠻⣿⣿⣿⣿⣿⣿⣿⣿⡿⠿⠇${SPR[7]}$WSD⢀⣤⣾⣿⣿⣿⢿
+\x59\x4f\x55\x20\x57\x45\x52\x45\x20\x45\x58\x50\x45\x43\x54\x49\x4e\x47\x20\x4c\x45\x57\x44\x53\x2c\x20\x42\x55\x54\x20\x49\x54\x20\x57\x41\x53\x20\x4d\x45\x2c\x20\x44\x49\x4f\x21
 EOM
 
     _draw_formatted "$surprise\n"
 }
-
-# # https://stackoverflow.com/questions/23577516/how-to-replace-all-matches-with-an-incrementing-number-in-bash
-# draw_hentai
-# num=5
-# # printf "%${num}s" |sed 's/ /FOO /g'
-# # yes FOO | head -"${num}"
-# repeat=echo 'aaaa'
-
-# # repeat=`seq "$num" | sed "c abc"`
-
-# echo "$repreat"
-
-
-
-# TODO investigate this coloring method
-# red=$(tput setaf 1)  # Set the text color to red
-# normal=$(tput sgr0)  # Reset the text color to the default
-# echo "${red}This text is red${normal}"  # Print the text in red
-# Black: tput setaf 0
-# Red: tput setaf 1
-# Green: tput setaf 2
-# Yellow: tput setaf 3
-# Blue: tput setaf 4
-# Magenta: tput setaf 5
-# Cyan: tput setaf 6
-# White: tput setaf 7
-
-
 
 echo "Finished loading \"$(readlink -f -- "$BASH_SOURCE")\" for: \"`readlink -f $0`\""
 
