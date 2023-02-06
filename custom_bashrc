@@ -972,19 +972,19 @@ function _colored_echo () {
 }
 # echo in red
 function recho () {
-    _colored_echo '<=red=>' "${@}"
+    _colored_echo '<=bold=><=red=>' "${@}"
 }
 # echo in green
 function gecho () {
-    _colored_echo '<=green=>' "${@}"
+    _colored_echo '<=bold=><=green=>' "${@}"
 }
 # echo in blue
 function becho () {
-	_colored_echo '<=blue=>' "${@}"
+	_colored_echo '<=bold=><=blue=>' "${@}"
 }
 # echo in yellow
 function yecho () {
-	_colored_echo '<=yellow=>' "${@}"
+	_colored_echo '<=bold=><=yellow=>' "${@}"
 }
 # underlinedecho in red
 function ruecho () {
@@ -1033,6 +1033,7 @@ function _draw_formatted () {
     text_to_draw="${text_to_draw//$reset_key/$reset_value}"  # replace reset on its own, because otherwise we'd replace it with 2 consecutive color resets (still works, but isn't right)
     text_to_draw=$(echo "$text_to_draw" | sed -r "s/($regex_tag)/$reset_value_escaped\1/g")  # put reset before each color tag
     text_to_draw=$(echo "$text_to_draw" | sed -r "s/($regex_tag)($reset_value_escaped)($regex_tag)/\1\3/g")  # delete reset in between tags (to avoid canceling-out the prior tag)
+    text_to_draw=$(echo "$text_to_draw" | sed -r "s/($regex_tag)($reset_value_escaped)($regex_tag)/\1\3/g")  # doesn't work for 3 consecutive tags, so we just repeat it...
     text_to_draw=$(echo "$text_to_draw" | sed -r "s/($regex_ws_tag)/$reset_value_escaped\1/g")  # put reset before spaces-insert
     text_to_draw=$(echo "$text_to_draw" | sed -r "s/$/&$reset_value_escaped/g")  # add resets at the ends of lines
 
@@ -1049,8 +1050,6 @@ function _draw_formatted () {
     for str in "${!colors[@]}"; do
         text_to_draw="${text_to_draw//$str/${colors[$str]}}"
     done
-
-    echo "$text_to_draw"
 
     printf "$text_to_draw"
 
