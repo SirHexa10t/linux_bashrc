@@ -6,10 +6,10 @@
 #---------------------------------------------------------------------------------------------
 
 
-# Add everything here (see note below) to own user's .bashrc file (or in /etc/bash.bashrc if you want it to be global)
-# Then reset your terminal or source (shortcut: .) the relevant .bashrc file:
-#   . /etc/bash.bashrc
-#   . ~/.bashrc
+# Add everything here (see note below) to own user's .bashrc file (or in /etc/bash.bashrc if you want it to be global), then reset your terminal
+# Relevant .bashrc files:
+#   /etc/bash.bashrc
+#   $HOME/.bashrc
 
 # (note) It's more modular (and arguably easier) to just save this file somewhere and refer to it from bashrc.
 # To do that, just paste the following 2 lines (uncommented) at the end of your bashrc. Make sure the filename's correct of-course.
@@ -26,7 +26,7 @@
 QEMU_VOLUME_UUID='A80899A4089971D4'
 LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
 
-HISTTIMEFORMAT="%Y-%m-%d %T  "  # makes "history" command display the time the command ran at
+HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
 # My binds
 #################################################################################
