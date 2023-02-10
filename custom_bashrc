@@ -115,6 +115,7 @@ alias sysinfo_short='echo "For simpler neat hardware specs, run \"neofetch\" or 
 alias sysinfo_full='inxi -FxxzJy90'
 
 
+
 # Service/Application handling
 # ============================
 
@@ -335,14 +336,6 @@ alias howdoi_shortcut='echo "
 
 # function aliases (alternate names)
 # ==================================
-
-
-# server administration
-# =====================
-
-# TODO - delete? Is this redundent with the 
-# list users that have password access
-alias list_users="awk -F: '\$3 >= 1000 && \$1 != \"nobody\" {print \$1}' /etc/passwd"
 
 
 # Custom
@@ -593,7 +586,7 @@ function devs() {
 }
 
 
-# list users with uid >= 1000. Specify uid limit with --max_uid <number>  ; only count users with home-dir with --require_home 
+# list password-owning users with uid >= 1000. Specify uid limit with --max_uid <number>  ; only count users with home-dir with --require_home 
 function list_human_users() {
     # defaults
     max_uid_filter=''  # no extra filtering
@@ -1079,7 +1072,6 @@ function _draw_formatted () {
 
 }
 
-# TODO - make a drawing convention that adds in spaces
 function draw_hentai () {
     HY='<=b_yellow=>'  # Hair Yellow
     HYD='<=yellow=>'  # Hair Yellow Dark
