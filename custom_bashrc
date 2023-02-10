@@ -183,27 +183,30 @@ alias howdoi_linux='echo "
 * log-file: /var/log/kern.log  :  log for kernel ring buffer
 "'
 
-#TODO - add a 1-line add-user command (with no prompts needed), with/without superuser privileges
 # Reminders for user/groups management
 alias howdoi_users='echo "
 * groups <username>  # display the groups of a user
-* usermod -aG <groupA,groupB,groupC> <username>  # add user to group(s). You can even add to group sudo.
+* usermod -aG <groupA,groupB,groupC> <username>  # add user to group(s). You can even add to group sudo (makes into superuser in Ubuntu).
 * getent group  # list all groups and their user-members
+* sudo adduser --disabled-password --gecos "" <username>  # adduser is a useradd wrapper (addused is generally better). The --disabled-password and --gecos options are required for no-prompt; gecos fills thumbnail info (cancels interactive). --no-create-home skips homedir creation. --disabled-password skips password creation and disables password login.
+*   sudo adduser <username> --gecos "" --disabled-password && echo "<username>:<password>" | sudo chpasswd  # Add user with password in one line. take care to specify the username twice, as needed here
+* sudo deluser --remove-home <username>  # delete user and associate homedir
+* su - <username>  # Switch to user. Might require sudo.
 "'
 
 # Reminders for the basic gimmicks of bash
 alias howdoi_bash_terminal='echo "
+>> terminal
 * man <command>  # read the manual of the command
 * help  # list built-in Bash commands
 * sudo !!  # rerun last command with sudo permissions
-* add \"& disown\" after a command to have it run in its own thread so that it wont stop when the terminal closes
-* add \"2> /dev/null\" after a command to throw away warning/error messages it might bring up
-"'
-
-# Reminders for the basic gimmicks of bash
-alias howdoi_bash_terminal_tools='echo "
 * htop  # show real-time processes/resource-usage
 * diff <file1> <file2>  # get the text difference between 2 files
+>> bash (can be used in terminal of-course)
+* declare -p <variable>  # Note: no use of $. Print the variable to check data / data-type
+* add \"& disown\" after a command to have it run in its own thread so that it wont stop when the terminal closes
+* add \"2> /dev/null\" after a command to throw away warning/error messages it might bring up
+* time <command>  # get time measurement for command runtime. No need for quotes or any encapsulation, just prepend \"time\". Example: time ls -l
 "'
 
 # common media file operations
@@ -368,9 +371,12 @@ alias arrange_monitors='nvidia-settings --load-config-only && nvidia-settings --
 # Common commands - just for the use of other functions
 # =====================================================
 
+# Attempt to run command. If it fail, run with sudo. Don't 
 function _sudo_if_necessary () {
     [ $# -ge 1 ] || { echo "WTF are you expecting me to sudo? Give me a command-string as argument" ; return ; }
-    eval "$1" 2>/dev/null || eval "sudo $1"
+    
+    normal_output=$(eval "$@" 2>/dev/null)
+    [ $? -ne 0 ] && eval "sudo $@" || echo "$normal_output"
 }
 
 function _count_lines () {
@@ -389,8 +395,6 @@ function _get_dev_name_from_uuid () {
     blkid | grep "UUID=\"$1\"" | awk -F: '{print $1}'
 }
 
-
-
 # adds y/n prompt. Call like this:  if prompt_yn "are you sure you want to do that?"; then echo "alright..."; else echo "then lets call it off" && return ; fi
 function _prompt_yn() {   
     response=""
@@ -408,17 +412,15 @@ function _prompt_yn() {
 
 # wait $1 seconds, print a dot for each second passed.
 function _wait_n_seconds () {
-  printf "Waiting $1 seconds"
-  for ((i=0; i<$1; i++))
-  do
-    printf "."  # Print a dot and flush the output to ensure that it is printed immediately
-    sleep 1
-  done
-  
-  printf "\n" # Print a newline after the dots
+    printf "Waiting $1 seconds"
+    for ((i=0; i<$1; i++))
+    do
+        printf "."  # Print a dot and flush the output to ensure that it is printed immediately
+        sleep 1
+    done
+
+    printf "\n" # Print a newline after the dots
 }
-
-
 
 
 
@@ -591,67 +593,88 @@ function devs() {
 }
 
 
+# list users with uid >= 1000. Specify uid limit with --max_uid <number>  ; only count users with home-dir with --require_home 
+function list_human_users() {
+    # defaults
+    max_uid_filter=''  # no extra filtering
+    require_home='false'
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+            '--max_uid')
+    			max_uid_filter="&& \$3 <= $2"
+    			shift 2
+    			continue
+    		;;
+            '--require_home')
+    			require_home='true'
+    			shift 1
+    			continue
+    		;;
+            *)
+                recho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+    			shift
+    		;;
+        esac
+    done
 
-list_human_users() {
-    users=$(ps -eo user= | sort | uniq)  # all users
-    
-    for user in $users; do
-      # Get the home directory for the user from the /etc/passwd file
-      home=$(grep "^$user:" /etc/passwd | awk -F: '{print $6}')
-      
-      # Check if the home directory exists and is a subdirectory of /home/
-      if [ -d "$home" ] && [ "${home#/home/}" != "$home" ]; then  # The user is likely a human user
+    users=$(getent passwd | awk -F: '$3 >= 1000 '"$max_uid_filter"' {print $1}')  # get all users with uid >= 1000, maybe with a limit (because uid increments by 1)
+    for user in $users; do      
+      if [ "$require_home" == 'false'  ] || [ -d "/home/$user" ]; then  # if homedir isn't required, or if it is and it does exist
           echo $user
       fi
     done
     echo "root"  # always assume root might be humanly-used somewhere
 }
 
-# TODO - check / refactor
-# get a list of users and their resource-usage stats
-function user_resource_allocation () {
-    #!/bin/bash
+
+# get a list of users and their resource-usage stats. Flags are --gpu : display gpu data too  ;  --not_sudo : don't ask for sudo password for checking other users' @HOME dir size
+function resources_used () {
+    maybe_sudo=$([[ " $* " =~ " --not_sudo " ]] && echo "" || echo "_sudo_if_necessary")  # if flagged, run regularly as non-superuser. If not, try inputting password in case it's necessary
+
     thread_count=$(nproc)
     bottleneck_threshold=$(echo "scale=3; 100/$thread_count" | bc -l)
 
-    becho "Computing units count: $thread_count"
-    becho "If your overall CPU usage reaches ${bottleneck_threshold}%, your CPU is possibly bottlenecked on a single thread."
+    # human-users lookup    
+    human_users=$(list_human_users --max_uid 2000)
+    declare -A h_users && for user in $human_users; do h_users[$user]='1'; done  # same, as hashset
 
-    declare -A husers
-    human_users=$(get_human_users)
-    for user in $human_users; do husers[$user]=1; done
+    current_users=$(ps -eo user= | sort | uniq)  # all current users running on the system
+    declare -A c_users && for user in $current_users; do c_users[$user]='1'; done  # same, as hashset
 
+    all_users=$(echo -e "$current_users\n$human_users" | sort | uniq)  # all users (joined list but kept only unique)
+    usage_summary='USER\tCPU\tRAM\t@HOME-size'
+    for user in $all_users; do
+        # determine if the line would be printed in color
+        prnt_cmd=$([ -n "${h_users[$user]}" ] && echo "gecho" || echo "echo")  # ternary for choice of command to use
+        # CPU usage%, "-" if not in "current_users" (users in process list)
+        cpu_usage=$([ -n "${c_users[$user]}" ] && echo $(ps -u $user -o %cpu,%pid | awk '{cpu+=$1} END {printf "%.2f%%\n", cpu/'$thread_count'}') || echo "-")  # user's CPU usage. Divided by num of threads because a ps line with 100% is just 100% single-thread, not 100% on all cores
+        # RAM usage%, "-" if not in "current_users" (users in process list)
+        mem_usage=$([ -n "${c_users[$user]}" ] && echo $(ps -u $user -o %mem= | awk '{mem+=$1} END {print mem"%"}') || echo "-")  # user's RAM usage
+        # Disk usage of user's home-dir. "-" if home-dir doesn't exist
+        disk_usage=$([ -d "/home/$user" ] && echo $($maybe_sudo du -sh "/home/$user" | cut -f1) || echo "-")  # specify home-dir disk usage (if applicable)
 
-    res_users=$(ps -eo user= | sort | uniq)
-    for user in $res_users; do
-        prnt_cmd=$(( -n "${husers[$name]}" )) && echo "gecho" || echo "echo"  # ternary for choice of command to use - if user is human, print colored
-
-        cpu_usage=$(ps -u $user -o %cpu= | awk '{cpu+=$1} END {print cpu}')  # user's CPU usage
-        mem_usage=$(ps -u $user -o %mem= | awk '{mem+=$1} END {print mem}')  # user's RAM usage
-
-
-        # Print the results
-        printf "User: %s\tCPU Usage: %.2f%%\tRAM Usage: %.2f%%\n" $user $cpu_usage $mem_usage
+        current_user_usage=$($prnt_cmd "$user\t$cpu_usage\t$mem_usage\t$disk_usage")  # data display format, including the optional coloring
+        usage_summary="$usage_summary\n$current_user_usage"
     done
 
+    # get cpu stat directly from /proc/stat , without the rounding errors in "top" ; line from https://stackoverflow.com/questions/9229333/how-to-get-overall-cpu-usage-e-g-57-on-linux
+    total_cpu_usage=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) "%"; }' <(grep 'cpu ' /proc/stat) <(sleep 1;grep 'cpu ' /proc/stat))
+        # total_cpu_usage=$(cat <(grep 'cpu ' /proc/stat) <(sleep 1 && grep 'cpu ' /proc/stat) | awk -v RS="" '{print ($13-$2+$15-$4)*100/($13-$2+$15-$4+$16-$5)}')  # also works
+    total_ram_usage=$(free -h | awk '/^Mem:/ {print $3 "(+" $6 " buff/cache) / " $2}')
+    total_disk_usage=$(df -h / --output=used,size,iused,itotal | tail -n+2 | awk '{ print $1 " / " $2 " ("$3 " / " $4" inodes)"}')
 
+    echo "Computing units count: $(becho $thread_count)"
+    echo "If your overall CPU usage reaches $(becho $bottleneck_threshold%), your CPU is possibly bottlenecked on a single thread."
 
+    echo "$(uecho 'Resources currently taken by users:') *verified human users are colored **results are subject to slight shifts over runtime, partially due to this very script's running."
+    echo -e "$usage_summary" | column -t -s $'\t'
 
-
-    # cpu_count=$(lscpu | grep "^CPU(s):" | awk '{print4s 
-    #  $2}')
-    # printf "# CPUs count(threads, not cores): $cpu_count \n"
-    # printf "# Possibly bottlenecking on a single thread when a user's CPU reaches %0.3f %% \n" $((100/"$cpu_count"))
-    # printf "\t\tUSER\t%%_CPU_USED\t%%_RAM_USED\n"
-    # ps axo user:20,pid,pcpu,pmem | awk '
-    #     {cpuarr[$1]+=$3 ; memarr[$1]+=$4} 
-    #     # get all users CPU and RAM
-    #     END {for (i in memarr) print i, cpuarr[i], memarr[i]}' | sort -k2 -nr \
-    #     | while read name cpu ram shell rest ; do
-    #         if [ -d "/home/$name" ]; then   # only keep  "human" users
-    #              printf "\r%20s \t%4f \t%10f\n" $name $cpu $ram
-    #         fi
-    #     done
+    echo "$(uecho 'Total CPU usage:') $total_cpu_usage"
+    echo "$(uecho 'Total RAM usage:') $total_ram_usage"
+    echo "$(uecho 'Total Disk usage:') $total_disk_usage  *For '/' only. Run devs function to see more."  
+    # TODO - check if there is a GPU at all, and support AMD (or Intel) drivers (need to detect)
+    [[ " $* " =~ " --gpu " ]] && ( uecho "GPU utilization info:" ; nvidia-smi -q -d MEMORY,COMPUTE,UTILIZATION ) # if flag --gpu is specified
+    
 }
 
 
@@ -770,7 +793,7 @@ args:
                     first_free_arg_is_exp='true'
                     exp=$1
                 else
-                    echo "I don't know how to handle $1"
+                    recho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
                 fi
     			shift
     		;;
@@ -958,17 +981,14 @@ function _underline () {
 
     echo "$1"
     echo "$line"
-
-    # echo -e "\033[32maaa\033[0m"  -  prints aaa in green
-    # echo -e "\033[$34m\033[32maaa\033[0m"  -  prints aaa in green, with underline
 }
 
 # TODO - detect if the terminal is bright instead of dark? If it's white, the colored prints should be darker; so you should remove the "\033[1m" prefix
 # echo in color, use like this: _colored_echo "<=uline=><=red=>" "color me"  # recolors red and underlined
 function _colored_echo () {
     # apply colors (arg 1) to all lines
-    formatted=$(echo -e "${@:2}" | while read -r line; do echo "${1}${line}"; done)
-    _draw_formatted "$formatted\n"
+    formatted=$( echo -e "${@:2}" | while read -r line; do echo "${1}${line}"; done )
+    _draw_formatted "$formatted"
 }
 # echo in red
 function recho () {
@@ -986,21 +1006,25 @@ function becho () {
 function yecho () {
 	_colored_echo '<=bold=><=yellow=>' "${@}"
 }
-# underlinedecho in red
+# underlined echo
+function uecho () {
+    _colored_echo '<=bold=><=uline=>' "${@}"
+}
+# underlined echo in red
 function ruecho () {
-    _colored_echo '<=red=><=bold=><=uline=>' "${@}"
+    _colored_echo '<=bold=><=uline=><=red=>' "${@}"
 }
 # underlined echo in green
 function guecho () {
-	_colored_echo '<=green=><=bold=><=uline=>' "${@}"
+	_colored_echo '<=bold=><=uline=><=green=>' "${@}"
 }
 # underlined echo in blue
 function buecho () {
-    _colored_echo '<=blue=><=bold=><=uline=>' "${@}"
+    _colored_echo '<=bold=><=uline=><=blue=>' "${@}"
 }
 # underlined echo in yellow
 function yuecho () {
-    _colored_echo '<=yellow=><=bold=><=uline=>' "${@}"
+    _colored_echo '<=bold=><=uline=><=yellow=>' "${@}"
 }
 
 # runs printf with a specific assortment of color names
@@ -1051,7 +1075,7 @@ function _draw_formatted () {
         text_to_draw="${text_to_draw//$str/${colors[$str]}}"
     done
 
-    printf "$text_to_draw"
+    echo -e "$text_to_draw"
 
 }
 
@@ -1100,7 +1124,7 @@ ${SPR[2]}$GD⠈⠉${SPR[8]}$WS⢀⣴⢇⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⢠⣾�
 \x59\x4f\x55\x20\x57\x45\x52\x45\x20\x45\x58\x50\x45\x43\x54\x49\x4e\x47\x20\x4c\x45\x57\x44\x53\x2c\x20\x42\x55\x54\x20\x49\x54\x20\x57\x41\x53\x20\x4d\x45\x2c\x20\x44\x49\x4f\x21
 EOM
 
-    _draw_formatted "$surprise\n"
+    _draw_formatted "$surprise"
 }
 
 echo "Finished loading \"$(readlink -f -- "$BASH_SOURCE")\" for: \"`readlink -f $0`\""
