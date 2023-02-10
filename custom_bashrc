@@ -277,8 +277,6 @@ alias howdoi_network='echo "
 *   detailed monitoring example 3:  sudo tcpdump -i any src 46.120.97.16 -nn -c 20  # -nn shows ip addresses and port-num without resolving hostname, -c stops capturing after 20 packets
 "'
 
-
-
 # Reminders for the basics of systemd
 alias howdoi_systemd='echo "
 * /etc/systemd/system/  :   add/remove .service files here
@@ -287,7 +285,6 @@ alias howdoi_systemd='echo "
 * sudo systemctl <enable/disable> example.service  # allow/disallow service to run after boot
 * journalctl -u <service_name.service>  # check the logs of a systemd service. Can also specify how to view them; example:   journalctl -u ssh --since \"1 hour ago\" --until now -f
 "'
-
 
 # Reminders for the basic gimmicks of tmux terminal
 alias howdoi_tmux='echo "tmux offers split-panes and sessions for terminals.
@@ -437,6 +434,8 @@ function lll () {
     ls -tarlushFN --color=always --time-style="+%Y-%m-%d_%H:%M:%S" --group-directories-first "$@" \
     | awk 'BEGIN { printf "%s\n", "'"$headers"'" } { print $0 }' | column -t  # put headers on top of the results, and space them well
 }
+
+
 
 # Maintenance and Update Operations
 # =================================
@@ -1099,7 +1098,7 @@ function draw_hentai () {
 
     # don't try to peek at the drawing here, go run the command in terminal
     read -r -d '' surprise << EOM
-${SPR[17]}$HY⠰⡘⡸⢏$HYD⠼⠋$HY⡀⣱$HYD⢏⣾⣿⣿⣿⣿⣿⣿⣿⣧⠻⣿⣿⣷⣦$HY⡪⡳⠹⣷⣀⣀<=10WS=>
+${SPR[17]}$HY⠰⡘⡸⢏$HYD⠼⠋$HY⡀⣱$HYD⢏⣾⣿⣿⣿⣿⣿⣿⣿⣧⠻⣿⣿⣷⣦$HY⡪⡳⠹⣷⣀⣀
 ${SPR[17]}$HY⢀⣽⣿⡶⣢⢸$HYD⡇⡏⣾⣿⠹⣿⣆⢻⣿⣇⢿⣿⣷⡙⠿⣿⣿⣿⣮$HY⠢⣽⡯⡑⠂
 ${SPR[17]}$HY⢘⣷⡱$HYD⣾⡟⠊⠧⠈⠟⢿⣧⢙⠻⣇⠙⢿⣎⢛⡻⠿⠦⠐⠩⠭⣭⣷⡜$HY⢷⡌⠄
 ${SPR[15]}$HY⠢⠴⣾⣛$HYD⢱⣿⡑$S⡀$HYD⡀⠄$S⢸$SD⢧$HYD⠹⠸⠁⣈${SP[1]}⣰$SD⠌⣥$HYD⡈⢙⣿⠻⢛$SD⠭$HYD⠻⣿⡄$HY⡸⣧
@@ -1114,7 +1113,7 @@ ${SPR[11]}$G⣀⣀⣠$S⢠⡀${SPR[10]}$S⠈⢻⣟⠫⢍⣰⡿$SD⢐⣥⣾⠟${S
 ${SPR[8]}$G⣠⠠⠴⠦$S⣻⣿⠌$SD⣴${SP[1]}⣐⣺⣿⠷${SPR[7]}$S⠛⠿⠟$SD⣩⣴⣿⠿⠁${SP[10]}$HY⢸⡆
 ${SPR[6]}$G⣀⡌⢦⡙$S⠰⠿⠟$SD⢁⢡$GD⣾$SD⠸⣿⠏${SPR[8]}$WS⢤⣶⣆$SD⠇⣼⠟⠁${SP[1]}$SD⢀⣀⣀⡤⠤⣤$WSD⣶⣶⠆${SP[2]}$HY⠸⠇
 ${SPR[5]}$G⣼⢻⡟⣪$S⡘⠿$SD⠉⣸$GD⡿⠘⠋${SPR[9]}$WS⡄⠦⠠⡀$WSD⠹⡄${SP[2]}⠴⣾⠿⠙⠉⠁${SP[1]}⢹⣿⡇
-${SPR[3]}$G⣠⣰⣿⠄$SD⠘⣿⠍$GD⢰⢣⡿⠃${SPR[11]}$WS⢇⢠⢀$WSD${SP[2]}⠁⣄${SP[1]}⢀⣰⡀⢀⠤⡆⠠${SP[1]}⠃⠀⠀⢀⣴⣶⣿⢿⣿⣿⣿⡶⠖⠒⠢
+${SPR[3]}$G⣠⣰⣿⠄$SD⠘⣿⠍$GD⢰⢣⡿⠃${SPR[11]}$WS⢇⢠⢀$WSD${SP[2]}⠁⣄${SP[1]}⢀⣰⡀⢀⠤⡆⠠${SP[1]}⠃${SP[2]}⢀⣴⣶⣿⢿⣿⣿⣿⡶⠖⠒⠢
 $G⣀⣿⠟$GD⣴⣿⣿⣦⡣⠡${SP[1]}⠛${SPR[9]}$WS⣀⣠⣭⣭⣵⣮⡙⢾⣷⡆$WSD⠐⣿⣷⣾⣿⣿⣗⡤⡴⠐${SP[1]}⣠⣴⣿⣿⣿⣿⡿⠟⠋
 $G⣼⡟$GD⣸⣿⣿⠋⠁${SPR[8]}$WS⣀⣬⣶⣾⣿⣿⣿⣿⣿⣿⣿⡿⡊⢋⣉⣬⣬$WSD⡰⣿⣿⡟⠋⢁⣠⣶⣿⣿⣿⣿⣿⣿⠫⠃${SPR[8]}$WSD⣀⣤⣾⣿
 ${SPR[2]}$GD⠈⠉${SPR[8]}$WS⢀⣴⢇⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⢠⣾⣿⣿⣿⣿⣿⣎$WSD⠻⣿⣿⣿⣿⣿⣿⣿⣿⡿⠿⠇${SPR[7]}$WSD⢀⣤⣾⣿⣿⣿⢿
