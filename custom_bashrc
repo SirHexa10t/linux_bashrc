@@ -371,10 +371,10 @@ alias arrange_monitors='nvidia-settings --load-config-only && nvidia-settings --
 # Common commands - just for the use of other functions
 # =====================================================
 
-# Attempt to run command. If it fail, run with sudo. Don't 
+# Attempt to run command. If it fail, run with sudo. Don't provide a multi-part (pipe-inclusive) command.
 function _sudo_if_necessary () {
     [ $# -ge 1 ] || { echo "WTF are you expecting me to sudo? Give me a command-string as argument" ; return ; }
-    
+
     normal_output=$(eval "$@" 2>/dev/null)
     [ $? -ne 0 ] && eval "sudo $@" || echo "$normal_output"
 }
