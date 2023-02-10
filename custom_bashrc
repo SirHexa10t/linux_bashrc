@@ -87,9 +87,6 @@ alias apt='nala'
 
 # ----- Lookups / Getting-info
 
-# like "ll" but better - all files, newest at bottom (add -S to sort by (non-recursive) size), neat/readable. Headers:  'size(blocks), modifiers, hardlinks_count, user, group, size, date-modified, name'
-alias lll='ls -tarlushFN --color=always --time-style=long-iso --group-directories-first'
-
 # just shorter grep, case insensitive (i), and no regex involved (F)
 alias g='grep -iF --color=auto'
 
@@ -433,6 +430,17 @@ function mkdir () {
     /usr/bin/mkdir "$extra_flag" "$@"
 }
 
+# function chown () {
+#     before=
+# }
+
+# Custom ls, like "ll". Add -S to sort by (non-recursive) size
+function lll () {
+    headers='Blocks\tPermissions\tHard-Links\tOwner\tGroup\tSize\tDate_Modified\tFilename'
+    ls -tarlushFN --color=always --time-style="+%Y-%m-%d_%H:%M:%S" --group-directories-first "$@" \
+    | awk 'BEGIN { printf "%s\n", "'"$headers"'" } { print $0 }' | column -t  # put headers on top of the results, and space them well
+
+}
 
 # Maintenance and Update Operations
 # =================================
