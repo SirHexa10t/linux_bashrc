@@ -90,7 +90,7 @@ alias apt='nala'
 # just shorter grep, case insensitive (i), and no regex involved (F)
 alias g='grep -iF --color=auto'
 
-# take ownership of file (add file-name after this command)
+# take ownership of file (add file-name after this command) # TODO - maybe make into a function that prints the chowned files (distinguishing the filenames from $@ is difficult though)
 alias claim='sudo chown $USER:$USER'
 
 # grepped history
@@ -417,7 +417,8 @@ function _wait_n_seconds () {
 # Basic functionalities override !
 # ================================
 
-# TODO - do about the same for chmod and chown - print the directory while grepping the specified file
+# TODO - do about the same for chmod and chown - print the directory/files with the changed data (maybe cancel that, getting the filenames in every case isn't simple)
+
 # add a print of local files after changing directory
 function cd () {
     builtin cd "$@" && \
@@ -430,16 +431,11 @@ function mkdir () {
     /usr/bin/mkdir "$extra_flag" "$@"
 }
 
-# function chown () {
-#     before=
-# }
-
 # Custom ls, like "ll". Add -S to sort by (non-recursive) size
 function lll () {
     headers='Blocks\tPermissions\tHard-Links\tOwner\tGroup\tSize\tDate_Modified\tFilename'
     ls -tarlushFN --color=always --time-style="+%Y-%m-%d_%H:%M:%S" --group-directories-first "$@" \
     | awk 'BEGIN { printf "%s\n", "'"$headers"'" } { print $0 }' | column -t  # put headers on top of the results, and space them well
-
 }
 
 # Maintenance and Update Operations
@@ -679,6 +675,7 @@ function resources_used () {
 }
 
 
+# search network activity by port (number) or substring
 function network_search () {
     if [ -z "$1" ]; then echo "You didn't provide anything to filter by. Aborting." && return 1 ; fi
     
