@@ -28,6 +28,7 @@ LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
 
 HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
+
 # My binds
 #################################################################################
 # "\C-" is CTRL, "\e" (or "\M-") is alt. Shift might not be supported, but if it is: "\S-" is Shift (and maybe also backslash and capitalize, like this for Shift-X: "\X").
@@ -144,7 +145,7 @@ alias rebuild_ramfs='sudo update-initramfs -u'
 alias remindme='echo "Find various cheatsheets by typing commands that start with \"howdoi\" or list bashrc options with command \"list_cmds\""'
 # Synonymous to "remindme", one of several.
 alias what_commands='remindme'
-# Synonymous to "remindme", one of several. P.S. it's mispelled intentionally; in case you don't get it.
+# Synonymous to "remindme", one of several. P.S. it's mispelled intentionally; don't fix it.
 alias i_forgor='remindme'
 
 # Reminders for linux system tools and command options
@@ -164,15 +165,9 @@ alias howdoi_linux='echo "
 * udisksctl mount --block-device=/dev/<device-name>  # Mount a device the way nemo would. No need for mkdir (and nemo can dismount it right), no harm in calling while unnecessary, automatically uses LABEL to mount at /media/<username>/
 *   udisksctl mount --block-device=/dev/<device-name> 2> /dev/null
 >> configurations
-* config-file: /etc/default/grub  :  boot configurations
-* config-file: /etc/modprobe.d/blacklist.conf  :  blacklist modules, such as firmware
-* visudo  # edit the /etc/sudoers file (only if you know what you are doing)
-* crontab -e  # edit routine-scheduled tasks
->> Some nice tools/commands you could need often
-* tmux  # terminal session/pane-manager - see more in the tmux cheatsheet
-* wget <url>  # download files
-* curl  :  communicate through HTTP(S)/(S)FTP/SCP - make any request (but if you just want to download something, you should probably use wget)
-* netstat  # get network related info (such as port usage and active connections)
+* /etc/default/grub  :  boot configurations
+* /etc/modprobe.d/blacklist.conf  :  blacklist modules, such as firmware
+* /etc/fstab  :  mounting configurations, including for dir /
 * sudo nvidia-xconfig  # create new xorg config, used by nvidia driver
 >> logs (to tail a logfile in real-time run: \"tail -f <logfile>\", or to get last 100 lines: \"tail -100 <logfile>\" )
 * log-file: /var/log/boot.log  :  System boot log
@@ -200,11 +195,15 @@ alias howdoi_bash_terminal='echo "
 * sudo !!  # rerun last command with sudo permissions
 * htop  # show real-time processes/resource-usage
 * diff <file1> <file2>  # get the text difference between 2 files
->> bash (can be used in terminal of-course)
+* visudo  # edit the /etc/sudoers file (only if you know what you are doing)
+>> bash basic utility commands (can be used in terminal of-course)
 * declare -p <variable>  # Note: no use of $. Print the variable to check data / data-type
-* add \"& disown\" after a command to have it run in its own thread so that it wont stop when the terminal closes
-* add \"2> /dev/null\" after a command to throw away warning/error messages it might bring up
+* # add \"& disown\" after a command to have it run in its own thread so that it wont stop when the terminal closes
+* # add \"2> /dev/null\" after a command to throw away warning/error messages it might bring up
 * time <command>  # get time measurement for command runtime. No need for quotes or any encapsulation, just prepend \"time\". Example: time ls -l
+>> tools (utilities for usage that isnt about managing the OS)
+* wget <url>  # download files
+* curl <url>  # communicate through HTTP(S)/(S)FTP/SCP - make any request (but if you just want to download something, you should probably use wget)
 "'
 
 # common media file operations
@@ -228,37 +227,6 @@ alias howdoi_android='echo "
 * scrcpy -r <filename.mp4>  # save a video recording of your connected android device activity (needs USB-Debug and File-Transfer mode)
 "'
 
-# Reminders for vm tools and command options (mostly stuff you can't do through Virtual Machine Manager)
-alias howdoi_vm='echo "
-* systemctl restart libvirtd  # restart the libvirt daemon vm-manager
-* virsh start <name>  # start VM
-* virsh domrename <old_name> <new_name>  # rename vm
-* virsh edit <name>  # modify the xml of a VM (you can do that in Virtual Machine Manager instead)
-* sudo virt-sparsify --in-place -v <diskimg.qcow2>  # compress vm disk file
-* virsh list --all  # show VM list
-* virsh snapshot-create-as --domain <VM-NAME> --name <SNAPSHOT-NAME>  # create snapshot for a vm (has to be turned off)
-* virsh snapshot-list --domain <VM-NAME>  # list snapshots of vm
-* virsh snapshot-info/snapshot-revert/snapshot-delete --domain <VM-NAME> --snapshotname <SNAPSHOT-NAME>  # detail/go_back_to/delete snapshot
-* qemu-img create -f qcow2 -F qcow2 -b <path_to_src_disk.qcow2> <path_to_output_disk.qcow2>  # snapshot a single disk
-"'
-
-# Reminders for docker
-alias howdoi_docker='echo "
->> view (might need to run sudo to find all)
-* docker ps -a  # list ALL containers
-* docker images -a  # list all images
-* docker volume ls  # list all volumes
-* sudo docker inspect <container_name_or_id>  # view container details 
->> managing container states
-* docker-compose -f <yml_file> up  # Start a conteiner using a yaml/yml file. Use -d to make it run in the background
->> removal
-* docker system prune -a  # remove all images/containers/volumes/networks. The flag -a also remove unused images
-* docker rmi <image(s)>  # remove images ; to remove all images:   docker rmi $(docker images -a -q)
-* docker rm <container_id(s)_or_name(s)>  # remove container(s) ; to force-remofe, add -f ; to remove all stopped containers:   docker rm $(docker ps -a -f status=exited -f status=created -q)
-* docker volume rm <volume_name(s)>  # remove volume(s)
-* docker run --rm <image_name>  # run an image and remove its container when it exits
-"'
-
 # Reminders for docker
 alias howdoi_network='echo "
 >> Own network info
@@ -278,7 +246,10 @@ alias howdoi_network='echo "
 "'
 
 # Reminders for the basics of systemd
-alias howdoi_systemd='echo "
+alias howdoi_manage_services='echo "
+>> Crontab
+* crontab -e  # edit routine-scheduled tasks
+>> systemd
 * /etc/systemd/system/  :   add/remove .service files here
 * sudo systemctl daemon-reload  # rescan and reload service files
 * sudo systemctl <start/stop/restart/status> <myservice>.service  # manage the state of the service or check its running-status
@@ -286,8 +257,39 @@ alias howdoi_systemd='echo "
 * journalctl -u <service_name.service>  # check the logs of a systemd service. Can also specify how to view them; example:   journalctl -u ssh --since \"1 hour ago\" --until now -f
 "'
 
+# Reminders for docker
+alias howdoi_manage_docker='echo "
+>> view (might need to run sudo to find all)
+* docker ps -a  # list ALL containers
+* docker images -a  # list all images
+* docker volume ls  # list all volumes
+* sudo docker inspect <container_name_or_id>  # view container details 
+>> managing container states
+* docker-compose -f <yml_file> up  # Start a conteiner using a yaml/yml file. Use -d to make it run in the background
+>> removal
+* docker system prune -a  # remove all images/containers/volumes/networks. The flag -a also remove unused images
+* docker rmi <image(s)>  # remove images ; to remove all images:   docker rmi $(docker images -a -q)
+* docker rm <container_id(s)_or_name(s)>  # remove container(s) ; to force-remofe, add -f ; to remove all stopped containers:   docker rm $(docker ps -a -f status=exited -f status=created -q)
+* docker volume rm <volume_name(s)>  # remove volume(s)
+* docker run --rm <image_name>  # run an image and remove its container when it exits
+"'
+
+# Reminders for vm tools and command options (mostly stuff you can't do through Virtual Machine Manager)
+alias howdoi_manage_vm='echo "
+* systemctl restart libvirtd  # restart the libvirt daemon vm-manager
+* virsh start <name>  # start VM
+* virsh domrename <old_name> <new_name>  # rename vm
+* virsh edit <name>  # modify the xml of a VM (you can do that in Virtual Machine Manager instead)
+* sudo virt-sparsify --in-place -v <diskimg.qcow2>  # compress vm disk file
+* virsh list --all  # show VM list
+* virsh snapshot-create-as --domain <VM-NAME> --name <SNAPSHOT-NAME>  # create snapshot for a vm (has to be turned off)
+* virsh snapshot-list --domain <VM-NAME>  # list snapshots of vm
+* virsh snapshot-info/snapshot-revert/snapshot-delete --domain <VM-NAME> --snapshotname <SNAPSHOT-NAME>  # detail/go_back_to/delete snapshot
+* qemu-img create -f qcow2 -F qcow2 -b <path_to_src_disk.qcow2> <path_to_output_disk.qcow2>  # snapshot a single disk
+"'
+
 # Reminders for the basic gimmicks of tmux terminal
-alias howdoi_tmux='echo "tmux offers split-panes and sessions for terminals.
+alias howdoi_use_tmux='echo "tmux offers split-panes and sessions for terminals.
 >> Good for managing a server:
 +tmux terminals persist even after disconnection. They keep running until restart the server or send a closure command.
 +tmux windows can be named, listed and looked up.
@@ -315,7 +317,7 @@ TODO - create a script thatll establish tmux workspaces when logging into your u
 TODO - create functions that run these commands interactively (like listing, then letting the user pick a number, then go there...)
 "'
 
-# Reminders for some neat time-saving GUI tricks
+# Reminders for some neat time-saving GUI keybind tricks
 alias howdoi_shortcut='echo "
 * Terminal CTRL+L : clear screen
 * Built-in Nemo [space] :  select (click) a file/folder, and press [space] to get a summary/preview; press again to close
