@@ -463,8 +463,7 @@ function add_to_path () {
 
 # don't worry about calling this when the device is already mounted, it won't do harm.
 function mount_media_by_uuid () {
-    device="$( _get_dev_name_from_uuid $@ )"
-    udisksctl mount --block-device="$device"
+    udisksctl mount -b "/dev/disk/by-uuid/$1"  # add -t <mountpoint>  to change mount-location
 }
 
 function all_crontabs () {
