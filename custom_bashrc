@@ -448,8 +448,27 @@ function lll () {
 function find_proc () {
     [ $# -ge 1 ] || { recho "No substring provided to look through with." ; return ; }
 
-    ps -eo pid,ppid,user,%cpu,%mem,vsz,rss,tty,stat,start,time,cmd --sort=-%cpu | awk -v search="$1" 'BEGIN{IGNORECASE=1} NR==1 || $0 ~ search {print}' \
+    ps -eo pid,ppid,user,%cpu,%mem,stat,start,time,cmd --sort=-%cpu | awk -v search="$1" 'BEGIN{IGNORECASE=1} NR==1 || $0 ~ search {print}' \
     | _color_word --word "$1"  # color the sought term
+}
+
+# kill processes by substring; get process-specifications and confirmation prompt
+function kill_interactively () {
+    [ $# -ge 1 ] || { recho "You need to provide a substring to find (and later kill) processes with." ; return ; }
+    
+    pids=$(pgrep -i "$1")  # get all PIDs
+    [ -z "$pids" ] && becho "no processes found" && return 0;
+    pids_commas=$(echo "$pids" | tr '\n' ',' | sed 's/,$//')  # save PIDs with comma-separation (for listing)
+    pids_spaces=$(echo "$pids_commas" | tr ',' ' ')  # save PIDs with space-separation (for killing)
+    proc_info=$(ps -p "$pids_commas" -o pid,ppid,user,%cpu,%mem,stat,start,time,cmd --sort=-%cpu)
+
+    prompt="$(echo "$proc_info" ; recho "The listed processes will be killed. Are you sure?")"
+    if _prompt_yn "$prompt"; then _sudo_if_necessary kill ${pids_spaces} ; else echo "Quitting." && return ; fi
+
+    _wait_n_seconds 2
+
+    pids=$(pgrep -i "$1")  # get all PIDs, again
+    [ -z "$pids" ] && becho "Confirmed no new processes with same substring found" || recho "Found live processes with the same name you just eliminated"
 }
 
 
