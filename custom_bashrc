@@ -317,6 +317,8 @@ TODO - create a script thatll establish tmux workspaces when logging into your u
 TODO - create functions that run these commands interactively (like listing, then letting the user pick a number, then go there...)
 "'
 
+# TODO - cargo (maven-like manager) cheatsheet. Reference: https://www.youtube.com/watch?v=zF34dRivLOw
+
 # Reminders for some neat time-saving GUI keybind tricks
 alias howdoi_shortcut='echo "
 * Terminal CTRL+L : clear screen
@@ -362,7 +364,7 @@ alias arrange_monitors='nvidia-settings --load-config-only && nvidia-settings --
 
 # Attempt to run command. If it fail, run with sudo. Don't provide a multi-part (pipe-inclusive) command.
 function _sudo_if_necessary () {
-    [ $# -ge 1 ] || { echo "WTF are you expecting me to sudo? Give me a command-string as argument" ; return ; }
+    [ $# -ge 1 ] || { recho "WTF are you expecting me to sudo? Give me a command-string as argument" ; return ; }
 
     normal_output=$(eval "$@" 2>/dev/null)
     [ $? -ne 0 ] && eval "sudo $@" || echo "$normal_output"
@@ -378,6 +380,7 @@ function _pad_end_w_spaces() {
     awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "$1"
 }
 
+# TODO - unused, so remove?
 # get device name such as "/dev/sda2". You must provide one argument: the UUID of the device.
 function _get_dev_name_from_uuid () {
     [ $# -ge 1 ] || { echo "You need to provide UUID as an argument" ; return ; }
@@ -437,6 +440,17 @@ function lll () {
     | awk 'BEGIN { printf "%s\n", "'"$headers"'" } { print $0 }' | column -t  # put headers on top of the results, and space them well
 }
 
+
+# Basic functionalities
+# =====================
+
+# Find processes by substring. Prints error if given no args ; prints everything if given empty string
+function find_proc () {
+    [ $# -ge 1 ] || { recho "No substring provided to look through with." ; return ; }
+
+    ps -eo pid,ppid,user,%cpu,%mem,vsz,rss,tty,stat,start,time,cmd --sort=-%cpu | awk -v search="$1" 'BEGIN{IGNORECASE=1} NR==1 || $0 ~ search {print}' \
+    | _color_word --word "$1"  # color the sought term
+}
 
 
 # Maintenance and Update Operations
@@ -802,11 +816,9 @@ args:
     
     [ -n "$verbose" ] && becho "running on directory: $dir  ;  expression: $exp  ;  including strings up to length: $text_limit"  # print found arguments (if verbose)
 
-    recolor_grep="grep -iF --color=always \"$exp\""  # appent this grep just to color the output... Sorry, I'm bad at bash T_T
-
     becho "matching filenames:"
     becho "==================="
-    _sudo_if_necessary "find \"$dir\" -iname \"*$exp*\"" | eval "$recolor_grep"
+    _sudo_if_necessary "find \"$dir\" -iname \"*$exp*\"" | _color_word --word "$exp"
 
     becho "matching file contents:"
     becho "======================="
@@ -815,7 +827,7 @@ args:
         [ -n "$verbose" ] && becho "filtering with maximum result length: $text_limit" 
         all_results=$(echo "$all_results" | awk "length(\$0) <= $text_limit")
     fi
-    echo "$all_results" | eval "$recolor_grep"  # print with no filtering by length
+    echo "$all_results" | _color_word --word "$exp"  # print with no filtering by length
 }
 
 
@@ -979,6 +991,42 @@ function _underline () {
 
     echo "$1"
     echo "$line"
+}
+
+# returns the given text with coloration of a word (case-insensitive). You can pipe the text into it.
+function _color_word () {
+    text='' ; word='' ; color='<=bold=><=red=>'
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+    		'-t'|'--text')
+    			text="$2"
+    			shift 2
+    			continue
+    		;;
+    		'-w'|'--word')
+    			word="$2"
+    			shift 2
+    			continue
+            ;;
+            '-c'|'--color')
+                color="$2"
+                shift 2
+                continue
+            ;;
+    		*)
+                return  # received undefined argument
+    		;;
+    	esac
+    done
+
+    # If text is not provided via --text, and if standard input (piped data) exists : assign standard input to text
+    if [ -z "$text" ] && ! [ -t 0 ]; then text=$(cat); fi
+
+    [ -z "$text" ] && return 1  # no text given
+    [ -z "$word" ] && echo "$text" && return # no word
+
+    # insert tags around word, I makes it case-insensitive
+    _draw_formatted "$(echo "$text" | sed -e "s/$word/$color&<=reset=>/gI")"
 }
 
 # TODO - detect if the terminal is bright instead of dark? If it's white, the colored prints should be darker; so you should remove the "\033[1m" prefix
