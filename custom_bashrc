@@ -100,14 +100,21 @@ alias claim='sudo chown $USER:$USER'
 # grepped history
 alias hg='history | grep -iF --color=auto'
 
+# TODO - if you ever find out how to put this in a table without messing up filenames with spaces, fix this 
+# Custom ls, like "ll". Add -S to sort by (non-recursive) size
+alias lll='becho "Blocks Permissions Hard-Links Owner Group Size Date_Modified Filename" ; ls -tarlushFN --color=always --time-style="+%Y-%m-%d_%H:%M:%S" --group-directories-first'
+
 # reset terminal (includs bashrc reload)
 alias anew='exec bash'
 
-# Show current network connections to the server
-alias ipview="netstat -anpl | grep :80 | awk {'print \$5'} | cut -d\":\" -f1 | sort | uniq -c | sort -n | sed -e 's/^ *//' -e 's/ *\$//'"
+# Show current network connections to the server through port 80
+alias port80="sudo netstat -tulpn | grep :80"
 
 # get own IP
 alias whatsmyip="becho 'My private IPs:'; echo \"$(ip addr show | grep inet | grep -v inet6 | awk '{print $2}' | cut -d/ -f1)\" && becho 'My IPv4:' ; dig @resolver4.opendns.com myip.opendns.com +short "
+
+# get addresses on LAN
+alias whatsmynetwork="buecho 'LAN devices:' ; arp -a  ;  buecho 'Connections:' ; netstat -atn"
 
 # Get basic hardware and system list
 alias sysinfo_short='echo "For simpler neat hardware specs, run \"neofetch\" or \"screenfetch\""; inxi -bD'
@@ -198,6 +205,7 @@ alias howdoi_bash_terminal='echo "
 * less <file>  # Read file with up/down controls. Newer and more convenient than "more".
 * sudo !!  # rerun last command with sudo permissions
 * htop  # show real-time processes/resource-usage
+* xkill  # after you run this, your mouse cursor would turn into an "x" sign, and the next window youll click would be killed. A bit lazy and silly.
 * diff <file1> <file2>  # get the text difference between 2 files
 * visudo  # edit the /etc/sudoers file (only if you know what you are doing)
 >> bash basic utility commands (can be used in terminal of-course)
@@ -379,9 +387,12 @@ function _count_lines () {
 }
 
 # useful for drawings or neat concatenating of tables like so: 'paste <(_pad_end_w_spaces "$(df -h)") <(_pad_end_w_spaces "$(df -hi)") <(_pad_end_w_spaces "$(df -hi)")'
-# add spaces to the end of lines so that the block of text would be a rectangle; i.e. end uniformly on the same column. Use like so:  _pad_end_w_spaces "$(lsblk)"
+# add spaces to the end of lines so that the block of text would be a rectangle; i.e. end uniformly on the same column. Use like so:  _pad_end_w_spaces "$(lsblk)"  or   lsblk | _pad_end_w_spaces
+# DOES NOT work on color-coded text! The color info adds in as extra characters and makes the text look uneven!
 function _pad_end_w_spaces() {
-    awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "$1"
+    text="$1"  # assume that text is provided as an argument
+    if [ -z "$text" ] && ! [ -t 0 ]; then text=$(cat); fi  # if no text given and there's a stream from a pipe, get the stream contents as text
+    awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "$text"
 }
 
 # TODO - unused, so remove?
@@ -437,17 +448,14 @@ function mkdir () {
     /usr/bin/mkdir "$extra_flag" "$@"
 }
 
-# TODO - Fix: this command prints filenames with tabs instead of spaces
-# Custom ls, like "ll". Add -S to sort by (non-recursive) size
-function lll () {
-    headers='Blocks\tPermissions\tHard-Links\tOwner\tGroup\tSize\tDate_Modified\tFilename'
-    ls -tarlushFN --color=always --time-style="+%Y-%m-%d_%H:%M:%S" --group-directories-first "$@" \
-    | awk 'BEGIN { printf "%s\n", "'"$headers"'" } { print $0 }' | column -t  # put headers on top of the results, and space them well
-}
-
 
 # Basic functionalities
 # =====================
+
+# man grep - find word in manual, with a bit of context (lines above/below). $1 is command (to manual), $2 is word to find
+function mang () {
+    man "$1" | grep -iF --color=auto -C 3 -- "$2"  # the "--" allows you to lookup dashes in your expression
+}
 
 # Find processes by substring. Prints error if given no args ; prints everything if given empty string
 function find_proc () {
@@ -583,7 +591,7 @@ function devs() {
     df_results=$(df -h -x tmpfs --output=source,fstype,itotal,ipcent,size,pcent,file,target)
     df_title=$(echo "$df_results" | head -n1)
     df_content=$(echo "$df_results" | tail -n+2 | sort -k1,1)
-    df_results=$(echo -e "${df_title}\n${df_content}")  # reattaching (now the contents are sorted)
+    df_results=$(echo -e "${df_title}\n${df_content}" | _pad_end_w_spaces)  # reattaching (now the contents are sorted), and ending lines neatly
 
     # device names (used as identifiers)
     df_devices=$(echo "$df_content" | awk 'NR>1 {print $1}')
@@ -607,7 +615,6 @@ function devs() {
     lsblk_hashmap['Filesystem']=${lsblk_hashmap['PATH']}
     
     # place the maps right after the df results
-    df_results=$(_pad_end_w_spaces "$df_results")  # prepare to add the extra columns by making the lines end at the same char-column
     df_and_lsblk=()
     while IFS= read -r line || [[ -n "$line" ]]; do
         dev_name=$(echo $line | awk '{print $1}')
@@ -677,7 +684,8 @@ function resources_used () {
     declare -A c_users && for user in $current_users; do c_users[$user]='1'; done  # same, as hashset
 
     all_users=$(echo -e "$current_users\n$human_users" | sort | uniq)  # all users (joined list but kept only unique)
-    usage_summary='USER\tCPU\tRAM\t@HOME-size'
+    headers='USER,CPU,RAM,@HOME-size'
+    usage_summary=''
     for user in $all_users; do
         # determine if the line would be printed in color
         prnt_cmd=$([ -n "${h_users[$user]}" ] && echo "gecho" || echo "echo")  # ternary for choice of command to use
@@ -702,7 +710,7 @@ function resources_used () {
     echo "If your overall CPU usage reaches $(becho $bottleneck_threshold%), your CPU is possibly bottlenecked on a single thread."
 
     echo "$(uecho 'Resources currently taken by users:') *verified human users are colored **results are subject to slight shifts over runtime, partially due to this very script's running."
-    echo -e "$usage_summary" | column -t -s $'\t'
+    echo -e "$usage_summary" | column -t -s $'\t' -N "$headers"
 
     echo "$(uecho 'Total CPU usage:') $total_cpu_usage"
     echo "$(uecho 'Total RAM usage:') $total_ram_usage"
@@ -720,7 +728,7 @@ function network_search () {
     if [[ $1 =~ ^[0-9]+$ ]]; then  # numerical - filter as a port number
         sudo netstat -tulpn | grep ":$1"
     else  # non-numerical, look-up as a substring
-        sudo netstat | grep "$1"
+        sudo netstat | grep -iF --color=auto "$1"
     fi
 }
 
@@ -750,10 +758,9 @@ function explore () {
         fi
     done <<< "$filenames"
 
-    headers=$(becho "total_size\tfile_count\tinodes\tname")
     data="${folders[@]}${files[@]}"    
     [[ " $* " =~ " -s " ]] && data=$(echo -e "${data}" | sort -h)  # if flag -s specified, sort ; first datum is size, so that's what we sort by
-    echo -e "${headers}\n${data}" | column -t -s $'\t'  # separate nicely with tabs
+    echo -e "${data}" | column -t -s $'\t' -N $(becho "total_size,file_count,inodes,name")  # separate nicely with tabs
     echo "current dir total files: $total_files"
     echo "current dir total size: $(du -sh "$location" | cut -f1)"
     echo "current dir inodes use: $(du -s --inodes "$location" | cut -f1)"
