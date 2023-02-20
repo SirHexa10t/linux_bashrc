@@ -91,6 +91,9 @@ alias apt='nala'
 # just shorter grep, case insensitive (i), and no regex involved (F)
 alias g='grep -iF --color=auto'
 
+# grep, but catches 3 lines before/after (+6 total) match 
+alias g3='grep -iF --color=auto -C 3'
+
 # take ownership of file (add file-name after this command) # TODO - maybe make into a function that prints the chowned files (distinguishing the filenames from $@ is difficult though)
 alias claim='sudo chown $USER:$USER'
 
@@ -191,7 +194,8 @@ alias howdoi_users='echo "
 alias howdoi_bash_terminal='echo "
 >> terminal
 * man <command>  # read the manual of the command
-* help  # list built-in Bash commands
+*   help  # list built-in Bash commands
+* less <file>  # Read file with up/down controls. Newer and more convenient than "more".
 * sudo !!  # rerun last command with sudo permissions
 * htop  # show real-time processes/resource-usage
 * diff <file1> <file2>  # get the text difference between 2 files
@@ -433,6 +437,7 @@ function mkdir () {
     /usr/bin/mkdir "$extra_flag" "$@"
 }
 
+# TODO - Fix: this command prints filenames with tabs instead of spaces
 # Custom ls, like "ll". Add -S to sort by (non-recursive) size
 function lll () {
     headers='Blocks\tPermissions\tHard-Links\tOwner\tGroup\tSize\tDate_Modified\tFilename'
@@ -468,7 +473,7 @@ function kill_interactively () {
     _wait_n_seconds 2
 
     pids=$(pgrep -i "$1")  # get all PIDs, again
-    [ -z "$pids" ] && becho "Confirmed no new processes with same substring found" || recho "Found live processes with the same name you just eliminated"
+    [ -z "$pids" ] && becho "Confirmed no new processes with same substring" || recho "Found live processes with the same name you just eliminated"
 }
 
 
