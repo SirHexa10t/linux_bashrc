@@ -79,6 +79,7 @@ alias man='man '
 # rsync copy instead of cp - recursive by default and shows progress percentage
 alias cp='rsync -ah --info=progress2'
 
+# TODO - check if this locks people from using apt (can't install nala because of this alias; can't use nala because it's not installed). Put this alias in an "if"?
 # replace apt with nala. Same thing but prettier
 alias apt='nala'
 
