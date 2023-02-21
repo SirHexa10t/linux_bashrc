@@ -72,7 +72,6 @@ Many functions within this project were created for the purpose of easing and au
 ### Here are a few examples (kept simple, no extra args specified):
 
 ![command_devs](md_imgs/devs.jpg)
-![command_devs](https://github.com/SirHexa10t/linux_bashrc/blob/main/md_imgs/devs.jpg?raw=true)
 ###### Figure 1: "devs" - output of the command "devs"
 A simple command that gives you all info about all devices at once.
 * Verbose: Identify by name/address/size/ which device is mounted or needs more space or inodes cleanup
@@ -90,7 +89,6 @@ A simple command that gives you all info about all devices at once.
 
 
 ![command_resources_used](md_imgs/resources_used.jpg)
-![command_resources_used](https://github.com/SirHexa10t/linux_bashrc/blob/main/md_imgs/resources_used.jpg?raw=true)
 ###### Figure 2: "resources_used" - resource utilization
 An overview of users' resource utilization.
 - Note: root is always suspected as a human-user
@@ -114,7 +112,6 @@ so you can see if said user might be experiencing issues due to single-threaded 
 
 
 ![command_explore](md_imgs/explore.jpg)
-![command_explore](https://github.com/SirHexa10t/linux_bashrc/blob/main/md_imgs/explore.jpg?raw=true)
 ###### Figure 3: "explore" - detail of directory's disk utilization
 Specifies disk utilization of all files and folders within a directory
 

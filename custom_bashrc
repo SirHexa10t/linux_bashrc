@@ -21,6 +21,20 @@
 
 
 
+
+# This function is needed early, for safe alias replacements.
+# Removed (non-purged) packages are considered not-installed
+function _is_pkg_installed () {
+    is_pkg_installed=$(dpkg-query -W --showformat='${Status}\n' ${1} 2>&1 | grep "install ok installed")
+    if [ "${is_pkg_installed}" == "install ok installed" ]; then return 0; else return 1; fi
+}
+
+# Returns true if pacakge is installed, false + user-message if not. Provide package name as arg 1.
+function _announce_pkg_installed () {
+    if _is_pkg_installed "$1" ; then return 0; else echo "Can't use package '$1', consider installing it."; return 1; fi
+} 
+
+
 # My settings
 #################################################################################
 QEMU_VOLUME_UUID='A80899A4089971D4'
@@ -76,12 +90,12 @@ alias sudo='sudo '
 # same trick as in sudo
 alias man='man '
 
-# rsync copy instead of cp - recursive by default and shows progress percentage
-alias cp='rsync -ah --info=progress2'
-
-# TODO - check if this locks people from using apt (can't install nala because of this alias; can't use nala because it's not installed). Put this alias in an "if"?
 # replace apt with nala. Same thing but prettier
-alias apt='nala'
+# conditional alias - only if package is installed
+_announce_pkg_installed 'nala' && alias apt='nala'
+
+# rsync copy instead of cp - recursive by default and shows progress percentage
+_announce_pkg_installed 'rsync' && alias cp='rsync -ah --info=progress2'
 
 
 # Common
