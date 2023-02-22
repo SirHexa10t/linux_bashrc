@@ -24,10 +24,9 @@
 #################################################################################
 _alias_names_query='alias | grep -E "^alias" | sed "s/^alias \([^=]*\)=.*/\1/"'  # this is needed very early for specific lookup
 
-# My settings / constants
+
+# Session data
 #################################################################################
-QEMU_VOLUME_UUID='A80899A4089971D4'
-LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
 SUDO_FILE=$(which sudo)
 THIS_FILE=$(readlink -f -- "$BASH_SOURCE")
 IS_USER_ROOT=$(if [ "$USER" == "root" ]; then echo "true"; else echo "false"; fi)
@@ -36,6 +35,12 @@ CUSTOM_ALIASES=$(eval "$_alias_names_query")  # will only be ready by the time t
 declare -A CUSTOM_ALIASES_MAP  # use this for lookup (will be filled at the end too)
 CUSTOM_FUNCTIONS=$(declare -F | awk '{print $3}')  # will only be ready by the time this file's reading is done
 declare -A CUSTOM_FUNCTIONS_MAP  # use this for lookup (will be filled at the end too)
+
+
+# My settings / constants
+#################################################################################
+QEMU_VOLUME_UUID='A80899A4089971D4'
+LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
 
 HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
@@ -89,6 +94,7 @@ fi
 # TODO - put aliases and functions in "remindme" (and add screenshot to README). Don't put comments with 2 hashes (##)
 # TODO - lookup within "remindme" (maybe just add a flag, but then maybe it should be named something else, like "available_cmds")
 # TODO - "whatnow" - tag commands (things like "network" or "visual" or "filesystem") and list the tags for (optional) interactive picking 
+# TODO - find all "] &&" and see that they operate fine
 
 
 # This function is needed early, for safe alias replacements.
@@ -1268,6 +1274,27 @@ EOM
 
     _draw_formatted "$surprise"
 }
+
+# Provide command as args; it'll run async, while ascii animations would play until the command's thread closes.
+# Example: _spinning_wait_for_task sleep 10
+function _spinning_wait_for_task {
+    local cmd=("$@")
+    "${cmd[@]}" &  # Run the command in the background
+    local pid=$!  # Get the PID of the background process
+    local chars=('\' '|' '/' '-')
+    local i=0
+    while [ -d /proc/"$pid" ]; do
+        i=$(( (i+1) % 4 ))
+        printf "\r%s Running: %s" "${chars[$i]}" "${cmd[*]}"
+        sleep 0.1
+    done
+}
+
+
+
+
+# Finishing touches (parsing this file and announcing that we're done to user)
+#################################################################################
 
 CUSTOM_ALIASES=$( comm -23 <( eval "$_alias_names_query" | sort) <( echo "$CUSTOM_ALIASES" | sort) )  # keep list of (only) aliases that were added between now and the start of the file
 for ali in $CUSTOM_ALIASES; do CUSTOM_ALIASES_MAP[$ali]='1'; done  # fill a lookup hashmap (wanted hashset, but that's the closest I can get)
