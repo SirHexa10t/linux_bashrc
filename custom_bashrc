@@ -30,6 +30,7 @@ QEMU_VOLUME_UUID='A80899A4089971D4'
 LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
 SUDO_FILE=$(which sudo)
 THIS_FILE=$(readlink -f -- "$BASH_SOURCE")
+IS_USER_ROOT=$(if [ "$USER" == "root" ]; then echo "true"; else echo "false"; fi)
 
 CUSTOM_ALIASES=$(eval "$_alias_names_query")  # will only be ready by the time this file's reading is done
 declare -A CUSTOM_ALIASES_MAP  # use this for lookup (will be filled at the end too)
@@ -48,28 +49,31 @@ HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the c
 # before adding a bind, check whether it's already taken, by running "bind -p". You'd generally be overwriting existing binds, but some of them such as CTRL+M cause problems when you overwrite
 # To define it only if the shortcut doesn't exist, run a command like this:   if ! bind -q "\C-w"; then bind '"\C-w": "exit\n"'; fi
 
-# Bash terminal related 
-# =====================
+if [ "$IS_USER_ROOT" = false ]; then  # no binding keys when running as root.
 
-# CTRL+H : basically "help"
-bind -x '"\C-h": "remindme"$\r$\n'
+    # Bash terminal related 
+    # =====================
 
-# ALT+N : refresh bash terminal
-bind '"\en": "exec bash\n"'  # print this, so the user can rerun this easily for function tests
+    # CTRL+H : basically "help"
+    bind -x '"\C-h": "remindme"$\r$\n'
 
-# CTRL+W : close terminal. Just like in web-browsers
-# bind '"\C-w": "exit\n"'  # should be defined in the OS for all windows
+    # ALT+N : refresh bash terminal
+    bind '"\en": "exec bash\n"'  # print this, so the user can rerun this easily for function tests
 
-# CTRL+SHIFT+I : get system info
-# bind -x '"\C-\I": "echo something"$\r$\n'  # TODO
+    # CTRL+W : close terminal. Just like in web-browsers
+    # bind '"\C-w": "exit\n"'  # should be defined in the OS for all windows
+
+    # CTRL+SHIFT+I : get system info
+    # bind -x '"\C-\I": "echo something"$\r$\n'  # TODO
 
 
-# Custom environment 
-# ==================
+    # Custom environment 
+    # ==================
 
-# CTRL+X : (let's pretend X is for X-Server...) arrange monitors when the nvidia settings won't keep them arranged
-bind -x '"\C-x": "arrange_monitors"$\r$\n'
+    # CTRL+X : (let's pretend X is for X-Server...) arrange monitors when the nvidia settings won't keep them arranged
+    bind -x '"\C-x": "arrange_monitors"$\r$\n'
 
+fi
 
 # My keyword shortcuts
 #################################################################################
@@ -80,6 +84,11 @@ bind -x '"\C-x": "arrange_monitors"$\r$\n'
 # Basic functionalitiy override !
 # ===============================
 
+# TODO - make sudo reload this file silently
+# TODO - colored code (comments one color, function/alias name another color, code (for alias) another color)
+# TODO - put aliases and functions in "remindme" (and add screenshot to README). Don't put comments with 2 hashes (##)
+# TODO - lookup within "remindme" (maybe just add a flag, but then maybe it should be named something else, like "available_cmds")
+# TODO - "whatnow" - tag commands (things like "network" or "visual" or "filesystem") and list the tags for (optional) interactive picking 
 
 
 # This function is needed early, for safe alias replacements.
@@ -96,36 +105,7 @@ function _announce_pkg_installed () {
 
 
 # The space at the end makes bash auto-complete the next word as well. 'sudo ' alone makes aliases work in sudo, but not functions.
-# alias sudo='sudo '
-
-# TODO - WIP
-# alias sudoexec='sudo -E bash -c "source $THIS_FILE; $1"'
-function sudo () {
-    # echo "all: $@"
-    # echo "first: $1"
-    # if [ -n "${CUSTOM_FUNCTIONS_MAP[$1]}" ]; then echo "found"; fi
-    
-    # if arg 1 is in the list of this file's functions, source this file. Otherwise, run sudo regularly. (this isn't perfect;)
-    if [ -n "${CUSTOM_FUNCTIONS_MAP[$1]}" ]; then
-        custom_function_cmd="source $THIS_FILE && $@"
-        "$SUDO_FILE" bash -c "$custom_function_cmd"
-    else
-        "$SUDO_FILE" "$@"
-    fi
-}
-
-# # simple sudo - will not load this bashrc file
-# function sisudo() {
-#     "$SUDO_FILE" "$@"
-# }
-# # custom sudo - will load this bashrc file
-# function csudo() {
-#     "$SUDO_FILE" bash -c "source $THIS_FILE && $@"
-# }
-
-function unallowed () {
-    cat /etc/sudoers
-}
+alias sudo='sudo '
 
 # same trick as in sudo
 alias man='man '
@@ -157,7 +137,7 @@ alias hg='history | grep -iF --color=auto'
 
 # TODO - if you ever find out how to put this in a table without messing up filenames with spaces, fix this 
 # Custom ls, like "ll". Add -S to sort by (non-recursive) size
-alias lll='becho "Blocks Permissions Hard-Links Owner Group Size Date_Modified Filename" ; ls -tarlushFN --color=always --time-style="+%Y-%m-%d_%H:%M:%S" --group-directories-first'
+alias lll='becho "Blocks Permissions Hard-Links Owner Group Size Date_Modified Filename" ; ls -tarlushFN --color=always --time-style="+%Y-%m-%d_%T" --group-directories-first'
 
 # reset terminal (includs bashrc reload)
 alias anew='exec bash'
@@ -491,8 +471,20 @@ function _wait_n_seconds () {
 # Basic functionalities override !
 # ================================
 
-# TODO - do about the same for chmod and chown - print the directory/files with the changed data (maybe cancel that, getting the filenames in every case isn't simple)
+# Sources this file if the command is a function from this page.
+## I don't know what black magic is involved, but you need both the above sudo alias and this function to support alias interpretation.
+function sudo () {
+    # needs to be "silent" to avoid screwing up scripts that rely on the output of the sudo'd commands
+    # if arg 1 (just arg 1, deal with it) is in the list of this file's functions, source this file. Otherwise, run sudo regularly.
+    if [ -n "${CUSTOM_FUNCTIONS_MAP[$1]}" ]; then
+        custom_function_cmd="source $THIS_FILE && $@"
+        "$SUDO_FILE" bash -c "$custom_function_cmd"
+    else
+        "$SUDO_FILE" "$@"
+    fi
+}
 
+# TODO - do about the same for chmod and chown - print the directory/files with the changed data (maybe cancel that, getting the filenames in every case isn't simple)
 # add a print of local files after changing directory
 function cd () {
     builtin cd "$@" && \
@@ -1282,4 +1274,5 @@ for ali in $CUSTOM_ALIASES; do CUSTOM_ALIASES_MAP[$ali]='1'; done  # fill a look
 CUSTOM_FUNCTIONS=$( comm -23 <( declare -F | awk '{print $3}' | sort) <( echo "$CUSTOM_FUNCTIONS" | sort) )  # keep list of (only) functions that were added between now and the start of the file
 for func in $CUSTOM_FUNCTIONS; do CUSTOM_FUNCTIONS_MAP[$func]='1'; done  # fill a lookup hashmap (wanted hashset, but that's the closest I can get)
 
-echo "Finished loading \"$THIS_FILE\" for: \"`readlink -f $0`\""
+# if user is root (sudo running), be quiet
+if [ "$IS_USER_ROOT" = false ]; then echo "Finished loading \"$THIS_FILE\" for: \"`readlink -f $0`\""; fi
