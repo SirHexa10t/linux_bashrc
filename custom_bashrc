@@ -20,6 +20,9 @@
 # Defaults        env_keep += "BASH_FUNC_*"
 
 
+# please ignore
+#################################################################################
+_alias_names_query='alias | grep -E "^alias" | sed "s/^alias \([^=]*\)=.*/\1/"'  # this is needed very early for specific lookup
 
 # My settings / constants
 #################################################################################
@@ -28,7 +31,9 @@ LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
 SUDO_FILE=$(which sudo)
 THIS_FILE=$(readlink -f -- "$BASH_SOURCE")
 
-CUSTOM_FUNCTIONS=$(declare -F | awk '{print $3}')  # will only be ready by the time this file's reading is done ()
+CUSTOM_ALIASES=$(eval "$_alias_names_query")  # will only be ready by the time this file's reading is done
+declare -A CUSTOM_ALIASES_MAP  # use this for lookup (will be filled at the end too)
+CUSTOM_FUNCTIONS=$(declare -F | awk '{print $3}')  # will only be ready by the time this file's reading is done
 declare -A CUSTOM_FUNCTIONS_MAP  # use this for lookup (will be filled at the end too)
 
 HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
@@ -161,7 +166,7 @@ alias anew='exec bash'
 alias port80="sudo netstat -tulpn | grep :80"
 
 # get own IP
-alias whatsmyip="becho 'My private IPs:'; echo \"$(ip addr show | grep inet | grep -v inet6 | awk '{print $2}' | cut -d/ -f1)\" && becho 'My IPv4:' ; dig @resolver4.opendns.com myip.opendns.com +short "
+alias whatsmyip='becho "My private IPs:"; ip addr show | grep inet | grep -v inet6 | awk '\''{print $2}'\'' | cut -d/ -f1  ;  becho "My IPv4:" ; dig @resolver4.opendns.com myip.opendns.com +short '
 
 # get addresses on LAN
 alias whatsmynetwork="buecho 'LAN devices:' ; arp -a  ;  buecho 'Connections:' ; netstat -atn"
@@ -590,6 +595,7 @@ function archive_tar7z () {
     # TODO - get rid of last '/' if it exists
     # TODO - check full addresses' effect
     # TODO - check with sudo
+    
     tar -cvzf - "$1" | 7za a -si "$1".tar.7z
 }
 
@@ -1271,7 +1277,9 @@ EOM
     _draw_formatted "$surprise"
 }
 
-CUSTOM_FUNCTIONS=$( comm -23 <( declare -F | awk '{print $3}' | sort) <(echo "$CUSTOM_FUNCTIONS" | sort) )  # keep list of (only) functions that were added between now and the start of the file
+CUSTOM_ALIASES=$( comm -23 <( eval "$_alias_names_query" | sort) <( echo "$CUSTOM_ALIASES" | sort) )  # keep list of (only) aliases that were added between now and the start of the file
+for ali in $CUSTOM_ALIASES; do CUSTOM_ALIASES_MAP[$ali]='1'; done  # fill a lookup hashmap (wanted hashset, but that's the closest I can get)
+CUSTOM_FUNCTIONS=$( comm -23 <( declare -F | awk '{print $3}' | sort) <( echo "$CUSTOM_FUNCTIONS" | sort) )  # keep list of (only) functions that were added between now and the start of the file
 for func in $CUSTOM_FUNCTIONS; do CUSTOM_FUNCTIONS_MAP[$func]='1'; done  # fill a lookup hashmap (wanted hashset, but that's the closest I can get)
 
 echo "Finished loading \"$THIS_FILE\" for: \"`readlink -f $0`\""
