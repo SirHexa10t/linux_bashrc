@@ -21,24 +21,15 @@
 
 
 
-
-# This function is needed early, for safe alias replacements.
-# Removed (non-purged) packages are considered not-installed
-function _is_pkg_installed () {
-    is_pkg_installed=$(dpkg-query -W --showformat='${Status}\n' ${1} 2>&1 | grep "install ok installed")
-    if [ "${is_pkg_installed}" == "install ok installed" ]; then return 0; else return 1; fi
-}
-
-# Returns true if pacakge is installed, false + user-message if not. Provide package name as arg 1.
-function _announce_pkg_installed () {
-    if _is_pkg_installed "$1" ; then return 0; else echo "Can't use package '$1', consider installing it."; return 1; fi
-} 
-
-
-# My settings
+# My settings / constants
 #################################################################################
 QEMU_VOLUME_UUID='A80899A4089971D4'
 LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
+SUDO_FILE=$(which sudo)
+THIS_FILE=$(readlink -f -- "$BASH_SOURCE")
+
+CUSTOM_FUNCTIONS=$(declare -F | awk '{print $3}')  # will only be ready by the time this file's reading is done ()
+declare -A CUSTOM_FUNCTIONS_MAP  # use this for lookup (will be filled at the end too)
 
 HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
@@ -62,7 +53,7 @@ bind -x '"\C-h": "remindme"$\r$\n'
 bind '"\en": "exec bash\n"'  # print this, so the user can rerun this easily for function tests
 
 # CTRL+W : close terminal. Just like in web-browsers
-bind '"\C-w": "exit\n"'
+# bind '"\C-w": "exit\n"'  # should be defined in the OS for all windows
 
 # CTRL+SHIFT+I : get system info
 # bind -x '"\C-\I": "echo something"$\r$\n'  # TODO
@@ -84,8 +75,52 @@ bind -x '"\C-x": "arrange_monitors"$\r$\n'
 # Basic functionalitiy override !
 # ===============================
 
-# the space at the end makes bash check the next word as well
-alias sudo='sudo '
+
+
+# This function is needed early, for safe alias replacements.
+# Removed (non-purged) packages are considered not-installed
+function _is_pkg_installed () {
+    is_pkg_installed=$(dpkg-query -W --showformat='${Status}\n' ${1} 2>&1 | grep "install ok installed")
+    if [ "${is_pkg_installed}" == "install ok installed" ]; then return 0; else return 1; fi
+}
+
+# Returns true if pacakge is installed, false + user-message if not. Provide package name as arg 1.
+function _announce_pkg_installed () {
+    if _is_pkg_installed "$1" ; then return 0; else echo "Can't use package '$1', consider installing it."; return 1; fi
+} 
+
+
+# The space at the end makes bash auto-complete the next word as well. 'sudo ' alone makes aliases work in sudo, but not functions.
+# alias sudo='sudo '
+
+# TODO - WIP
+# alias sudoexec='sudo -E bash -c "source $THIS_FILE; $1"'
+function sudo () {
+    # echo "all: $@"
+    # echo "first: $1"
+    # if [ -n "${CUSTOM_FUNCTIONS_MAP[$1]}" ]; then echo "found"; fi
+    
+    # if arg 1 is in the list of this file's functions, source this file. Otherwise, run sudo regularly. (this isn't perfect;)
+    if [ -n "${CUSTOM_FUNCTIONS_MAP[$1]}" ]; then
+        custom_function_cmd="source $THIS_FILE && $@"
+        "$SUDO_FILE" bash -c "$custom_function_cmd"
+    else
+        "$SUDO_FILE" "$@"
+    fi
+}
+
+# # simple sudo - will not load this bashrc file
+# function sisudo() {
+#     "$SUDO_FILE" "$@"
+# }
+# # custom sudo - will load this bashrc file
+# function csudo() {
+#     "$SUDO_FILE" bash -c "source $THIS_FILE && $@"
+# }
+
+function unallowed () {
+    cat /etc/sudoers
+}
 
 # same trick as in sudo
 alias man='man '
@@ -137,6 +172,8 @@ alias sysinfo_short='echo "For simpler neat hardware specs, run \"neofetch\" or 
 # Get comprehensive system/specs details
 alias sysinfo_full='inxi -FxxzJy90'
 
+# open window at current terminal directory
+alias gui='xdg-open "$(pwd)"'
 
 
 # Service/Application handling
@@ -457,10 +494,16 @@ function cd () {
         ls -AF --color=always --group-directories-first 
 }
 
-# make mkdir more "reasonable" with a flag that is always nice to have
+# make mkdir more "reasonable" with a flag that is always nice to have ; -p doesn't print error if dir exists
 function mkdir () {
     [[ $* == *-p* ]] && extra_flag="" || extra_flag="-p"  # if flag not present, store it in var 
     /usr/bin/mkdir "$extra_flag" "$@"
+}
+
+# make date output in a specific format by default
+function date () {
+    args=$([ $# == 0 ] && echo "+%Y-%m-%d_%T" || echo "$@")  # if provided 0 args, set the time-format to own preference
+    /usr/bin/date "$args"
 }
 
 
@@ -539,6 +582,16 @@ function all_crontabs () {
 
 }
 
+
+# Archive a file locally into .tar.7z format. Provide filename as arg 1
+function archive_tar7z () {
+    [ $# -ge 1 ] || { recho "You need to tell me what to archive" ; return 1; }
+    [ -e "$1" ] || { recho "This file doesn't exist!" ; return 1; }
+    # TODO - get rid of last '/' if it exists
+    # TODO - check full addresses' effect
+    # TODO - check with sudo
+    tar -cvzf - "$1" | 7za a -si "$1".tar.7z
+}
 
 # finds files that shouldnt be executable and chmods them
 function revoke_exe_mod () {
@@ -1218,5 +1271,7 @@ EOM
     _draw_formatted "$surprise"
 }
 
-echo "Finished loading \"$(readlink -f -- "$BASH_SOURCE")\" for: \"`readlink -f $0`\""
+CUSTOM_FUNCTIONS=$( comm -23 <( declare -F | awk '{print $3}' | sort) <(echo "$CUSTOM_FUNCTIONS" | sort) )  # keep list of (only) functions that were added between now and the start of the file
+for func in $CUSTOM_FUNCTIONS; do CUSTOM_FUNCTIONS_MAP[$func]='1'; done  # fill a lookup hashmap (wanted hashset, but that's the closest I can get)
 
+echo "Finished loading \"$THIS_FILE\" for: \"`readlink -f $0`\""
