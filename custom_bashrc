@@ -22,7 +22,7 @@
 
 # please ignore
 #################################################################################
-_alias_names_query='alias | grep -E "^alias" | sed "s/^alias \([^=]*\)=.*/\1/"'  # this is needed very early for specific lookup
+_alias_names_query='alias | grep -E "^alias" | sed "s/^alias \([^=]*\)=.*/\1/"'  # this is needed very early (and very late) for lookup of existing aliases
 
 
 # Session data
@@ -43,7 +43,6 @@ QEMU_VOLUME_UUID='A80899A4089971D4'
 LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
 
 HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
-
 
 # My binds
 #################################################################################
@@ -195,11 +194,14 @@ alias rebuild_ramfs='sudo update-initramfs -u'
 # TODO - command grep. "command_like <expression>"
 
 # One of several "help"/"manual" kind of reminders, to help the user get such info without opening the bashrc files.
-alias remindme='echo "Find various cheatsheets by typing commands that start with \"howdoi\" or list bashrc options with command \"list_cmds\""'
+alias remindme='becho "Find various cheatsheets by typing commands that start with \"howdoi\" or list bashrc options with command \"list_cmds\""'
 # Synonymous to "remindme", one of several.
 alias what_commands='remindme'
 # Synonymous to "remindme", one of several. P.S. it's mispelled intentionally; don't fix it.
 alias i_forgor='remindme'
+# short for "ps grep".
+alias psg='find_proc'
+
 
 # Reminders for linux system tools and command options
 alias howdoi_linux='echo "
@@ -221,6 +223,8 @@ alias howdoi_linux='echo "
 * /etc/default/grub  :  boot configurations
 * /etc/modprobe.d/blacklist.conf  :  blacklist modules, such as firmware
 * /etc/fstab  :  mounting configurations, including for dir /
+* /etc/environment  :  OS environment variables
+*   printenv  # print (all) current environment variables 
 * sudo nvidia-xconfig  # create new xorg config, used by nvidia driver
 >> logs (to tail a logfile in real-time run: \"tail -f <logfile>\", or to get last 100 lines: \"tail -100 <logfile>\" )
 * log-file: /var/log/boot.log  :  System boot log
@@ -256,6 +260,7 @@ alias howdoi_bash_terminal='echo "
 * # add \"& disown\" after a command to have it run in its own thread so that it wont stop when the terminal closes
 * # add \"2> /dev/null\" after a command to throw away warning/error messages it might bring up
 * time <command>  # get time measurement for command runtime. No need for quotes or any encapsulation, just prepend \"time\". Example: time ls -l
+* extra_dist=$(( (a > b) ? (a - b) : 0 ))  # example for ternary in bash (use the \"&&\",\"||\" ternary instead when you have a condition in \"[]\"). The double-parentheses mean you dont need \"$\" to reference variables and that the math operations get evaluated
 >> tools (utilities for usage that isnt about managing the OS)
 * wget <url>  # download files
 * curl <url>  # communicate through HTTP(S)/(S)FTP/SCP - make any request (but if you just want to download something, you should probably use wget)
@@ -1136,7 +1141,7 @@ function _color_word () {
 # echo in color, use like this: _colored_echo "<=uline=><=red=>" "color me"  # recolors red and underlined
 function _colored_echo () {
     # apply colors (arg 1) to all lines
-    formatted=$( echo -e "${@:2}" | while read -r line; do echo "${1}${line}"; done )
+    formatted=$( echo "${@:2}" | while IFS= read -r line; do echo "${1}${line}"; done )
     _draw_formatted "$formatted"
 }
 # echo in red
@@ -1275,9 +1280,11 @@ EOM
     _draw_formatted "$surprise"
 }
 
+# TODO - make interruptible (don't hold the user waiting)
+# TODO - make runner reach the end of the terminal window
 # Provide command as args; it'll run async, while ascii animations would play until the command's thread closes.
 # Example: _spinning_wait_for_task sleep 10
-function _spinning_wait_for_task {
+function _spinning_wait_for_task () {
     local cmd=("$@")
     "${cmd[@]}" &  # Run the command in the background
     local pid=$!  # Get the PID of the background process
@@ -1290,7 +1297,92 @@ function _spinning_wait_for_task {
     done
 }
 
+# usage: arg 1 is n, arg 2 is a block of text
+function _reveal_n_first_columns () {
+    echo "$2" | awk '{print substr($0, 1, n)}' n=$1
+}
 
+# short animation. -v : verbose (debugging)
+function animate_lets_go () {
+    # Define the animation frames as an array of strings
+frame1="    
+⠀⢀⣤⡤⣄⠀
+⣴⢿⢿⢳⢛⠂
+⠿⣘⢱⣦⡤⠃
+⣦⣿⡏⠉⢢⠀
+⠈⣷⣞⣟⡅⠀
+"
+frame2="
+⠀⣠⣴⠖⣦⠀
+⣾⢻⠻⠻⠩⡁
+⠻⣮⣸⣿⠶⠁
+⣶⣟⠀⢀⣵⣦
+⠛⠁⠉⠁⠙⠁
+"
+
+banner=" 
+    ####      *########  ##########  ##  #######*      #########   ,####n###  
+   ,###       ##r          a##     ##n ###/         ,####         ####    ###)
+   ###       #######(     ###         /#####,      ,###/  o####  ####     ####
+  ##b       *###         ###             d####     ####    *### .###,    #### 
+ ######### ,########    ###          #######/      #####_####/   ####_#####   
+"
+
+window="
+                                 
+                                 
+                                 
+                                 
+                                 
+"  # there are spaces here, in case your IDE doesn't show you that easily
+
+    # draw runner "spreading" the banner by having it revealed behind him, than runner "disappears" into an invisible wall
+    # how it's done:
+    # runner is "pushed" by an ever-extending banner from 1 to full length
+    # once banner is full length, runner is "pushed" by an extra invisible window of spaces
+    # the invisible wall appears after the total distance of the banner + invisible window - the width of the runner, so that the window would keep pushing the runner past it 
+
+
+    banner_width=$(sed -n '2p' <<< "$banner" | wc -c)  # width of banner, going by 2nd line
+    window_width=$(sed -n '2p' <<< "$window" | wc -c)  # width of extra running distance away from banner, going by 2nd line
+    runner_width=$(sed -n '2p' <<< "$frame1" | wc -c)  # width of runner, going by 2nd line of the first frame
+    total_run=$(( banner_width + window_width ))  # the total run distance (not drawing beyond that). Runner starts fading at $((total_run - runner_width))
+
+    frames=("$frame1" "$frame2")
+    frames_count="${#frames[@]}"
+    iter_time=0.01  # in seconds
+
+    i=0  # runner frame iterator
+    echo -ne "\033[s"  # Save cursor position
+
+    # d is total distance progressed
+    for ((d=1; d<=$total_run; d++)); do
+        time_start=$(date +%s.%N)
+
+        i=$(( (i+1) % $frames_count ))  # which frame gets drawn (loop)
+        window_dist=$(( (d > banner_width) ? (d - banner_width) : 0 ))  # ternary - extra distance of runner past banner, minimum is 0 (starts counting up once banner is full)
+        runner_width_still_visible=$((total_run - d - 1))  # how much of the runner gets drawn (drawn fully until reaching the wall). Don't as me why -1 is necessary; sometimes it isn't.
+
+        banner_sprite=$(_reveal_n_first_columns "$d" "$banner")
+        extra_dist_sprite=$(_reveal_n_first_columns "$window_dist" "$window")
+        cut_back_runner_sprite=$(_reveal_n_first_columns "$runner_width_still_visible" "${frames[$i]}")  # runner disappears into an invisible wall, by drawing less of it as it runs further away
+        echo -e "$(paste -d ' ' <(gecho "$banner_sprite") <(echo "$extra_dist_sprite") <(echo "$cut_back_runner_sprite"))"  # print by putting one after the other, delimiter is space
+        echo -ne "\033[u"  # Restore cursor position
+
+        # wait for the rest of the iteration
+        time_lapse=$(echo "$(date +%s.%N) - $time_start" | bc)  # each iteration takes about 2.5 milliseconds 
+        if (( $(echo "$time_lapse < $iter_time" | bc -l) )); then sleep $(echo "$iter_time - $time_lapse" | bc); fi
+
+        [[ " $* " =~ " -v " ]] && echo "banner_width: $banner_width , window_width: $window_width , runner_width: $runner_width , total_run: $total_run , wall_location: $wall_location"
+        [[ " $* " =~ " -v " ]] && echo "iteration took ${time_lapse}s , distance ran: $d , distance remaining: $runner_width_still_visible"
+    done
+
+    # dim the banner (and progress the cursor)
+    calm_banner_color='<=green=>'
+    _colored_echo "$calm_banner_color" "$banner"
+
+
+}
 
 
 # Finishing touches (parsing this file and announcing that we're done to user)
@@ -1303,3 +1395,5 @@ for func in $CUSTOM_FUNCTIONS; do CUSTOM_FUNCTIONS_MAP[$func]='1'; done  # fill 
 
 # if user is root (sudo running), be quiet
 if [ "$IS_USER_ROOT" = false ]; then echo "Finished loading \"$THIS_FILE\" for: \"`readlink -f $0`\""; fi
+
+animate_lets_go
