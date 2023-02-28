@@ -44,6 +44,9 @@ LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
 
 HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
+# TODO - define a quick-run file. It would contain a command/script for testing (such as running a python program somewhere). Running it would be easily done through an alias of just 2-3 letters 
+
+
 # My binds
 #################################################################################
 # "\C-" is CTRL, "\e" (or "\M-") is alt. Shift might not be supported, but if it is: "\S-" is Shift (and maybe also backslash and capitalize, like this for Shift-X: "\X").
@@ -63,6 +66,9 @@ if [ "$IS_USER_ROOT" = false ]; then  # no binding keys when running as root.
 
     # ALT+N : refresh bash terminal
     bind '"\en": "exec bash\n"'  # print this, so the user can rerun this easily for function tests
+
+    # CTRL+Z : undo the regular CTRL+Z ; resume background-process UI 
+    # bind -x '"\C-z": "fg"$\r$\n'
 
     # CTRL+W : close terminal. Just like in web-browsers
     # bind '"\C-w": "exit\n"'  # should be defined in the OS for all windows
@@ -89,11 +95,12 @@ fi
 # ===============================
 
 # TODO - make sudo reload this file silently
-# TODO - colored code (comments one color, function/alias name another color, code (for alias) another color)
+# TODO - colored code (comments one color, function/alias name another color, code (for alias) another color). Text within quotes in yellow maybe
 # TODO - put aliases and functions in "remindme" (and add screenshot to README). Don't put comments with 2 hashes (##)
 # TODO - lookup within "remindme" (maybe just add a flag, but then maybe it should be named something else, like "available_cmds")
 # TODO - "whatnow" - tag commands (things like "network" or "visual" or "filesystem") and list the tags for (optional) interactive picking 
 # TODO - find all "] &&" and see that they operate fine
+
 
 
 # This function is needed early, for safe alias replacements.
@@ -249,6 +256,8 @@ alias howdoi_bash_terminal='echo "
 >> terminal
 * man <command>  # read the manual of the command
 *   help  # list built-in Bash commands
+* cd  # write no directory to return to home-dir. Equivalent to cd ~
+*   cd -  # go back to previous directory
 * less <file>  # Read file with up/down controls. Newer and more convenient than "more".
 * sudo !!  # rerun last command with sudo permissions
 * htop  # show real-time processes/resource-usage
@@ -256,14 +265,19 @@ alias howdoi_bash_terminal='echo "
 * diff <file1> <file2>  # get the text difference between 2 files
 * visudo  # edit the /etc/sudoers file (only if you know what you are doing)
 >> bash basic utility commands (can be used in terminal of-course)
+* # \"$my_var\" is the value of variable my_var, \"$1\" is the first argument in current scope (and so on), \"$@\" is all arguments in current scope, \"$#\" is the number of args, \"$$\" is current PID, \"$?\" is the return code of last operation, $(<cmd here>) is used to run commands within commands (can also use `<cmd here>`)
 * declare -p <variable>  # Note: no use of $. Print the variable to check data / data-type
 * # add \"& disown\" after a command to have it run in its own thread so that it wont stop when the terminal closes
 * # add \"2> /dev/null\" after a command to throw away warning/error messages it might bring up
 * time <command>  # get time measurement for command runtime. No need for quotes or any encapsulation, just prepend \"time\". Example: time ls -l
 * extra_dist=$(( (a > b) ? (a - b) : 0 ))  # example for ternary in bash (use the \"&&\",\"||\" ternary instead when you have a condition in \"[]\"). The double-parentheses mean you dont need \"$\" to reference variables and that the math operations get evaluated
+* espeak <text>  # read-out (audio) the given text. A bit of a gimmick, sounds very robotic
 >> tools (utilities for usage that isnt about managing the OS)
 * wget <url>  # download files
 * curl <url>  # communicate through HTTP(S)/(S)FTP/SCP - make any request (but if you just want to download something, you should probably use wget)
+>> shortcuts
+* Terminal CTRL+L : clear screen
+* Terminal CTRL+Z : send to background (leave any interactive UI for a while). Resume by running: fg
 "'
 
 # common media file operations
@@ -379,9 +393,21 @@ TODO - create functions that run these commands interactively (like listing, the
 
 # TODO - cargo (maven-like manager) cheatsheet. Reference: https://www.youtube.com/watch?v=zF34dRivLOw
 
+
+alias howdoi_ascii='echo "
+# Create ASCII writings in this site: http://patorjk.com/software/taag/
+* figlet <text>  # write ASCII styled text, different fonts are also supported
+* banner <text>  # write ASCII styled text
+* toilet <text>  # write ASCII styled text, different fonts and styles are also supported
+* jp2a --output=<output.txt> --colors <input.png>  # convert image to ASCII
+* ascii-image-converter <input.png>  # convert image to ASCII
+* <text_output_command> | lolcat  # rainbow-color text
+* <text_output_command> | pv -qL 200  # write text progressively (like being typed, or (if fast) etched by a laser engraver). Try testing with neofetch. Try adding pipe to lolcat.
+"'
+
+
 # Reminders for some neat time-saving GUI keybind tricks
 alias howdoi_shortcut='echo "
-* Terminal CTRL+L : clear screen
 * Built-in Nemo [space] :  select (click) a file/folder, and press [space] to get a summary/preview; press again to close
 * Custom Gnome-Nemo CTRL+SHIT+T :  open Terminal at current Nemo location
 * Built-in Gnome CTRL+ALT+T :  open Terminal
@@ -1088,9 +1114,29 @@ EOT
 
 # Visuals
 # =======
+function _get_cursor_row () {
+    echo -en "\033[6n" # send the control sequence to query cursor position
+    read -sdR CURPOS # read cursor position from input buffer
+
+    # Extract the row number from the cursor position
+    echo "$CURPOS" | sed -rn 's/^.*\[(.*)\;.*$/\1/p'
+}
+
 function _repeat_space_n_times () {
     printf "%${1}s" | tr ' ' " "
 }
+
+# create a block of whitespace
+# arg 1 is how high the column is, arg 2 is width
+function _repeat_whitespace_rows () {
+    (($1 <= 0)) && return
+    (($2 <= 0)) && return
+    
+    for (( i=1; i<=$1; i++ )); do
+        printf "%${2}s\n" " "
+    done
+}
+
 function _underline () {
     char=${2:-'-'}  # determine which char to repeat in underline
     input_string_length=${#1}
@@ -1280,8 +1326,6 @@ EOM
     _draw_formatted "$surprise"
 }
 
-# TODO - make interruptible (don't hold the user waiting)
-# TODO - make runner reach the end of the terminal window
 # Provide command as args; it'll run async, while ascii animations would play until the command's thread closes.
 # Example: _spinning_wait_for_task sleep 10
 function _spinning_wait_for_task () {
@@ -1301,6 +1345,7 @@ function _spinning_wait_for_task () {
 function _reveal_n_first_columns () {
     echo "$2" | awk '{print substr($0, 1, n)}' n=$1
 }
+
 
 # short animation. -v : verbose (debugging)
 function animate_lets_go () {
@@ -1328,62 +1373,99 @@ banner="
  ######### ,########    ###          #######/      #####_####/   ####_#####   
 "
 
-window="
-                                 
-                                 
-                                 
-                                 
-                                 
-"  # there are spaces here, in case your IDE doesn't show you that easily
+    # there are spaces here, in case your IDE doesn't show you that easily
 
     # draw runner "spreading" the banner by having it revealed behind him, than runner "disappears" into an invisible wall
     # how it's done:
     # runner is "pushed" by an ever-extending banner from 1 to full length
     # once banner is full length, runner is "pushed" by an extra invisible window of spaces
-    # the invisible wall appears after the total distance of the banner + invisible window - the width of the runner, so that the window would keep pushing the runner past it 
+    # the invisible wall appears after the [full width of the banner + invisible window] , so that the window would keep pushing the runner past it 
 
+    # ----------- Define sprites, and terminal limits -----------
 
+    terminal_width=$(tput cols)
+    terminal_height=$(tput lines)
     banner_width=$(sed -n '2p' <<< "$banner" | wc -c)  # width of banner, going by 2nd line
-    window_width=$(sed -n '2p' <<< "$window" | wc -c)  # width of extra running distance away from banner, going by 2nd line
     runner_width=$(sed -n '2p' <<< "$frame1" | wc -c)  # width of runner, going by 2nd line of the first frame
-    total_run=$(( banner_width + window_width ))  # the total run distance (not drawing beyond that). Runner starts fading at $((total_run - runner_width))
+    sprite_height=$(echo "$banner" | wc -l)  # same for all sprites involved
 
-    frames=("$frame1" "$frame2")
-    frames_count="${#frames[@]}"
-    iter_time=0.01  # in seconds
+    runner_frames=("$frame1" "$frame2")
+    runner_frames_count="${#runner_frames[@]}"
+
+    # check that the screen is wide enough
+    necessary_terminal_width=$((banner_width + runner_width))
+    if ((necessary_terminal_width > terminal_width)); then recho "Cancelled animation-playing; your terminal needs to be wider." ; return 1 ; fi
+    # check that the screen is high enough
+    necessary_terminal_height=$sprite_height
+    if ((necessary_terminal_height > terminal_height)); then recho "Cancelled animation-playing; your terminal needs to be higher." ; return 1 ; fi
+    # make sure that there's vertical space for the ascii animation
+    if [[ " $* " =~ " -v " ]]; then
+        clear  # make more room for the extra prints
+    else
+        # make the necessary room needed for the animation
+        for ((el=1; el<=$necessary_terminal_height; el++)); do echo ; done  # put new lines below
+        tput cuu $necessary_terminal_height  # go back up, to make future use of added lines
+    fi
+
+
+    # ----------- Define iteration variables -----------
+
+    total_run=$terminal_width # $(( banner_width + window_width ))  # the total run distance (not drawing beyond that). Runner starts fading at $((total_run - runner_width))
+    iter_time=0.01  # iteration time in seconds
+    min_key_input_time=0.003  # minimum time to listen to user input
 
     i=0  # runner frame iterator
+
+    exit_key=''  # save the pressed key that stopped the animation
+
+    # ----------- Animation iteration -----------
+   
     echo -ne "\033[s"  # Save cursor position
 
     # d is total distance progressed
     for ((d=1; d<=$total_run; d++)); do
         time_start=$(date +%s.%N)
 
-        i=$(( (i+1) % $frames_count ))  # which frame gets drawn (loop)
-        window_dist=$(( (d > banner_width) ? (d - banner_width) : 0 ))  # ternary - extra distance of runner past banner, minimum is 0 (starts counting up once banner is full)
-        runner_width_still_visible=$((total_run - d - 1))  # how much of the runner gets drawn (drawn fully until reaching the wall). Don't as me why -1 is necessary; sometimes it isn't.
+        i=$(( (i+1) % $runner_frames_count ))  # which frame gets drawn (loop)
+        window_dist=$((d - banner_width-1))  # ternary - extra distance of runner past banner, minimum is 0 (starts counting up once banner is full)  # -1 for the newline char
+        runner_width_still_visible=$((total_run - d))  # how much of the runner gets drawn (drawn fully until reaching the wall).
 
         banner_sprite=$(_reveal_n_first_columns "$d" "$banner")
-        extra_dist_sprite=$(_reveal_n_first_columns "$window_dist" "$window")
-        cut_back_runner_sprite=$(_reveal_n_first_columns "$runner_width_still_visible" "${frames[$i]}")  # runner disappears into an invisible wall, by drawing less of it as it runs further away
+        extra_dist_sprite=$(_repeat_whitespace_rows "$sprite_height" "$window_dist")
+        cut_back_runner_sprite=$(_reveal_n_first_columns "$runner_width_still_visible" "${runner_frames[$i]}")  # runner disappears into an invisible wall, by drawing less of it as it runs further away
         echo -e "$(paste -d ' ' <(gecho "$banner_sprite") <(echo "$extra_dist_sprite") <(echo "$cut_back_runner_sprite"))"  # print by putting one after the other, delimiter is space
         echo -ne "\033[u"  # Restore cursor position
 
+        # TODO - shorten iteration time (optimize)
         # wait for the rest of the iteration
-        time_lapse=$(echo "$(date +%s.%N) - $time_start" | bc)  # each iteration takes about 2.5 milliseconds 
-        if (( $(echo "$time_lapse < $iter_time" | bc -l) )); then sleep $(echo "$iter_time - $time_lapse" | bc); fi
+        time_lapse=$(echo "$(date +%s.%N) - $time_start" | bc)  # each iteration takes about 2.5 milliseconds
+        condition=$(echo "$min_key_input_time > $iter_time - $time_lapse" | bc)  # is minimum wait time larger than the time left to wait for iteration
+        key_press_wait=$([ "$condition" -eq 1 ] && echo "$min_key_input_time" || echo "$iter_time - $time_lapse" | bc)  # pick the larger of the two
+        read -t "$key_press_wait" -N 1 exit_key && break
 
-        [[ " $* " =~ " -v " ]] && echo "banner_width: $banner_width , window_width: $window_width , runner_width: $runner_width , total_run: $total_run , wall_location: $wall_location"
-        [[ " $* " =~ " -v " ]] && echo "iteration took ${time_lapse}s , distance ran: $d , distance remaining: $runner_width_still_visible"
+
+        [[ " $* " =~ " -v " ]] && echo "banner_width: $banner_width , runner_width: $runner_width , total_run: $total_run"
+        [[ " $* " =~ " -v " ]] && echo "iteration took ${time_lapse}s , key_press_wait: ${key_press_wait}s , distance-window width: $window_dist , distance ran: $d , distance remaining: $runner_width_still_visible"
+
     done
 
-    # dim the banner (and progress the cursor)
+    # dim the banner (and progress the cursor) by pasting over it at-once
+    echo -ne "\033[u"  # Restore cursor position
     calm_banner_color='<=green=>'
-    _colored_echo "$calm_banner_color" "$banner"
-
+    banner_final=$(_colored_echo "$calm_banner_color" "$banner")
+    space_window_final=$( _repeat_whitespace_rows "$sprite_height" $(($total_run - $banner_width)) )
+    everything_final=$(paste -d ' ' <(echo "$banner_final") <(echo "$space_window_final") )
+    echo -e "$everything_final"
+    if [ -z "$exit_key" ]; then  # if the user didn't terminate manually; there's time to do more animations
+        # draw over again
+        echo -ne "\033[u"  # Restore cursor position
+        erase_final=$( _repeat_whitespace_rows "$sprite_height" "$total_run" )  # TODO - replace with the ascii title of tmux window, if provided
+        echo -e "$erase_final" | pv -qL 200  # erase line by line
+        echo -ne "\033[u"  # Restore cursor position  # TODO - make this conditional; only if used only whitespaces (deleted the banner), go back.
+    fi
+    # echo -e "$(paste -d ' ' <(echo "$banner_final") <(echo "$space_window_final") )"
 
 }
-
 
 # Finishing touches (parsing this file and announcing that we're done to user)
 #################################################################################
@@ -1396,4 +1478,11 @@ for func in $CUSTOM_FUNCTIONS; do CUSTOM_FUNCTIONS_MAP[$func]='1'; done  # fill 
 # if user is root (sudo running), be quiet
 if [ "$IS_USER_ROOT" = false ]; then echo "Finished loading \"$THIS_FILE\" for: \"`readlink -f $0`\""; fi
 
-animate_lets_go
+
+#  TODO - put as a top pane in tmux window. Needs to be in a different pane because I can't find a way to make it play without interrupting key input or disrupting it and keeping the first char in the input.
+# if running in a visible terminal, and not as root
+# if [ -t 1 ] && [ "$IS_USER_ROOT" = false ]; then  
+#    animate_lets_go
+# fi
+
+
