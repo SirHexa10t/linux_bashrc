@@ -284,7 +284,7 @@ alias howdoi_bash_terminal='echo "
 alias howdoi_media_and_docs='echo "
 * pdftk <file1> <file2> <file3> cat output <merged_name.pdf>  # create a unified pdf file 
 * xournal <pdf_filepath>  # edit a pdf file with option to add signatures
-* ffmpeg -i <input.mp4> -c copy -an <output.mp4>  # get a video copy without the audio
+* ffmpeg  # general media (audio / video) handling package, you can find some usages in this bashrc file
 "'
 
 # Reminders for microsoft-format handling tools
@@ -617,17 +617,6 @@ function all_crontabs () {
 }
 
 
-# Archive a file locally into .tar.7z format. Provide filename as arg 1
-function archive_tar7z () {
-    [ $# -ge 1 ] || { recho "You need to tell me what to archive" ; return 1; }
-    [ -e "$1" ] || { recho "This file doesn't exist!" ; return 1; }
-    # TODO - get rid of last '/' if it exists
-    # TODO - check full addresses' effect
-    # TODO - check with sudo
-    
-    tar -cvzf - "$1" | 7za a -si "$1".tar.7z
-}
-
 # finds files that shouldnt be executable and chmods them
 function revoke_exe_mod () {
     location=${1:-.}  # use given address, default to current location
@@ -641,6 +630,61 @@ function revoke_exe_mod () {
         fi
     done <<< "$files"
 }
+
+
+
+# File handline (media and data)
+# ==============================
+
+
+# Archive a file locally into .tar.7z format. Provide filename as arg 1
+function archive_tar7z () {
+    [ $# -ge 1 ] || { recho "You need to tell me what to archive" ; return 1; }
+    [ -e "$1" ] || { recho "This file doesn't exist!" ; return 1; }
+    # TODO - get rid of last '/' if it exists
+    # TODO - check full addresses' effect
+    # TODO - check with sudo
+    
+    tar -cvzf - "$1" | 7za a -si "$1".tar.7z
+}
+
+# arg 1: media_file
+function media_remove_audio () {
+    output="${1%.*}_noaudio.${1##*.}"  # add "_noaudio" before the file's .<format>
+    ffmpeg -i "$1" -c copy -an "$output"
+}
+
+# usage: -v/--video <video_file>  -a/--audio <audio_file>
+function media_merge_audio_video () {
+    video_file='' ; audio_file=''
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+    		'-v'|'--video')
+    			video_file="$2"
+    			shift 2
+    			continue
+    		;;
+    		'-a'|'--audio')
+    			audio_file="$2"
+    			shift 2
+    			continue
+            ;;
+    		*)
+                recho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+                return 1
+    		;;
+    	esac
+    done
+
+    [ -z "$video_file" ] && recho "no video file specified" && return 1
+    [ -z "$audio_file" ] && recho "no audio file specified" && return 1
+
+    output="${video_file%.*}_replaced_audio.${video_file##*.}"  # add "_replaced_audio" before the video file's .<format>
+
+    ffmpeg -i "$video_file" -i "$audio_file" -c:v copy -c:a libvorbis "$output"
+}
+
+# TODO - create a function that uses youtube-dl and other website downloaders; have it accept any download-link. 
 
 
 # ----- Microsoft handling 
