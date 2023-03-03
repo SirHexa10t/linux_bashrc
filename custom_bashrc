@@ -23,6 +23,7 @@
 # please ignore
 #################################################################################
 _alias_names_query='alias | grep -E "^alias" | sed "s/^alias \([^=]*\)=.*/\1/"'  # this is needed very early (and very late) for lookup of existing aliases
+_function_names_query='declare -F | awk '\''{print $3}'\'  # not as complex as aliases, but if aliases are here, so should this be.
 
 # uses a later variable definition to determine if the script runs for user: "root"
 function _is_user_root () { if [ "$IS_USER_ROOT" = true ]; then return 0; else return 1; fi  }
@@ -35,9 +36,11 @@ THIS_FOLDER=$(dirname "$THIS_FILE")
 SCRIPTS_BASHRC_FILE="$THIS_FOLDER/script_calls_bashrc"  # optional extention file
 IS_USER_ROOT=$(if [ "$USER" == "root" ]; then echo "true"; else echo "false"; fi)
 
+TESTS_FILE="$THIS_FOLDER/run_tests.sh"  # Will run at the end of the sourcing of this file, for convenient debugging. Put whatever you want in such a file and change the address if you will.
+
 CUSTOM_ALIASES=$(eval "$_alias_names_query")  # will only be ready by the time this file's reading is done
 declare -A CUSTOM_ALIASES_MAP  # use this for lookup (will be filled at the end too)
-CUSTOM_FUNCTIONS=$(declare -F | awk '{print $3}')  # will only be ready by the time this file's reading is done
+CUSTOM_FUNCTIONS=$(eval "$_function_names_query")  # will only be ready by the time this file's reading is done
 declare -A CUSTOM_FUNCTIONS_MAP  # use this for lookup (will be filled at the end too)
 
 
@@ -204,7 +207,7 @@ alias rebuild_ramfs='sudo update-initramfs -u'
 # TODO - command grep. "command_like <expression>"
 
 # One of several "help"/"manual" kind of reminders, to help the user get such info without opening the bashrc files.
-alias remindme='becho "Find various cheatsheets by typing commands that start with \"howdoi\" or list bashrc options with command \"list_cmds\""'
+alias list_cmds='remindme'
 # Synonymous to "remindme", one of several.
 alias what_commands='remindme'
 # Synonymous to "remindme", one of several. P.S. it's mispelled intentionally; don't fix it.
@@ -511,8 +514,8 @@ function _wait_n_seconds () {
 # Basic functionalities override !
 # ================================
 
-# Sources this file if the command is a function from this page.
 ## I don't know what black magic is involved, but you need both the above sudo alias and this function to support alias interpretation.
+# Sources this file if the command is a function from this page.
 function sudo () {
     # needs to be "silent" to avoid screwing up scripts that rely on the output of the sudo'd commands
     # if arg 1 (just arg 1, deal with it) is in the list of this file's functions, source this file. Otherwise, run sudo regularly.
@@ -546,6 +549,48 @@ function date () {
 
 # Basic functionalities
 # =====================
+
+# get a list of custom commands. Optional flags: --show_hidden: include functions made only for other functions' use ; --include_line_num: self-explanatory ; 
+function remindme () {
+    # declare -p CUSTOM_FUNCTIONS
+    show_hidden=''
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+            '--show_hidden')
+    			show_hidden='true'
+    			shift 1
+    			continue
+    		;;
+            *)
+                recho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+    			shift
+    		;;
+        esac
+    done
+
+    declare -A unoriginal_map
+    unoriginal=('sudo' 'cd' 'mkdir' )  # list of overwritten shell commands 
+    for command in $unoriginal; do unoriginal_map[$command]='1'; done  # map, for faster lookup
+
+    declare -p CUSTOM_FUNCTIONS
+    # cmd_list=()
+    declare -A line_to_cmd
+    while read -r func; do
+        if [ -z "$show_hidden" ] && [[ "${func:0:1}" == '_' ]]; then continue; fi  # if not showing hidden functions and current function starts with '_', skip it
+
+        # we already have the function, we need the documentation. And maybe also line number.
+        expression="^\s*function\s+${func}\s*\(\)\s*{"
+        line_num=$( grep -nE "$expression" "$THIS_FILE" | cut -d: -f1 )  # get line number
+        matched=$(grep -B 2 -E "$expression" "$THIS_FILE")  # match declaration and 2 rows above for comments
+        matched=$(echo "$matched" | grep -E '^#[^#]')  # keep only comments, but not if they start with "##", those are for the maintaining of the function rather than understanding how it works
+        matched=$(echo "${matched}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
+        line_to_cmd["$line_num"]="$(echo "$func") $(yecho "$matched")"
+    done <<< "$CUSTOM_FUNCTIONS"
+
+    cmd_list=$(for key in "${!line_to_cmd[@]}"; do echo "$key ${line_to_cmd[$key]}"; done | sort -n -k2)  # sorted by line-number
+    echo "$(becho The following commands were overridden, but still have a similar functionality:)  $(printf "%s, " "${unoriginal[@]}" | sed 's/, $//')"
+    for i in "${cmd_list[@]}"; do echo "$i" ; done
+}
 
 # man grep - find word in manual, with a bit of context (lines above/below). $1 is command (to manual), $2 is word to find
 function mang () {
@@ -1518,13 +1563,15 @@ banner="
 
 CUSTOM_ALIASES=$( comm -23 <( eval "$_alias_names_query" | sort) <( echo "$CUSTOM_ALIASES" | sort) )  # keep list of (only) aliases that were added between now and the start of the file
 for ali in $CUSTOM_ALIASES; do CUSTOM_ALIASES_MAP[$ali]='1'; done  # fill a lookup hashmap (wanted hashset, but that's the closest I can get)
-CUSTOM_FUNCTIONS=$( comm -23 <( declare -F | awk '{print $3}' | sort) <( echo "$CUSTOM_FUNCTIONS" | sort) )  # keep list of (only) functions that were added between now and the start of the file
+CUSTOM_FUNCTIONS=$( comm -23 <( eval "$_function_names_query" | sort) <( echo "$CUSTOM_FUNCTIONS" | sort) )  # keep list of (only) functions that were added between now and the start of the file
 for func in $CUSTOM_FUNCTIONS; do CUSTOM_FUNCTIONS_MAP[$func]='1'; done  # fill a lookup hashmap (wanted hashset, but that's the closest I can get)
 
 
 ! _is_user_root && echo "$(gecho "Finished loading") \"$THIS_FILE\" for: \"`readlink -f $0`\""  # if user is root (sudo running), be quiet
 
 [ -e "$SCRIPTS_BASHRC_FILE" ] && source "$SCRIPTS_BASHRC_FILE"  # if the file for it exists, source bashrc functions that activate various external scripts
+
+[ -e "$TESTS_FILE" ] && ! _is_user_root && source "$TESTS_FILE"  # run the tests file if it exists and we're not in sudo mode
 
 
 #  TODO - put as a top pane in tmux window. Needs to be in a different pane because I can't find a way to make it play without interrupting key input or disrupting it and keeping the first char in the input.
