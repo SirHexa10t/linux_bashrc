@@ -13,11 +13,13 @@ file_names=$(ls "$SCRIPTS_PATH")
 # Loop through the list of files and create a function for each
 while IFS= read -r filename; do
     function_name=${filename%.*}  # keep the file name but not the ending suffix
-    eval "function ${function_name} () { "$SCRIPTS_PATH/$filename"; }"
+    extension=${filename##*.}  # gets file-type or entire filename if there's no file-type
+    [[ "$extension" == "$function_name" ]] && extension='generic'  # to avoid having functions for no-extention files named "fooname_fooname", we'll write "generic" as the file-type
+    eval "function ${extension}_${function_name} () { "$SCRIPTS_PATH/$filename"; }"
 done <<< "$file_names"
 
 
-_confirm_loaded
+py__confirm_loaded
 loading_success=$( [ "$?" -eq 0 ] && gecho "Successfully loaded" || recho "Failed loading" )
 ! _is_user_root && echo "$loading_success scripts file \"$SCRIPTS_BASHRC_FILE\""  # if user is root (sudo running), be quiet
 

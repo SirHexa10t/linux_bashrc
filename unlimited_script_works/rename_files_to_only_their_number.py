@@ -24,11 +24,11 @@ END = '\033[0m'
 
 # For all files in the directory
 for filename in os.listdir('.'):
-    match = re.match(r'.*-(\d+)\.jpg', filename)  # Extract the number from the filename
+    match = re.match(r'.*-(\d+)\.(\w+)', filename)  # Extract the number from the filename
     if match:
         # If a match is found, rename the file
-        new_filename = match.group(1) + '.jpg'
-        # os.rename(filename, new_filename)
+        new_filename = match.group(1) + '.' + match.group(2)
+        os.rename(filename, new_filename)
         # Print a message with colored filenames
         print(f'Renamed {RED}{filename}{END} to {GREEN}{new_filename}{END}')
 
