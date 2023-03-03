@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Notice: changing this file would probably break it very easily. If you want to make changes, do them gradually.
+# This file calls script files in another location (relative to own location) in definitions that makes them accessible as terminal commands
+
+SCRIPTS_FOLDER='unlimited_script_works'  # name of the folder within this project. Change it if you want, just be aware this could break.
+SCRIPTS_PATH="$THIS_FOLDER/$SCRIPTS_FOLDER"  # uses argument from custom_bashrc.
+
+
+
+file_names=$(ls "$SCRIPTS_PATH")
+
+# Loop through the list of files and create a function for each
+while IFS= read -r filename; do
+    function_name=${filename%.*}  # keep the file name but not the ending suffix
+    eval "function ${function_name} () { "$SCRIPTS_PATH/$filename"; }"
+done <<< "$file_names"
+
+
+_confirm_loaded
+loading_success=$( [ "$?" -eq 0 ] && gecho "Successfully loaded" || recho "Failed loading" )
+! _is_user_root && echo "$loading_success scripts file \"$SCRIPTS_BASHRC_FILE\""  # if user is root (sudo running), be quiet
+

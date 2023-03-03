@@ -24,11 +24,15 @@
 #################################################################################
 _alias_names_query='alias | grep -E "^alias" | sed "s/^alias \([^=]*\)=.*/\1/"'  # this is needed very early (and very late) for lookup of existing aliases
 
+# uses a later variable definition to determine if the script runs for user: "root"
+function _is_user_root () { if [ "$IS_USER_ROOT" = true ]; then return 0; else return 1; fi  }
 
 # Session data
 #################################################################################
 SUDO_FILE=$(which sudo)
 THIS_FILE=$(readlink -f -- "$BASH_SOURCE")
+THIS_FOLDER=$(dirname "$THIS_FILE")
+SCRIPTS_BASHRC_FILE="$THIS_FOLDER/script_calls_bashrc"  # optional extention file
 IS_USER_ROOT=$(if [ "$USER" == "root" ]; then echo "true"; else echo "false"; fi)
 
 CUSTOM_ALIASES=$(eval "$_alias_names_query")  # will only be ready by the time this file's reading is done
@@ -37,7 +41,7 @@ CUSTOM_FUNCTIONS=$(declare -F | awk '{print $3}')  # will only be ready by the t
 declare -A CUSTOM_FUNCTIONS_MAP  # use this for lookup (will be filled at the end too)
 
 
-# My settings / constants
+# My settings / constants (customize this to your needs/liking)
 #################################################################################
 QEMU_VOLUME_UUID='A80899A4089971D4'
 LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
@@ -56,8 +60,7 @@ HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the c
 # before adding a bind, check whether it's already taken, by running "bind -p". You'd generally be overwriting existing binds, but some of them such as CTRL+M cause problems when you overwrite
 # To define it only if the shortcut doesn't exist, run a command like this:   if ! bind -q "\C-w"; then bind '"\C-w": "exit\n"'; fi
 
-if [ "$IS_USER_ROOT" = false ]; then  # no binding keys when running as root.
-
+if ! _is_user_root; then  # no binding keys when running as root.
     # Bash terminal related 
     # =====================
 
@@ -1471,7 +1474,7 @@ banner="
         time_start=$(date +%s.%N)
 
         i=$(( (i+1) % $runner_frames_count ))  # which frame gets drawn (loop)
-        window_dist=$((d - banner_width-1))  # ternary - extra distance of runner past banner, minimum is 0 (starts counting up once banner is full)  # -1 for the newline char
+        window_dist=$((d - banner_width-1))  # extra distance of runner past banner, minimum is 0 (starts counting up once banner is full)  # -1 for the newline char
         runner_width_still_visible=$((total_run - d))  # how much of the runner gets drawn (drawn fully until reaching the wall).
 
         banner_sprite=$(_reveal_n_first_columns "$d" "$banner")
@@ -1507,7 +1510,6 @@ banner="
         echo -e "$erase_final" | pv -qL 200  # erase line by line
         echo -ne "\033[u"  # Restore cursor position  # TODO - make this conditional; only if used only whitespaces (deleted the banner), go back.
     fi
-    # echo -e "$(paste -d ' ' <(echo "$banner_final") <(echo "$space_window_final") )"
 
 }
 
@@ -1519,8 +1521,10 @@ for ali in $CUSTOM_ALIASES; do CUSTOM_ALIASES_MAP[$ali]='1'; done  # fill a look
 CUSTOM_FUNCTIONS=$( comm -23 <( declare -F | awk '{print $3}' | sort) <( echo "$CUSTOM_FUNCTIONS" | sort) )  # keep list of (only) functions that were added between now and the start of the file
 for func in $CUSTOM_FUNCTIONS; do CUSTOM_FUNCTIONS_MAP[$func]='1'; done  # fill a lookup hashmap (wanted hashset, but that's the closest I can get)
 
-# if user is root (sudo running), be quiet
-if [ "$IS_USER_ROOT" = false ]; then echo "Finished loading \"$THIS_FILE\" for: \"`readlink -f $0`\""; fi
+
+! _is_user_root && echo "$(gecho "Finished loading") \"$THIS_FILE\" for: \"`readlink -f $0`\""  # if user is root (sudo running), be quiet
+
+[ -e "$SCRIPTS_BASHRC_FILE" ] && source "$SCRIPTS_BASHRC_FILE"  # if the file for it exists, source bashrc functions that activate various external scripts
 
 
 #  TODO - put as a top pane in tmux window. Needs to be in a different pane because I can't find a way to make it play without interrupting key input or disrupting it and keeping the first char in the input.
