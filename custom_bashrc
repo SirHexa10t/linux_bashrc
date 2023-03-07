@@ -33,16 +33,15 @@ function _is_user_root () { if [ "$IS_USER_ROOT" = true ]; then return 0; else r
 SUDO_FILE=$(which sudo)
 THIS_FILE=$(readlink -f -- "$BASH_SOURCE")
 THIS_FOLDER=$(dirname "$THIS_FILE")
-SCRIPTS_BASHRC_FILE="$THIS_FOLDER/script_calls_bashrc"  # optional extention file
-IS_USER_ROOT=$(if [ "$USER" == "root" ]; then echo "true"; else echo "false"; fi)
-
 TESTS_FILE="$THIS_FOLDER/run_tests.sh"  # Will run at the end of the sourcing of this file, for convenient debugging. Put whatever you want in such a file and change the address if you will.
+SCRIPTS_BASHRC_FILE="$THIS_FOLDER/script_calls_bashrc"  # optional extention file
+IS_USER_ROOT=$(if [ "$USER" = "root" ]; then echo "true"; else echo "false"; fi)
+IS_FIRST_SOURCING=$([ ! -v CUSTOM_ALIASES_INITIAL ] && echo 'true' || echo 'false')
 
-CUSTOM_ALIASES=$(eval "$_alias_names_query")  # will only be ready by the time this file's reading is done
-declare -A CUSTOM_ALIASES_MAP  # use this for lookup (will be filled at the end too)
-CUSTOM_FUNCTIONS=$(eval "$_function_names_query")  # will only be ready by the time this file's reading is done
-declare -A CUSTOM_FUNCTIONS_MAP  # use this for lookup (will be filled at the end too)
-
+if [ "$IS_FIRST_SOURCING" = true ]; then  # only do if not defined already (can happen if you source this file again), in which case, previous iteration's values are the right ones
+    CUSTOM_ALIASES_INITIAL=$(eval "$_alias_names_query")
+    CUSTOM_FUNCTIONS_INITIAL=$(eval "$_function_names_query")
+fi
 
 # My settings / constants (customize this to your needs/liking)
 #################################################################################
@@ -203,8 +202,8 @@ alias rebuild_ramfs='sudo update-initramfs -u'
 # function aliases (alternate names)
 # ==================================
 
-# Synonymous to "remindme".
-alias list_cmds='remindme'
+# Synonymous to "remindme" with extra information (less useful to user).
+alias list_cmds='remindme --show_hidden --include_line_num'
 # Synonymous to "remindme".
 alias what_commands='remindme'
 ## Mispelled intentionally; don't fix it.
@@ -491,7 +490,55 @@ function _prompt_yn() {
     done
 }
 
+# turn a list into a hashmap; you need to evaluate the output (can't return a hashmap directly)
+# call like this: eval $(_hashmap_instructions --hm_name 'my_hashmap' --list "${my_list_var[@]}")
+function _hashmap_instructions () {
+    hashmap_name='' ; the_list=''
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+            '--hm_name')
+    			hashmap_name="$2"
+    			shift 2
+    			continue
+    		;;
+            '--list')  # MUST come last!
+                shift 1
+    			the_list="$@"
+                while [ "$#" -gt 0 ]; do shift; done  # no more args, shift them all.
+    			continue
+    		;;
+            *)
+                recho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+    			shift
+    		;;
+        esac
+    done
 
+    [ -z "$hashmap_name" ] && recho "no name provided for your hashmap" && return 1
+    [ -z "$the_list" ] && recho "no list provided" && return 1
+
+    hasmap_builder="declare -A $hashmap_name=("
+    for item in $the_list; do hasmap_builder+=" [$item]='1'"; done 
+    hasmap_builder+=")"
+    
+    # "return" the hashmap-creation string that needs to be evaluated
+    echo "$hasmap_builder"
+}
+
+# gets variable name, evaluates it and returns hashmap-creation-string for same varname with suffix _map or _MAP
+# call like this: eval $(_hashmap_this_var 'list_name')
+function _hashmap_this_var () {
+    [ "$#" -eq 1 ] || { recho "You need to provide variable-name as an argument" ; return ; }  # TODO - check this file for all places where "ge 1" was used, maybe mistakenly instead of "eq 1"
+    
+    # uses the '=' to avoid screwing up a substring in the declaration prior to var-name
+    eval $(declare -p "$1" | sed "s/${1}=/new_list=/")  # get list declaration and declare it for a name we know locally
+
+    [[ ${new_list[@]} == "" ]] && return 1  # list is empty (variable was initialized as empty string) - nothing to do
+
+
+    hm_suffix=$([[ "${1}" == "${1^^}" ]] && echo "MAP" || echo "map")  # if completely capitalized, suffix is _MAP, otherwise it's _map
+    _hashmap_instructions --hm_name "${1}_${hm_suffix}" --list "${new_list[@]}"
+}
 
 # Basic functionalities override !
 # ================================
@@ -562,10 +609,8 @@ function remindme () {
         esac
     done
 
-    declare -A unoriginal_map
     unoriginal=('sudo' 'man' 'cd' 'mkdir' 'cp' 'date' 'apt')  # list of overwritten shell commands 
-    for command in "${unoriginal[@]}"; do unoriginal_map[$command]='1'; done  # map, for faster lookup
-
+    eval $(_hashmap_this_var 'unoriginal')  # create hashmap: unoriginal_map
 
     declare -A line_to_cmd  # map of line number to respective command definition (name and comment)
 
@@ -573,43 +618,41 @@ function remindme () {
     # TODO - if not "sort", print categories by finding the line above "# =="
     # TODO - once tags are added, (color-)mark some commands as "useful"; specifically those you can use often
 
-    # aliases
-    while read -r ali; do
-        if [ -n "${unoriginal_map[$ali]}" ]; then continue; fi  # if it's an override of a known command (user already knows what it does), don't mention it - skip
 
-        # we already have the alias, we need the documentation. And maybe also line number.
-        expression="^\s*alias\s+${ali}="
-        line_num=$( grep -nE "$expression" "$THIS_FILE" | cut -d: -f1 )  # get line number
-        matched=$(grep -B 1 -E "$expression" "$THIS_FILE")  # match declaration and 1 row above for comments
-        matched=$(echo "$matched" | grep -E '^#[^#]' |  grep -vE '^#[[:space:]]*TODO' )  # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO
-        matched=$(echo "${matched}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
-        line_to_cmd["$line_num"]="$(echo "$ali")  $(yecho "$matched")"
-    done <<< "$CUSTOM_ALIASES"
+    function get_commands_by_expression {
+        expression_template="$1"
+        num_of_rows_above="$2"
+        cmd_names="${@:3}"  # args 3 and onwards
+
+        [ -z "$cmd_names" ] && recho 'No commands given to search!' && return
+
+        while read -r name; do
+            if [ -z "$show_hidden" ] && [[ "${name:0:1}" == '_' ]]; then continue; fi  # if not showing hidden functions and current function starts with '_', skip it
+            if [ -n "${unoriginal_map[$name]}" ]; then continue; fi  # if it's an override of a known command (user already knows what it does), don't mention it - skip
+
+            # we already have the names, we need the documentation. And maybe also line number.
+            expression=$(echo "$expression_template" | sed "s/<name>/$name/")
+            line_num=$( grep -nE "$expression" "$THIS_FILE" | cut -d: -f1 )  # get line number
+            matched=$(grep -B "$num_of_rows_above" -E "$expression" "$THIS_FILE")  # match declaration and some rows above for documentation
+            matched=$(echo "$matched" | grep -E '^#[^#]' |  grep -vE '^#[[:space:]]*TODO' )  # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO
+            matched=$(echo "${matched}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
+            line_to_cmd["$line_num"]="$(echo "$name")  $(yecho "$matched")"
+        done <<< "$cmd_names"
+    }
+
+    # aliases
+    get_commands_by_expression "^\s*alias\s+<name>=" 1 "$CUSTOM_ALIASES"
 
     # functions
-    while read -r func; do
-        if [ -z "$show_hidden" ] && [[ "${func:0:1}" == '_' ]]; then continue; fi  # if not showing hidden functions and current function starts with '_', skip it
-        if [ -n "${unoriginal_map[$func]}" ]; then continue; fi  # if it's an override of a known command (user already knows what it does), don't mention it - skip
-
-        # we already have the function, we need the documentation. And maybe also line number.
-        expression="^\s*function\s+${func}\s*\(\)\s*{"
-        line_num=$( grep -nE "$expression" "$THIS_FILE" | cut -d: -f1 )  # get line number
-        matched=$(grep -B 2 -E "$expression" "$THIS_FILE")  # match declaration and 2 rows above for comments
-        matched=$(echo "$matched" | grep -E '^#[^#]' |  grep -vE '^#[[:space:]]*TODO' )  # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO
-        matched=$(echo "${matched}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
-        line_to_cmd["$line_num"]="$(echo "$func")  $(yecho "$matched")"
-    done <<< "$CUSTOM_FUNCTIONS"
-
+    get_commands_by_expression "^\s*function\s+<name>\s*\(\)\s*{" 2 "$CUSTOM_FUNCTIONS"
 
     cmd_list=$(for key in "${!line_to_cmd[@]}"; do echo "$key ${line_to_cmd[$key]}"; done )  # include line-number for possible sorting
     [ -n "$sort" ] && cmd_list=$(echo "$cmd_list" | sort -k2) || cmd_list=$(echo "$cmd_list" | sort -n -k1) # If user specified alphabetical sorting, sort by command name. Otherwise sort by line num
     [ -z "$include_line_num" ] && cmd_list=$(echo "$cmd_list" | cut -d" " -f2-)  # if flag not specified, remove line numbers
-    # if [ -n "$include_line_num" ]; then  #
 
-    # fi
-    # cmd_list=$([ -n "$include_line_num" ] && echo "$key ")  # keep the line numb
+
     echo "$(becho The following commands were overridden, but retain their original functionality:)  $(printf "%s, " "${unoriginal[@]}" | sed 's/, $//')"
-    for i in "${cmd_list[@]}"; do echo "$i" ; done
+    echo "$cmd_list"
 }
 
 # man grep - find word in manual, with a bit of context (lines above/below).
@@ -903,21 +946,21 @@ function resources_used () {
 
     # human-users lookup    
     human_users=$(list_human_users --max_uid 2000)
-    declare -A h_users && for user in $human_users; do h_users[$user]='1'; done  # same, as hashset
+    eval $(_hashmap_this_var 'human_users')  # create hashmap: human_users_map
 
     current_users=$(ps -eo user= | sort | uniq)  # all current users running on the system
-    declare -A c_users && for user in $current_users; do c_users[$user]='1'; done  # same, as hashset
+    eval $(_hashmap_this_var 'current_users')  # create hashmap: current_users_map
 
     all_users=$(echo -e "$current_users\n$human_users" | sort | uniq)  # all users (joined list but kept only unique)
     headers='USER,CPU,RAM,@HOME-size'
     usage_summary=''
     for user in $all_users; do
         # determine if the line would be printed in color
-        prnt_cmd=$([ -n "${h_users[$user]}" ] && echo "gecho" || echo "echo")  # ternary for choice of command to use
+        prnt_cmd=$([ -n "${human_users_map[$user]}" ] && echo "gecho" || echo "echo")  # ternary for choice of command to use
         # CPU usage%, "-" if not in "current_users" (users in process list)
-        cpu_usage=$([ -n "${c_users[$user]}" ] && echo $(ps -u $user -o %cpu,%pid | awk '{cpu+=$1} END {printf "%.2f%%\n", cpu/'$thread_count'}') || echo "-")  # user's CPU usage. Divided by num of threads because a ps line with 100% is just 100% single-thread, not 100% on all cores
+        cpu_usage=$([ -n "${current_users_map[$user]}" ] && echo $(ps -u $user -o %cpu,%pid | awk '{cpu+=$1} END {printf "%.2f%%\n", cpu/'$thread_count'}') || echo "-")  # user's CPU usage. Divided by num of threads because a ps line with 100% is just 100% single-thread, not 100% on all cores
         # RAM usage%, "-" if not in "current_users" (users in process list)
-        mem_usage=$([ -n "${c_users[$user]}" ] && echo $(ps -u $user -o %mem= | awk '{mem+=$1} END {print mem"%"}') || echo "-")  # user's RAM usage
+        mem_usage=$([ -n "${current_users_map[$user]}" ] && echo $(ps -u $user -o %mem= | awk '{mem+=$1} END {print mem"%"}') || echo "-")  # user's RAM usage
         # Disk usage of user's home-dir. "-" if home-dir doesn't exist
         disk_usage=$([ -d "/home/$user" ] && echo $($maybe_sudo du -sh "/home/$user" | cut -f1) || echo "-")  # specify home-dir disk usage (if applicable)
 
@@ -1619,18 +1662,23 @@ banner="
 
 }
 
+
+
 # Finishing touches (parsing this file and announcing that we're done to user)
 #################################################################################
 
-CUSTOM_ALIASES=$( comm -23 <( eval "$_alias_names_query" | sort) <( echo "$CUSTOM_ALIASES" | sort) )  # keep list of (only) aliases that were added between now and the start of the file
-for ali in $CUSTOM_ALIASES; do CUSTOM_ALIASES_MAP[$ali]='1'; done  # fill a lookup hashmap (wanted hashset, but that's the closest I can get)
-CUSTOM_FUNCTIONS=$( comm -23 <( eval "$_function_names_query" | sort) <( echo "$CUSTOM_FUNCTIONS" | sort) )  # keep list of (only) functions that were added between now and the start of the file
-for func in $CUSTOM_FUNCTIONS; do CUSTOM_FUNCTIONS_MAP[$func]='1'; done  # fill a lookup hashmap (wanted hashset, but that's the closest I can get)
+if [ "$IS_FIRST_SOURCING" = true ]; then
+    CUSTOM_ALIASES=$( comm -23 <( eval "$_alias_names_query" | sort) <( echo "$CUSTOM_ALIASES_INITIAL" | sort) )  # keep list of (only) aliases that were added between now and the start of the file
+    eval $(_hashmap_this_var 'CUSTOM_ALIASES')  # create hashmap: CUSTOM_FUNCTIONS_MAP
+    CUSTOM_FUNCTIONS=$( comm -23 <( eval "$_function_names_query" | sort) <( echo "$CUSTOM_FUNCTIONS_INITIAL" | sort) )  # keep list of (only) functions that were added between now and the start of the file
+    eval $(_hashmap_this_var 'CUSTOM_FUNCTIONS')  # create hashmap: CUSTOM_FUNCTIONS_MAP
+
+    # source commands that call scripts in other languages
+    [ -e "$SCRIPTS_BASHRC_FILE" ] && source "$SCRIPTS_BASHRC_FILE"  # if the file for it exists, source bashrc functions that bring over to the terminal various external scripts
+fi
 
 
-! _is_user_root && echo "$(gecho "Finished loading") \"$THIS_FILE\" for: \"`readlink -f $0`\""  # if user is root (sudo running), be quiet
-
-[ -e "$SCRIPTS_BASHRC_FILE" ] && source "$SCRIPTS_BASHRC_FILE"  # if the file for it exists, source bashrc functions that activate various external scripts
+! _is_user_root && echo "$(gecho "Finished loading") \"$THIS_FILE\" for: \"`readlink -f $0`\". To view added commands, run: $(becho remindme)"  # if user is root (sudo running), be quiet
 
 [ -e "$TESTS_FILE" ] && ! _is_user_root && source "$TESTS_FILE"  # run the tests file if it exists and we're not in sudo mode
 

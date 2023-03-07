@@ -6,9 +6,10 @@
 SCRIPTS_FOLDER='unlimited_script_works'  # name of the folder within this project. Change it if you want, just be aware this could break.
 SCRIPTS_PATH="$THIS_FOLDER/$SCRIPTS_FOLDER"  # uses argument from custom_bashrc.
 
-
+CONFIRMATION_CMD='py__confirm_loaded'  # a call to a script added in just to confirm that the rest of the scripts are reached right 
 
 file_names=$(ls "$SCRIPTS_PATH")
+
 
 # Loop through the list of files and create a function for each
 while IFS= read -r filename; do
@@ -19,7 +20,16 @@ while IFS= read -r filename; do
 done <<< "$file_names"
 
 
-py__confirm_loaded
+function list_script_calls () {
+    echo "$SCRIPTS_FILE_FUNCTIONS"
+}
+
+
+SCRIPTS_FILE_FUNCTIONS=$(eval "$_function_names_query")  # get all current functions
+SCRIPTS_FILE_FUNCTIONS=$( comm -23 <( echo "$SCRIPTS_FILE_FUNCTIONS" | sort) <( echo "$CUSTOM_FUNCTIONS_INITIAL" | sort) )  # keep list of (only) functions that weren't there before main bashrc
+SCRIPTS_FILE_FUNCTIONS=$( comm -23 <( echo "$SCRIPTS_FILE_FUNCTIONS" | sort) <( echo "$CUSTOM_FUNCTIONS" | sort) )  # keep list of (only) functions that were added since main bashrc reached its end
+
+"$CONFIRMATION_CMD"
 loading_success=$( [ "$?" -eq 0 ] && gecho "Successfully loaded" || recho "Failed loading" )
-! _is_user_root && echo "$loading_success scripts file \"$SCRIPTS_BASHRC_FILE\""  # if user is root (sudo running), be quiet
+! _is_user_root && echo "$loading_success scripts file \"$SCRIPTS_BASHRC_FILE\". To view added script-call commands, run: $(becho list_script_calls)"  # if user is root (sudo running), be quiet
 
