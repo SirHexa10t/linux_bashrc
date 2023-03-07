@@ -51,8 +51,6 @@ LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
 
 HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
-# TODO - define a quick-run file. It would contain a command/script for testing (such as running a python program somewhere). Running it would be easily done through an alias of just 2-3 letters 
-
 
 # My binds
 #################################################################################
@@ -70,8 +68,9 @@ if ! _is_user_root; then  # no binding keys when running as root.
     # CTRL+H : basically "help"
     bind -x '"\C-h": "remindme"$\r$\n'
 
+    # print this, so the user can rerun this easily for function tests
     # ALT+N : refresh bash terminal
-    bind '"\en": "exec bash\n"'  # print this, so the user can rerun this easily for function tests
+    bind '"\en": "exec bash\n"'
 
     # CTRL+Z : undo the regular CTRL+Z ; resume background-process UI 
     # bind -x '"\C-z": "fg"$\r$\n'
@@ -100,10 +99,8 @@ fi
 # Basic functionalitiy override !
 # ===============================
 
-# TODO - make sudo reload this file silently
-# TODO - colored code (comments one color, function/alias name another color, code (for alias) another color). Text within quotes in yellow maybe
-# TODO - put aliases and functions in "remindme" (and add screenshot to README). Don't put comments with 2 hashes (##)
-# TODO - lookup within "remindme" (maybe just add a flag, but then maybe it should be named something else, like "available_cmds")
+# TODO - add remindme's screenshot to README
+# TODO - lookup (grep) within "remindme"
 # TODO - "whatnow" - tag commands (things like "network" or "visual" or "filesystem") and list the tags for (optional) interactive picking 
 # TODO - find all "] &&" and see that they operate fine
 
@@ -116,7 +113,8 @@ function _is_pkg_installed () {
     if [ "${is_pkg_installed}" == "install ok installed" ]; then return 0; else return 1; fi
 }
 
-# Returns true if pacakge is installed, false + user-message if not. Provide package name as arg 1.
+# Returns true if pacakge is installed, false + user-message if not.
+# arg 1: package name
 function _announce_pkg_installed () {
     if _is_pkg_installed "$1" ; then return 0; else echo "Can't use package '$1', consider installing it."; return 1; fi
 } 
@@ -141,16 +139,17 @@ _announce_pkg_installed 'rsync' && alias cp='rsync -ah --info=progress2'
 
 # ----- Lookups / Getting-info
 
-# just shorter grep, case insensitive (i), and no regex involved (F)
+# grep, case insensitive (i), and no regex involved (F)
 alias g='grep -iF --color=auto'
 
-# grep, but catches 3 lines before/after (+6 total) match 
+# grep, catches 3 lines before/after (+6 total) match, case insensitive (i), and no regex involved (F)
 alias g3='grep -iF --color=auto -C 3'
 
-# take ownership of file (add file-name after this command) # TODO - maybe make into a function that prints the chowned files (distinguishing the filenames from $@ is difficult though)
+# TODO - maybe make into a function that prints the chowned files (distinguishing the filenames from $@ is difficult though)
+# take ownership of file (add file-name after this command) 
 alias claim='sudo chown $USER:$USER'
 
-# grepped history
+# history grep
 alias hg='history | grep -iF --color=auto'
 
 # TODO - if you ever find out how to put this in a table without messing up filenames with spaces, fix this 
@@ -201,20 +200,22 @@ alias rebuild_boot='sudo update-grub'
 alias rebuild_ramfs='sudo update-initramfs -u'
 
 
-# Cheatsheets
-# =================
+# function aliases (alternate names)
+# ==================================
 
-# TODO - command grep. "command_like <expression>"
-
-# One of several "help"/"manual" kind of reminders, to help the user get such info without opening the bashrc files.
+# Synonymous to "remindme".
 alias list_cmds='remindme'
-# Synonymous to "remindme", one of several.
+# Synonymous to "remindme".
 alias what_commands='remindme'
-# Synonymous to "remindme", one of several. P.S. it's mispelled intentionally; don't fix it.
+## Mispelled intentionally; don't fix it.
+# Synonymous to "remindme".
 alias i_forgor='remindme'
-# short for "ps grep".
+# Synonymous to "find_proc". psg is short for "ps grep"
 alias psg='find_proc'
 
+
+# Cheatsheets
+# =================
 
 # Reminders for linux system tools and command options
 alias howdoi_linux='echo "
@@ -307,7 +308,7 @@ alias howdoi_android='echo "
 * scrcpy -r <filename.mp4>  # save a video recording of your connected android device activity (needs USB-Debug and File-Transfer mode)
 "'
 
-# Reminders for docker
+# Reminders for network management
 alias howdoi_network='echo "
 >> Own network info
 * ip addr  # display own networking interfaces
@@ -399,7 +400,7 @@ TODO - create functions that run these commands interactively (like listing, the
 
 # TODO - cargo (maven-like manager) cheatsheet. Reference: https://www.youtube.com/watch?v=zF34dRivLOw
 
-
+# Reminders for ascii-related commands and handling
 alias howdoi_ascii='echo "
 # Create ASCII writings in this site: http://patorjk.com/software/taag/
 * figlet <text>  # write ASCII styled text, different fonts are also supported
@@ -424,13 +425,10 @@ alias howdoi_shortcut='echo "
 "'
 
 
-# function aliases (alternate names)
-# ==================================
-
-
 # Custom
 # ======
 
+# Ad-Hoc screen layout rearrangement (sometimes they get messed up; maybe it's an Nvidia-Linux problem)
 alias arrange_monitors='nvidia-settings --load-config-only && nvidia-settings --assign CurrentMetaMode="HDMI-0: nvidia-auto-select +1920+1080, DP-0: nvidia-auto-select +1920+0, DP-2: nvidia-auto-select +3840+1080, DP-4: 1920x1080_240 +0+1080"'
 
 
@@ -451,10 +449,10 @@ alias arrange_monitors='nvidia-settings --load-config-only && nvidia-settings --
 
 # TODO - a "checksum" function that gets both file to checksum and the checksum-result file, determines which is which, runs the appropriate checksum on the file and compares with the result file; prints the match result 
 
-# Common commands - just for the use of other functions
-# =====================================================
+# Common operations - just for the use of functions
+# =================================================
 
-# Attempt to run command. If it fail, run with sudo. Don't provide a multi-part (pipe-inclusive) command.
+# attempt to run command given command (args) - if it fails, run with sudo
 function _sudo_if_necessary () {
     [ $# -ge 1 ] || { recho "WTF are you expecting me to sudo? Give me a command-string as argument" ; return ; }
 
@@ -462,13 +460,9 @@ function _sudo_if_necessary () {
     [ $? -ne 0 ] && eval "sudo $@" || echo "$normal_output"
 }
 
-function _count_lines () {
-    echo "$1" | wc -l
-}
-
 # useful for drawings or neat concatenating of tables like so: 'paste <(_pad_end_w_spaces "$(df -h)") <(_pad_end_w_spaces "$(df -hi)") <(_pad_end_w_spaces "$(df -hi)")'
-# add spaces to the end of lines so that the block of text would be a rectangle; i.e. end uniformly on the same column. Use like so:  _pad_end_w_spaces "$(lsblk)"  or   lsblk | _pad_end_w_spaces
-# DOES NOT work on color-coded text! The color info adds in as extra characters and makes the text look uneven!
+# Append spaces to text lines for a rectangular look; i.e. end uniformly on the same column.
+# Also works with pipes. Could be problematic for table formatting if color is involved (colors are extra unseen chars)
 function _pad_end_w_spaces() {
     text="$1"  # assume that text is provided as an argument
     if [ -z "$text" ] && ! [ -t 0 ]; then text=$(cat); fi  # if no text given and there's a stream from a pipe, get the stream contents as text
@@ -482,7 +476,7 @@ function _get_dev_name_from_uuid () {
     blkid | grep "UUID=\"$1\"" | awk -F: '{print $1}'
 }
 
-# adds y/n prompt. Call like this:  if prompt_yn "are you sure you want to do that?"; then echo "alright..."; else echo "then lets call it off" && return ; fi
+# adds y/n prompt. Call like this:  if prompt_yn "<prompt q>?"; then echo "<starting-process msg>"; else echo "<cancellation msg>" && return ; fi
 function _prompt_yn() {   
     response=""
     # keep prompting the user until they provide a valid response
@@ -497,18 +491,6 @@ function _prompt_yn() {
     done
 }
 
-# wait $1 seconds, print a dot for each second passed.
-function _wait_n_seconds () {
-    printf "Waiting $1 seconds"
-    for ((i=0; i<$1; i++))
-    do
-        printf "."  # Print a dot and flush the output to ensure that it is printed immediately
-        sleep 1
-    done
-
-    printf "\n" # Print a newline after the dots
-}
-
 
 
 # Basic functionalities override !
@@ -518,7 +500,7 @@ function _wait_n_seconds () {
 # Sources this file if the command is a function from this page.
 function sudo () {
     # needs to be "silent" to avoid screwing up scripts that rely on the output of the sudo'd commands
-    # if arg 1 (just arg 1, deal with it) is in the list of this file's functions, source this file. Otherwise, run sudo regularly.
+    # if arg 1 (only arg 1 supported, deal with it) is in the list of this file's functions, source this file. Otherwise, run sudo regularly.
     if [ -n "${CUSTOM_FUNCTIONS_MAP[$1]}" ]; then
         custom_function_cmd="source $THIS_FILE && $@"
         "$SUDO_FILE" bash -c "$custom_function_cmd"
@@ -550,14 +532,26 @@ function date () {
 # Basic functionalities
 # =====================
 
-# get a list of custom commands. Optional flags: --show_hidden: include functions made only for other functions' use ; --include_line_num: self-explanatory ; 
+# TODO - command grep. "command_like <expression>"
+# list custom commands.
+# --show_hidden (list inner-workings commands) ; --sort (sort alphabetically) ; --include_line_num
 function remindme () {
     # declare -p CUSTOM_FUNCTIONS
-    show_hidden=''
+    show_hidden='' ; include_line_num='' ; sort=''
     while [[ $# -gt 0 ]]; do
     	case "$1" in
             '--show_hidden')
     			show_hidden='true'
+    			shift 1
+    			continue
+    		;;
+            '--include_line_num')
+    			include_line_num='true'
+    			shift 1
+    			continue
+    		;;
+            '--sort')
+    			sort='true'
     			shift 1
     			continue
     		;;
@@ -569,35 +563,62 @@ function remindme () {
     done
 
     declare -A unoriginal_map
-    unoriginal=('sudo' 'cd' 'mkdir' )  # list of overwritten shell commands 
-    for command in $unoriginal; do unoriginal_map[$command]='1'; done  # map, for faster lookup
+    unoriginal=('sudo' 'man' 'cd' 'mkdir' 'cp' 'date' 'apt')  # list of overwritten shell commands 
+    for command in "${unoriginal[@]}"; do unoriginal_map[$command]='1'; done  # map, for faster lookup
 
-    declare -p CUSTOM_FUNCTIONS
-    # cmd_list=()
-    declare -A line_to_cmd
+
+    declare -A line_to_cmd  # map of line number to respective command definition (name and comment)
+
+    # TODO - list key binds too
+    # TODO - if not "sort", print categories by finding the line above "# =="
+    # TODO - once tags are added, (color-)mark some commands as "useful"; specifically those you can use often
+
+    # aliases
+    while read -r ali; do
+        if [ -n "${unoriginal_map[$ali]}" ]; then continue; fi  # if it's an override of a known command (user already knows what it does), don't mention it - skip
+
+        # we already have the alias, we need the documentation. And maybe also line number.
+        expression="^\s*alias\s+${ali}="
+        line_num=$( grep -nE "$expression" "$THIS_FILE" | cut -d: -f1 )  # get line number
+        matched=$(grep -B 1 -E "$expression" "$THIS_FILE")  # match declaration and 1 row above for comments
+        matched=$(echo "$matched" | grep -E '^#[^#]' |  grep -vE '^#[[:space:]]*TODO' )  # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO
+        matched=$(echo "${matched}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
+        line_to_cmd["$line_num"]="$(echo "$ali")  $(yecho "$matched")"
+    done <<< "$CUSTOM_ALIASES"
+
+    # functions
     while read -r func; do
         if [ -z "$show_hidden" ] && [[ "${func:0:1}" == '_' ]]; then continue; fi  # if not showing hidden functions and current function starts with '_', skip it
+        if [ -n "${unoriginal_map[$func]}" ]; then continue; fi  # if it's an override of a known command (user already knows what it does), don't mention it - skip
 
         # we already have the function, we need the documentation. And maybe also line number.
         expression="^\s*function\s+${func}\s*\(\)\s*{"
         line_num=$( grep -nE "$expression" "$THIS_FILE" | cut -d: -f1 )  # get line number
         matched=$(grep -B 2 -E "$expression" "$THIS_FILE")  # match declaration and 2 rows above for comments
-        matched=$(echo "$matched" | grep -E '^#[^#]')  # keep only comments, but not if they start with "##", those are for the maintaining of the function rather than understanding how it works
+        matched=$(echo "$matched" | grep -E '^#[^#]' |  grep -vE '^#[[:space:]]*TODO' )  # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO
         matched=$(echo "${matched}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
-        line_to_cmd["$line_num"]="$(echo "$func") $(yecho "$matched")"
+        line_to_cmd["$line_num"]="$(echo "$func")  $(yecho "$matched")"
     done <<< "$CUSTOM_FUNCTIONS"
 
-    cmd_list=$(for key in "${!line_to_cmd[@]}"; do echo "$key ${line_to_cmd[$key]}"; done | sort -n -k2)  # sorted by line-number
-    echo "$(becho The following commands were overridden, but still have a similar functionality:)  $(printf "%s, " "${unoriginal[@]}" | sed 's/, $//')"
+
+    cmd_list=$(for key in "${!line_to_cmd[@]}"; do echo "$key ${line_to_cmd[$key]}"; done )  # include line-number for possible sorting
+    [ -n "$sort" ] && cmd_list=$(echo "$cmd_list" | sort -k2) || cmd_list=$(echo "$cmd_list" | sort -n -k1) # If user specified alphabetical sorting, sort by command name. Otherwise sort by line num
+    [ -z "$include_line_num" ] && cmd_list=$(echo "$cmd_list" | cut -d" " -f2-)  # if flag not specified, remove line numbers
+    # if [ -n "$include_line_num" ]; then  #
+
+    # fi
+    # cmd_list=$([ -n "$include_line_num" ] && echo "$key ")  # keep the line numb
+    echo "$(becho The following commands were overridden, but retain their original functionality:)  $(printf "%s, " "${unoriginal[@]}" | sed 's/, $//')"
     for i in "${cmd_list[@]}"; do echo "$i" ; done
 }
 
-# man grep - find word in manual, with a bit of context (lines above/below). $1 is command (to manual), $2 is word to find
+# man grep - find word in manual, with a bit of context (lines above/below).
+# arg 1: man's target, arg 2: word to find
 function mang () {
     man "$1" | grep -iF --color=auto -C 3 -- "$2"  # the "--" allows you to lookup dashes in your expression
 }
 
-# Find processes by substring. Prints error if given no args ; prints everything if given empty string
+# Find processes by substring. Print error if given no args ; print everything if given empty string
 function find_proc () {
     [ $# -ge 1 ] || { recho "No substring provided to look through with." ; return ; }
 
@@ -605,7 +626,7 @@ function find_proc () {
     | _color_word --word "$1"  # color the sought term
 }
 
-# kill processes by substring; get process-specifications and confirmation prompt
+# kill processes by substring, with a confirmation prompt that specifies what's being killed
 function kill_interactively () {
     [ $# -ge 1 ] || { recho "You need to provide a substring to find (and later kill) processes with." ; return ; }
     
@@ -628,6 +649,7 @@ function kill_interactively () {
 # Maintenance and Update Operations
 # =================================
 
+# install from given (deb file's) URL
 function install_deb_from_url () {
     pkg_name=$(echo "$1" | awk -F/ '{print $NF}')  # get the string after last '/'
     installation_msg="Installed debian (.deb) package: $pkg_name. If you want to remove it, run: 'sudo dpkg -r $pkg_name'"
@@ -635,6 +657,8 @@ function install_deb_from_url () {
     rm "$pkg_name"  # remove .deb file
 }
 
+# Permanently append a string to PATH.
+# Add directories like "/home/<you>/.local/bin"
 function add_to_path () {
     # check if given arg is already in PATH
     if [[ $PATH == *$1* ]]; then
@@ -647,11 +671,14 @@ function add_to_path () {
     printf "From now on:\n`sudo cat /etc/environment`\n"
 }
 
-# don't worry about calling this when the device is already mounted, it won't do harm.
+# Mounts, and handles mount-dir. Safe to run when unnecessary, it'll just throw an error.
+# arg 1: uuid of device
 function mount_media_by_uuid () {
     udisksctl mount -b "/dev/disk/by-uuid/$1"  # add -t <mountpoint>  to change mount-location
 }
 
+# TODO - optimize, maybe use list_human_users() ?
+# list crontabs of all users
 function all_crontabs () {
     cat /etc/passwd | awk -F: '{ print $1; }' \
     | while read user; do
@@ -685,7 +712,8 @@ function revoke_exe_mod () {
 # ==============================
 
 
-# Archive a file locally into .tar.7z format. Provide filename as arg 1
+# Archive a file locally into .tar.7z format
+# arg 1: file-name
 function archive_tar7z () {
     [ $# -ge 1 ] || { recho "You need to tell me what to archive" ; return 1; }
     [ -e "$1" ] || { recho "This file doesn't exist!" ; return 1; }
@@ -737,7 +765,7 @@ function media_merge_audio_video () {
 
 # ----- Microsoft handling 
 
-# fix mount as read-only issue caused by Windows leaving some garbage on the disk
+# fix device-mountable-as-read-only issue, caused by Windows leaving some garbage on the disk
 function prepare_ntfs_for_writable_mount () {
     lsblk -o UUID,NAME,FSTYPE,LABEL | awk 'NR==1 || $3 == "ntfs"'
 
@@ -767,8 +795,8 @@ function prepare_ntfs_for_writable_mount () {
 # Debug and Check Operations
 # ==========================
 
-# Writes data to volume, to check its capacity. Careful not to give this function the wrong path!!!
-function check_drive_volume () {
+# Writes data to volume, to check its capacity. Careful: DESTRUCTIVE!!!
+function test_drive_volume () {
     if [ -z "$1" ]; then echo "You didn't provide a drive-name (run lsblk if you're not sure. Should be like '/dev/sdg' ). Aborting." && return 1 ; fi
     
     if _prompt_yn "Your data on $1 is about to be destroyed. Are you sure?"; then echo "Running. Don't remove the device."; else echo "Aborting." && return 1 ; fi
@@ -830,7 +858,8 @@ function devs() {
 }
 
 
-# list password-owning users with uid >= 1000. Specify uid limit with --max_uid <number>  ; only count users with home-dir with --require_home 
+# list password-owning users with uid >= 1000.
+# --max_uid <number> (listed users' uid limit)  ; --require_home (only list users with home-dir) 
 function list_human_users() {
     # defaults
     max_uid_filter=''  # no extra filtering
@@ -864,7 +893,8 @@ function list_human_users() {
 }
 
 
-# get a list of users and their resource-usage stats. Flags are --gpu : display gpu data too  ;  --not_sudo : don't ask for sudo password for checking other users' @HOME dir size
+# list users and their various resources usage.
+# --gpu (also display gpu data) ; --not_sudo (don't try to get restricted data as root)
 function resources_used () {
     maybe_sudo=$([[ " $* " =~ " --not_sudo " ]] && echo "" || echo "_sudo_if_necessary")  # if flagged, run regularly as non-superuser. If not, try inputting password in case it's necessary
 
@@ -916,7 +946,7 @@ function resources_used () {
 }
 
 
-# search network activity by port (number) or substring
+# search network activity by port (specify number) or substring
 function network_search () {
     if [ -z "$1" ]; then echo "You didn't provide anything to filter by. Aborting." && return 1 ; fi
     
@@ -927,7 +957,8 @@ function network_search () {
     fi
 }
 
-# Reports all local files size and inner-files count. Sortable by size with "-s"
+# get local files size and inner-files count
+# -s (sort by size)
 function explore () {
     location=${1:-.}  # use given address, default to current location
     location=$(readlink -f "$location")  # use absolute path (and use no '/' at the end)
@@ -965,7 +996,8 @@ function explore () {
 # Info: Lookup
 # ============
 
-# case-insensitive lookup on all files in dir (and subdirs). -d: dir (default is ".") , -e: expression , --allow_text_dumps (optional). or just put <expression> to look locally
+# case-insensitive lookup on all files in dir (and subdirs).
+# -d <dir> (specify lookup start, default is ".") ; -e <expression> (looked-up expression/substring) ; --text_limit <limit> (how long the results may be, default is maximum: 5000) ; --text_limit_short (same as --text_limit 500) ; --text_limit_medium (same as --text_limit 5000) / --text_limit_unlimited (unlimited response length)
 function supergrep () {
     [ $# -ge 1 ] || { echo "You must provide at least one argument, for the lookup-expression" ; return ; }
     # we have a text-length limit to skip gibbrish and text-dumps. It's allowed over 4k, since that's the minimum file-path length.
@@ -1062,6 +1094,7 @@ args:
 # ==============================
 
 #TODO - offer to choose a vm by number [1-n]. Need to create a function like y_n one that gets a dicitonary as an argument 
+# interactively launch looking-glass session and VM (if not running). 
 function launch_vm_w_lookingglass() {
     valid=0
     while [ $valid -eq 0 ]
@@ -1127,6 +1160,7 @@ function launch_vm_w_lookingglass() {
 
 }
 
+# interactively create a new systemd service (using templates)
 function create_systemd_service () {
     read -p "Choose the name of your service: " service_name  # Read the user's input
     service_name=${service_name%.service}  # remove the '.service' if it's there
@@ -1206,6 +1240,8 @@ EOT
 
 # Visuals
 # =======
+
+# get current row-index of cursor
 function _get_cursor_row () {
     echo -en "\033[6n" # send the control sequence to query cursor position
     read -sdR CURPOS # read cursor position from input buffer
@@ -1214,12 +1250,13 @@ function _get_cursor_row () {
     echo "$CURPOS" | sed -rn 's/^.*\[(.*)\;.*$/\1/p'
 }
 
+# get <arg 1> spaces
 function _repeat_space_n_times () {
     printf "%${1}s" | tr ' ' " "
 }
 
 # create a block of whitespace
-# arg 1 is how high the column is, arg 2 is width
+# arg 1: height (number of rows), arg 2: width (number of columns)
 function _repeat_whitespace_rows () {
     (($1 <= 0)) && return
     (($2 <= 0)) && return
@@ -1229,6 +1266,8 @@ function _repeat_whitespace_rows () {
     done
 }
 
+# print string with a similarly-lengthed line
+# arg 1: string , arg 2 (optional): line-char (default is '-')
 function _underline () {
     char=${2:-'-'}  # determine which char to repeat in underline
     input_string_length=${#1}
@@ -1239,7 +1278,8 @@ function _underline () {
     echo "$line"
 }
 
-# returns the given text with coloration of a word (case-insensitive). You can pipe the text into it.
+# colors a specified substring within given text
+# -t/--text <text> (specify text to color, if it's not piped-in) ; -w/--word <word> (substring to color) ; -c/--color <color-string> (see available colors in "_draw_formatted", default is red)
 function _color_word () {
     text='' ; word='' ; color='<=bold=><=red=>'
     while [[ $# -gt 0 ]]; do
@@ -1276,7 +1316,8 @@ function _color_word () {
 }
 
 # TODO - detect if the terminal is bright instead of dark? If it's white, the colored prints should be darker; so you should remove the "\033[1m" prefix
-# echo in color, use like this: _colored_echo "<=uline=><=red=>" "color me"  # recolors red and underlined
+# recolors all lines with specified color
+# arg 1: color (ee available colors in "_draw_formatted") , arg 2: text to color
 function _colored_echo () {
     # apply colors (arg 1) to all lines
     formatted=$( echo "${@:2}" | while IFS= read -r line; do echo "${1}${line}"; done )
@@ -1289,6 +1330,10 @@ function recho () {
 # echo in green
 function gecho () {
     _colored_echo '<=bold=><=green=>' "${@}"
+}
+# echo in dark green
+function dagecho () {
+    _colored_echo '<=green=>' "${@}"
 }
 # echo in blue
 function becho () {
@@ -1319,7 +1364,8 @@ function yuecho () {
     _colored_echo '<=bold=><=uline=><=yellow=>' "${@}"
 }
 
-# runs printf with a specific assortment of color names
+# recolors text by replacing color tags with their appropriate color-codes
+# arg 1: text
 function _draw_formatted () {
     declare -A colors=(
     # colors
@@ -1371,6 +1417,7 @@ function _draw_formatted () {
 
 }
 
+# the best function in this entire collection
 function draw_hentai () {
     HY='<=b_yellow=>'  # Hair Yellow
     HYD='<=yellow=>'  # Hair Yellow Dark
@@ -1418,6 +1465,20 @@ EOM
     _draw_formatted "$surprise"
 }
 
+
+# wait <arg 1> seconds, print a dot for each second passed.
+function _wait_n_seconds () {
+    printf "Waiting $1 seconds"
+    for ((i=0; i<$1; i++))
+    do
+        printf "."  # Print a dot and flush the output to ensure that it is printed immediately
+        sleep 1
+    done
+
+    printf "\n" # Print a newline after the dots
+}
+
+
 # Provide command as args; it'll run async, while ascii animations would play until the command's thread closes.
 # Example: _spinning_wait_for_task sleep 10
 function _spinning_wait_for_task () {
@@ -1433,13 +1494,14 @@ function _spinning_wait_for_task () {
     done
 }
 
-# usage: arg 1 is n, arg 2 is a block of text
+# get only first n columns of text-block
+# arg 1: n (num of columns), arg 2: text-block
 function _reveal_n_first_columns () {
     echo "$2" | awk '{print substr($0, 1, n)}' n=$1
 }
 
 
-# short animation. -v : verbose (debugging)
+# short "LET'S GO" animation. -v : verbose (debugging)
 function animate_lets_go () {
     # Define the animation frames as an array of strings
 frame1="    
@@ -1543,8 +1605,7 @@ banner="
 
     # dim the banner (and progress the cursor) by pasting over it at-once
     echo -ne "\033[u"  # Restore cursor position
-    calm_banner_color='<=green=>'
-    banner_final=$(_colored_echo "$calm_banner_color" "$banner")
+    banner_final=$(dagecho "$banner")  # recolored banner
     space_window_final=$( _repeat_whitespace_rows "$sprite_height" $(($total_run - $banner_width)) )
     everything_final=$(paste -d ' ' <(echo "$banner_final") <(echo "$space_window_final") )
     echo -e "$everything_final"
