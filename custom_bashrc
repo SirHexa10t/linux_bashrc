@@ -765,16 +765,65 @@ function revoke_exe_mod () {
 # ==============================
 
 
-# Archive a file locally into .tar.7z format
-# arg 1: file-name
+# Archive files into .tar.7z format. You can specify any file / file-path, the archive would still be saved to current working directory.
+# -o/--overwrite (optional: replace old 7z archive instead of adding another one) ; -p/--password <pass> (optional: encrypt with password) ; all the rest are file-names
 function archive_tar7z () {
-    [ $# -ge 1 ] || { recho "You need to tell me what to archive" ; return 1; }
-    [ -e "$1" ] || { recho "This file doesn't exist!" ; return 1; }
-    # TODO - get rid of last '/' if it exists
-    # TODO - check full addresses' effect
-    # TODO - check with sudo
+    # anything unspecified as option/flag is file to archive
+    filenames=() ; overwrite='' ; password=''
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+    		'-o'|'--overwrite')
+    			overwrite='true'
+    			shift 1
+    			continue
+    		;;
+    		'-p'|'--password')
+    			password="$2"
+    			shift 2
+    			continue
+            ;;
+    		*)
+                filenames+=("$1")
+                shift 1
+    		;;
+    	esac
+    done
+
+    [ -n "$filenames" ] || { recho "You need to specify files (or folders) to archive" ; return 1; }
+
+    # note: don't try running multiple in async; tar and 7z already run multi-threaded
+    for f in "${filenames[@]}"; do
+        # archive without including whole directory leading to the file
+        full_path="$(realpath "$f")"  # get full path
+        folderpath="$(dirname "$full_path")"
+        filename="$(basename "$full_path")"
+        archive_name="${filename}.tar.7z"
+
+        # determine if the archiving will be done with encryption (password-protected)
+        optional_encryption=''
+        if [ -n "$password" ]; then  # entering an empty string as password doesn't (and shouldn't) count as password
+            becho "writing $archive_name with password encryption"
+            optional_encryption="-p$password"
+            archive_name=$(echo "$archive_name" | sed 's/.tar.7z$/_encrypted.tar.7z/')  # add "_encrypted" to file suffix name. You can't mix encrypted and unencrypted, so they shouldn't be named the same way
+        fi
+
+        # if similarly-named archive exists (involves overwrite-flag)
+        if [ -e "$archive_name" ]; then
+            already_exists_msg=$(recho "archive \"$archive_name\" already exists")
+            if [ -n "$overwrite" ]; then 
+                echo "$already_exists_msg. Removing it."
+                rm "$archive_name"
+            else
+                echo "$already_exists_msg. Creating archive with current date."
+                archive_name=$(echo "$archive_name" | sed "s/.tar.7z$/_$(date +%Y-%m-%d).tar.7z/")  # add "_<today>" to file suffix name to avoid mixing with old archive
+                [ -e "$archive_name" ] && rm "$archive_name" && recho "deleted an existing archive with the same name-date"  # if even the dated archive exists, delete it
+            fi
+
+        fi
+        
+        tar -C "$folderpath" -cvzf - "$filename" | 7za a -si "$archive_name" "$optional_encryption"
+    done
     
-    tar -cvzf - "$1" | 7za a -si "$1".tar.7z
 }
 
 # arg 1: media_file
@@ -1687,11 +1736,10 @@ if [ "$IS_FIRST_SOURCING" = true ]; then
     [ -e "$SCRIPTS_BASHRC_FILE" ] && source "$SCRIPTS_BASHRC_FILE"  # if the file for it exists, source bashrc functions that bring over to the terminal various external scripts
 fi
 
-
-! _is_user_root && echo "$(gecho "Finished loading") \"$THIS_FILE\" for: \"`readlink -f $0`\". To view added commands, run: $(becho remindme)"  # if user is root (sudo running), be quiet
-
-[ -e "$TESTS_FILE" ] && ! _is_user_root && source "$TESTS_FILE"  # run the tests file if it exists and we're not in sudo mode
-
+if ! _is_user_root; then   # if user is root (sudo running), be quiet
+    echo "$(gecho "Finished loading") \"$THIS_FILE\" for: \"`readlink -f $0`\". To view added commands, run: $(becho remindme)"  # announce done
+    [ -e "$TESTS_FILE" ] && source "$TESTS_FILE"  # run the tests file if it exists and we're not in sudo mode
+fi
 
 #  TODO - put as a top pane in tmux window. Needs to be in a different pane because I can't find a way to make it play without interrupting key input or disrupting it and keeping the first char in the input.
 # if running in a visible terminal, and not as root
