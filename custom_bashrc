@@ -173,6 +173,10 @@ alias sysinfo_short='echo "For simpler neat hardware specs, run \"neofetch\" or 
 # Get comprehensive system/specs details
 alias sysinfo_full='inxi -FxxzJy90'
 
+# Get metadata of a specified audio/video/image file
+alias media_metadata='ffprobe -v error -show_entries stream=width,height,r_frame_rate,codec_name,channels,bit_rate,duration -show_entries format=size -hide_banner -pretty -print_format json'
+
+
 # open window at current terminal directory
 alias gui='xdg-open "$(pwd)"'
 
