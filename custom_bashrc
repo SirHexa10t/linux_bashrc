@@ -1267,8 +1267,13 @@ function launch_vm_w_lookingglass() {
 }
 
 # interactively create a new systemd service (using templates)
+# arg 1: (optional) service name
 function create_systemd_service () {
-    read -p "Choose the name of your service: " service_name  # Read the user's input
+    if [ -n "$1" ]; then
+        service_name="$1"
+    else
+        read -p "Choose the name of your service: " service_name  # Read the user's input
+    fi
     service_name=${service_name%.service}  # remove the '.service' if it's there
     file_name="${service_name}.service"
     service_file="/etc/systemd/system/${file_name}"
@@ -1276,8 +1281,8 @@ function create_systemd_service () {
     if _prompt_yn "You'll modify as sudoer: $service_file ($is_empty). Are you ready?"; then echo "Creating file..."; else echo "Come back when you have everything you need." && return ; fi
     
     # provide a template
-    if _prompt_yn "Need a template?"; then
-        read -r -d '' initial_str << EOT
+    initial_str=''
+    _prompt_yn "Need a template?" && read -r -d '' initial_str << EOT
 [Unit]
 # rewrite this (don't worry about spaces)
 Description=<Insert purpose here>
@@ -1314,10 +1319,7 @@ ExecStart=<command that starts the service>
 ; WantedBy=multi-user.target  
 EOT
     # offer template adjustment
-    if _prompt_yn "Include guiding comments in the template?"; then echo "Leaving in comments."; else initial_str=$(grep -v "^#" <<< "$initial_str") ; fi
-    else 
-        initial_str='';
-    fi
+    if [ -n "$initial_str" ] && _prompt_yn "Include guiding comments in the template?"; then echo "Leaving in comments."; else initial_str=$(grep -v "^#" <<< "$initial_str") ; fi
 
     # insert template into the file (create/clear file if necessary)
     sudo sh -c "echo \"$initial_str\" > \"$service_file\""
@@ -1325,19 +1327,19 @@ EOT
     # let the user determine the contents of the service
     sudo nano "$service_file"
 
-    if _prompt_yn "We're done. Want me to rescan, run and enable the service after boot?"; then
-        echo 'reloading systemd...'
-        sudo systemctl daemon-reload
+    if _prompt_yn "We're done. Want me to reload, enable and start the service?"; then
+        becho 'reloading systemd...'
+        sudo systemctl daemon-reload  # rescan services
     
-        echo 'enabling after boot...'
-        sudo systemctl enable "$file_name"
-
-        echo 'starting service...'
+        becho 'enabling after boot...'
+        sudo systemctl enable "$file_name"  # enable after boot
+    
+        becho 'starting service...'
         sudo systemctl start "$file_name"
 
         _wait_n_seconds '3'
 
-        echo "Here's its status now:"
+        becho "Here's its status now:"
         sudo systemctl status "$file_name"
     fi
 
