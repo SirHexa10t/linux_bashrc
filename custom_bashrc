@@ -680,7 +680,7 @@ function find_proc () {
     [ $# -ge 1 ] || { recho "No substring provided to look through with." ; return ; }
 
     ps -eo pid,ppid,user,%cpu,%mem,stat,start,time,cmd --sort=-%cpu | awk -v search="$1" 'BEGIN{IGNORECASE=1} NR==1 || $0 ~ search {print}' \
-    | _color_word --word "$1"  # color the sought term
+    | color_word --word "$1"  # color the sought term
 }
 
 # kill processes by substring, with a confirmation prompt that specifies what's being killed
@@ -1182,7 +1182,7 @@ args:
 
     becho "matching filenames:"
     becho "==================="
-    _sudo_if_necessary "find \"$dir\" -iname \"*$exp*\"" | _color_word --word "$exp"
+    _sudo_if_necessary "find \"$dir\" -iname \"*$exp*\"" | color_word --word "$exp"
 
     becho "matching file contents:"
     becho "======================="
@@ -1191,7 +1191,7 @@ args:
         [ -n "$verbose" ] && becho "filtering with maximum result length: $text_limit" 
         all_results=$(echo "$all_results" | awk "length(\$0) <= $text_limit")
     fi
-    echo "$all_results" | _color_word --word "$exp"  # print with no filtering by length
+    echo "$all_results" | color_word --word "$exp"  # print with no filtering by length
 }
 
 
@@ -1231,7 +1231,7 @@ function launch_vm_w_lookingglass() {
 
     # Show user the parameters and ask for approval (quit if disapproved)
     becho "Please authorize the following. Note: no two running VMs may have the same looking-glass session-file or VNC-port at the same time"
-    if _prompt_yn "VM: $vm_name, looking-glass_name: $shmem_name, VNC-port: $portnum. Launch with these parameters?"; then echo "Starting..."; else echo "Quitting. If the details were off, modify your VM's xml file (easiest through VM Manager)" && return ; fi
+    if _prompt_yn "$(becho "VM:") $vm_name, $(becho "looking-glass_name:") $shmem_name, $(becho "VNC-port:") $portnum. Launch with these parameters?"; then echo "Starting..."; else echo "Quitting. If the details were off, modify your VM's xml file (easiest through VM Manager)" && return ; fi
 
     becho "Making sure os-virtual-drive file's volume is mounted"
     mount_media_by_uuid "$QEMU_VOLUME_UUID"
@@ -1386,32 +1386,36 @@ function _underline () {
     echo "$line"
 }
 
-# colors a specified substring within given text
-# -t/--text <text> (specify text to color, if it's not piped-in) ; -w/--word <word> (substring to color) ; -c/--color <color-string> (see available colors in "_draw_formatted", default is red)
-function _color_word () {
+# colors a specified substring within given text, like grep without line filtering
+# -t/--text <text> (specify text to color, if it's not piped-in) ; -w/--word <word> (substring to color, no option needed if it's the only arg and text is piped-in) ; -c/--color <color-string> (see available colors in "_draw_formatted", default is red)
+function color_word () {
     text='' ; word='' ; color='<=bold=><=red=>'
-    while [[ $# -gt 0 ]]; do
-    	case "$1" in
-    		'-t'|'--text')
-    			text="$2"
-    			shift 2
-    			continue
-    		;;
-    		'-w'|'--word')
-    			word="$2"
-    			shift 2
-    			continue
-            ;;
-            '-c'|'--color')
-                color="$2"
-                shift 2
-                continue
-            ;;
-    		*)
-                return  # received undefined argument
-    		;;
-    	esac
-    done
+    if [ $# -eq 1 ] && ! [ -t 0 ]; then  # only 1 arg + streamed input. Given arg is the word to color.
+        word="$1"
+    else  # "regular" case
+        while [[ $# -gt 0 ]]; do
+        	case "$1" in
+        		'-t'|'--text')
+        			text="$2"
+        			shift 2
+        			continue
+        		;;
+        		'-w'|'--word')
+        			word="$2"
+        			shift 2
+        			continue
+                ;;
+                '-c'|'--color')
+                    color="$2"
+                    shift 2
+                    continue
+                ;;
+        		*)
+                    return  # received undefined argument
+        		;;
+        	esac
+        done
+    fi
 
     # If text is not provided via --text, and if standard input (piped data) exists : assign standard input to text
     if [ -z "$text" ] && ! [ -t 0 ]; then text=$(cat); fi
