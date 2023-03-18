@@ -20,13 +20,27 @@
 # Defaults        env_keep += "BASH_FUNC_*"
 
 
-# please ignore
+# please ignore - stuff that's needed early in this file; not meant for the user 
 #################################################################################
 _alias_names_query='alias | grep -E "^alias" | sed "s/^alias \([^=]*\)=.*/\1/"'  # this is needed very early (and very late) for lookup of existing aliases
 _function_names_query='declare -F | awk '\''{print $3}'\'  # not as complex as aliases, but if aliases are here, so should this be.
 
 # uses a later variable definition to determine if the script runs for user: "root"
 function _is_user_root () { if [ "$IS_USER_ROOT" = true ]; then return 0; else return 1; fi  }
+
+# For dependencies on packages, especially in aliases.
+# Removed (non-purged) packages are considered not-installed
+function _is_pkg_installed () {
+    is_pkg_installed=$(dpkg-query -W --showformat='${Status}\n' ${1} 2>&1 | grep "install ok installed")
+    if [ "${is_pkg_installed}" == "install ok installed" ]; then return 0; else return 1; fi
+}
+
+# Returns true if pacakge is installed, false + user-message if not.
+# arg 1: package name
+function _announce_pkg_installed () {
+    if _is_pkg_installed "$1" ; then return 0; else echo "Can't use package '$1', consider installing it."; return 1; fi
+} 
+
 
 # Session data
 #################################################################################
@@ -103,20 +117,9 @@ fi
 # TODO - "whatnow" - tag commands (things like "network" or "visual" or "filesystem") and list the tags for (optional) interactive picking 
 # TODO - find all "] &&" and see that they operate fine
 
+# TODO - find places in code that print line-by-line and speed them up by buffering and printing everything at-once (noticably faster), unless those are in a (potentially) long processes
 
 
-# This function is needed early, for safe alias replacements.
-# Removed (non-purged) packages are considered not-installed
-function _is_pkg_installed () {
-    is_pkg_installed=$(dpkg-query -W --showformat='${Status}\n' ${1} 2>&1 | grep "install ok installed")
-    if [ "${is_pkg_installed}" == "install ok installed" ]; then return 0; else return 1; fi
-}
-
-# Returns true if pacakge is installed, false + user-message if not.
-# arg 1: package name
-function _announce_pkg_installed () {
-    if _is_pkg_installed "$1" ; then return 0; else echo "Can't use package '$1', consider installing it."; return 1; fi
-} 
 
 
 # The space at the end makes bash auto-complete the next word as well. 'sudo ' alone makes aliases work in sudo, but not functions.
@@ -733,6 +736,49 @@ function add_to_path () {
 function mount_media_by_uuid () {
     udisksctl mount -b "/dev/disk/by-uuid/$1"  # add -t <mountpoint>  to change mount-location
 }
+
+
+# Find iommu groups that deal with given word. Useful for passing devices onto VMs.
+# arg 1: device substring (example: "usb", or "nvidia", or "SATA") (optional; if not specified, you get all IOMMUs)
+function iommu_find () {
+    iommu_group_prefix='IOMMU Group '
+
+    # arg 1: accepted files. Example: /sys/kernel/iommu_groups/*/devices/*
+    function _stringify_iommu_files () {
+        for file in $1; do
+            iommu_group=$(echo "$file" | awk -F'/' '{print $(NF-2)}')
+            device_num=$(basename "$file")
+            device_string=$(lspci -nns "$device_num" | sed 's/^[[:alnum:]:.]* //')  # get the device description, but drop the initial number
+            echo "${iommu_group_prefix}$iommu_group: device $device_num : $device_string"
+        done
+    }
+
+    all_iommu_devices=$(_stringify_iommu_files '/sys/kernel/iommu_groups/*/devices/*' | sort -V)
+
+    lookup="$1"
+    if [ -z "$lookup" ]; then
+        recho "You didn't specify a device substring/word to look-up (Example: \"USB\"). So here are all IOMMUs/devices and connected USB peripherals:"
+        echo "$all_iommu_devices"
+        lsusb
+        return 0 
+    fi
+
+    # if you reach here, term search was specified
+    group_texts=()
+    iommu_groupnums=$(grep -i "$lookup" <<< "$all_iommu_devices" | sed "s/^${iommu_group_prefix}\([0-9]\+\):.*$/\1/" | sort -V | uniq)
+    for num in $iommu_groupnums; do
+        group_texts+=("$(_stringify_iommu_files "/sys/kernel/iommu_groups/$num/devices/*" | sort -V | color_word "$lookup")")
+    done
+
+    becho "IOMMU devices:"
+    printf "%s\n" "${group_texts[@]}"
+
+    becho "USB peripherals:"
+    lsusb | grep -iF --color=auto "$lookup"
+
+    # To add a device by IOMMU device number (xxxx:xx:xx.x), go to VM Manager, and add "PCI Host Device" with the same number 
+}
+
 
 # TODO - optimize, maybe use list_human_users() ?
 # list crontabs of all users
