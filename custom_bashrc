@@ -224,7 +224,7 @@ alias psg='find_proc'
 # =================
 
 # Reminders for linux system tools and command options
-alias howdoi_linux='echo "
+alias howdoi_linux='commecho "
 >> Packages
 * sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
 * sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for \"no prompt\")
@@ -254,7 +254,7 @@ alias howdoi_linux='echo "
 "'
 
 # Reminders for user/groups management
-alias howdoi_users='echo "
+alias howdoi_users='commecho "
 * groups <username>  # display the groups of a user
 * usermod -aG <groupA,groupB,groupC> <username>  # add user to group(s). You can even add to group sudo (makes into superuser in Ubuntu).
 * getent group  # list all groups and their user-members
@@ -265,8 +265,9 @@ alias howdoi_users='echo "
 "'
 
 # Reminders for the basic gimmicks of bash
-alias howdoi_bash_terminal='echo "
+alias howdoi_bash_terminal='commecho "
 >> terminal
+* apt search <term>  # look for substring in known packages. As usual, nala can also be used
 * man <command>  # read the manual of the command
 *   help  # list built-in Bash commands
 * cd  # write no directory to return to home-dir. Equivalent to cd ~
@@ -278,12 +279,12 @@ alias howdoi_bash_terminal='echo "
 * diff <file1> <file2>  # get the text difference between 2 files
 * visudo  # edit the /etc/sudoers file (only if you know what you are doing)
 >> bash basic utility commands (can be used in terminal of-course)
-* # \"$my_var\" is the value of variable my_var, \"$1\" is the first argument in current scope (and so on), \"$@\" is all arguments in current scope, \"$#\" is the number of args, \"$$\" is current PID, \"$?\" is the return code of last operation, $(<cmd here>) is used to run commands within commands (can also use `<cmd here>`)
++ \"\$my_var\" is the value of variable my_var, \"\$1\" is the first argument in current scope (and so on), \"\$@\" is all arguments in current scope, \"\$#\" is the number of args, \"\$\$\" is current PID, \"\$?\" is the return code of last operation, \$(<cmd here>) is used to run commands within commands (can also use \`<cmd here>\`)
 * declare -p <variable>  # Note: no use of $. Print the variable to check data / data-type
-* # add \"& disown\" after a command to have it run in its own thread so that it wont stop when the terminal closes
-* # add \"2> /dev/null\" after a command to throw away warning/error messages it might bring up
++ add \"& disown\" after a command to have it run in its own thread so that it wont stop when the terminal closes
++ add \"2> /dev/null\" after a command to throw away warning/error messages it might bring up
 * time <command>  # get time measurement for command runtime. No need for quotes or any encapsulation, just prepend \"time\". Example: time ls -l
-* extra_dist=$(( (a > b) ? (a - b) : 0 ))  # example for ternary in bash (use the \"&&\",\"||\" ternary instead when you have a condition in \"[]\"). The double-parentheses mean you dont need \"$\" to reference variables and that the math operations get evaluated
+* extra_dist=\$(( (a > b) ? (a - b) : 0 ))  # example for ternary in bash (use the \"&&\",\"||\" ternary instead when you have a condition in \"[]\"). The double-parentheses mean you dont need \"$\" to reference variables and that the math operations get evaluated
 * espeak <text>  # read-out (audio) the given text. A bit of a gimmick, sounds very robotic
 >> tools (utilities for usage that isnt about managing the OS)
 * wget <url>  # download files
@@ -294,28 +295,35 @@ alias howdoi_bash_terminal='echo "
 "'
 
 # common media file operations
-alias howdoi_media_and_docs='echo "
+alias howdoi_media_and_docs='commecho "
 * pdftk <file1> <file2> <file3> cat output <merged_name.pdf>  # create a unified pdf file 
 * xournal <pdf_filepath>  # edit a pdf file with option to add signatures
 * ffmpeg  # general media (audio / video) handling package, you can find some usages in this bashrc file
 "'
 
 # Reminders for microsoft-format handling tools
-alias howdoi_microsoft='echo "
+alias howdoi_microsoft='commecho "
 * lnkinfo <lnk-file>  # display link info
 * dos2unix <file>  # convert files from windows to unix encoding
 * sudo ntfsfix <device> -v  # run check-disk on NTFS device
 * ldmtool  #  Read dynamic disks by running \"sudo ldmtool create all\", and then mounting with \"mount -t ntfs /dev/mapper/<volume_name>\"
 "'
 
+# Snippets and tricks for Chromium-based browsers
+alias howdoi_chromium='commecho "
+* chrome://flags/#hardware-media-key-handling  # Advanced operation flags. Specifically media-key-handline - disable this to get rid of the banner that appears when you change volume
+* document.getElementsByTagName("video")[0].playbackRate = 4  # change youtube playback speed (example here: x4)
+"'
+
+
 # Reminders for android-related tools
-alias howdoi_android='echo "
+alias howdoi_android='commecho "
 * scrcpy  # run daemon that casts the connected Android device screen onto a window, and shares the clicks within it back to the Android device
 * scrcpy -r <filename.mp4>  # save a video recording of your connected android device activity (needs USB-Debug and File-Transfer mode)
 "'
 
 # Reminders for network management
-alias howdoi_network='echo "
+alias howdoi_network='commecho "
 >> Own network info
 * ip addr  # display own networking interfaces
 * sudo netstat -tulpn  # display active network connections and filter by port number
@@ -333,7 +341,7 @@ alias howdoi_network='echo "
 "'
 
 # Reminders for the basics of systemd
-alias howdoi_manage_services='echo "
+alias howdoi_manage_services='commecho "
 >> Crontab
 * crontab -e  # edit routine-scheduled tasks
 >> systemd
@@ -345,7 +353,7 @@ alias howdoi_manage_services='echo "
 "'
 
 # Reminders for docker
-alias howdoi_manage_docker='echo "
+alias howdoi_manage_docker='commecho "
 >> view (might need to run sudo to find all)
 * docker ps -a  # list ALL containers
 * docker images -a  # list all images
@@ -355,14 +363,14 @@ alias howdoi_manage_docker='echo "
 * docker-compose -f <yml_file> up  # Start a conteiner using a yaml/yml file. Use -d to make it run in the background
 >> removal
 * docker system prune -a  # remove all images/containers/volumes/networks. The flag -a also remove unused images
-* docker rmi <image(s)>  # remove images ; to remove all images:   docker rmi $(docker images -a -q)
-* docker rm <container_id(s)_or_name(s)>  # remove container(s) ; to force-remofe, add -f ; to remove all stopped containers:   docker rm $(docker ps -a -f status=exited -f status=created -q)
+* docker rmi <image(s)>  # remove images ; to remove all images:   docker rmi \$(docker images -a -q)
+* docker rm <container_id(s)_or_name(s)>  # remove container(s) ; to force-remofe, add -f ; to remove all stopped containers:   docker rm \$(docker ps -a -f status=exited -f status=created -q)
 * docker volume rm <volume_name(s)>  # remove volume(s)
 * docker run --rm <image_name>  # run an image and remove its container when it exits
 "'
 
 # Reminders for vm tools and command options (mostly stuff you can't do through Virtual Machine Manager)
-alias howdoi_manage_vm='echo "
+alias howdoi_manage_vm='commecho "
 * systemctl restart libvirtd  # restart the libvirt daemon vm-manager
 * virsh start <name>  # start VM
 * virsh domrename <old_name> <new_name>  # rename vm
@@ -376,14 +384,14 @@ alias howdoi_manage_vm='echo "
 "'
 
 # Reminders for the basic gimmicks of tmux terminal
-alias howdoi_use_tmux='echo "tmux offers split-panes and sessions for terminals.
+alias howdoi_use_tmux='commecho "tmux offers split-panes and sessions for terminals.
 >> Good for managing a server:
-+tmux terminals persist even after disconnection. They keep running until restart the server or send a closure command.
-+tmux windows can be named, listed and looked up.
-+tmux can accomodate multiple users on the same terminal simultanously; good for assistance/collaboration and for doing jobs that need a \"lock\" (having a channel where certain jobs run, so people would know if someone elses job is underway and should be allowed to finish first)
++ tmux terminals persist even after disconnection. They keep running until restart the server or send a closure command.
++ tmux windows can be named, listed and looked up.
++ tmux can accomodate multiple users on the same terminal simultanously; good for assistance/collaboration and for doing jobs that need a \"lock\" (having a channel where certain jobs run, so people would know if someone elses job is underway and should be allowed to finish first)
 >> Quick explanation: tmux has sessions. Each session can have various windows, each window (has a number and name) is a \"screen\" thats visible at the moment and has vertically/horizontally added panes 
-+For simplicity you can just have a SINGLE SESSION and manage all your windows there. Its easier to navigate windows, thanks to the green bar listing them at the bottom.
-+If a window has only need for a SINGLE TERMINAL (lets say the window is called \"grub_config\"), you can keep it simple and avoid adding extra panes. Add panes to multi-faceted things, like a project which has code, git-management, assets, runtime area etc.
++ For simplicity you can just have a SINGLE SESSION and manage all your windows there. Its easier to navigate windows, thanks to the green bar listing them at the bottom.
++ If a window has only need for a SINGLE TERMINAL (lets say the window is called \"grub_config\"), you can keep it simple and avoid adding extra panes. Add panes to multi-faceted things, like a project which has code, git-management, assets, runtime area etc.
 > Sessions:
 * tmux  # create a new tmux session
 * CTRL+B, D  : leave (detach) current session
@@ -400,15 +408,15 @@ alias howdoi_use_tmux='echo "tmux offers split-panes and sessions for terminals.
 * CTRL+B, \"  :  create a new pane to the bottom
 * CTRL+B, <left/right/up/down>  :  move focus to other pane
 * exit  # close pane. If last pane, close window.
-TODO - create a script thatll establish tmux workspaces when logging into your user (so youd have things ready for debugging or coding and such)
-TODO - create functions that run these commands interactively (like listing, then letting the user pick a number, then go there...)
 "'
+# TODO - create a script thatll establish tmux workspaces when logging into your user (so youd have things ready for debugging or coding and such)
+# TODO - create functions that run these commands interactively (like listing, then letting the user pick a number, then go there...)
 
 # TODO - cargo (maven-like manager) cheatsheet. Reference: https://www.youtube.com/watch?v=zF34dRivLOw
 
 # Reminders for ascii-related commands and handling
-alias howdoi_ascii='echo "
-# Create ASCII writings in this site: http://patorjk.com/software/taag/
+alias howdoi_ascii='commecho "
++ Create ASCII writings in this site: http://patorjk.com/software/taag/
 * figlet <text>  # write ASCII styled text, different fonts are also supported
 * banner <text>  # write ASCII styled text
 * toilet <text>  # write ASCII styled text, different fonts and styles are also supported
@@ -420,7 +428,7 @@ alias howdoi_ascii='echo "
 
 
 # Reminders for some neat time-saving GUI keybind tricks
-alias howdoi_shortcut='echo "
+alias howdoi_shortcut='commecho "
 * Built-in Nemo [space] :  select (click) a file/folder, and press [space] to get a summary/preview; press again to close
 * Custom Gnome-Nemo CTRL+SHIT+T :  open Terminal at current Nemo location
 * Built-in Gnome CTRL+ALT+T :  open Terminal
@@ -473,6 +481,22 @@ function _pad_end_w_spaces() {
     text="$1"  # assume that text is provided as an argument
     if [ -z "$text" ] && ! [ -t 0 ]; then text=$(cat); fi  # if no text given and there's a stream from a pipe, get the stream contents as text
     awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "$text"
+}
+
+# pastes 2 text blocks side by side
+# --lined (optional: separate with line instead of space)
+function _side_by_side() {
+    separator=' '
+    [ "$1" = "--lined" ] && separator='|' && shift
+    
+    # add more lines to text 1 if it's shorter than text 2
+    text1="$1" ; text2="$2"
+    lines_text_1=$(echo "$text1" | wc -l)
+    lines_text_2=$(echo "$text2" | wc -l)
+    difference=$(( lines_text_2 - lines_text_1 ))
+    [ $difference -gt 0 ] && text1+=$(echo -e "\n$(yes " " | head -$difference)")  # if text 2 is longer than text 1, add newlines until they're equal (add n newlines below - need a newline before those)
+
+    paste -d "$separator" <(_pad_end_w_spaces "$text1") <(echo "$text2")  # TODO - make this dynamic - paste n items one after another
 }
 
 # TODO - unused, so remove?
@@ -653,7 +677,7 @@ function remindme () {
             matched=$(grep -B "$num_of_rows_above" -E "$expression" "$THIS_FILE")  # match declaration and some rows above for documentation
             matched=$(echo "$matched" | grep -E '^#[^#]' |  grep -vE '^#[[:space:]]*TODO' )  # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO
             matched=$(echo "${matched}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
-            line_to_cmd["$line_num"]="$(echo "$name")  $(yecho "$matched")"
+            line_to_cmd["$line_num"]="$name  $matched"
         done <<< "$cmd_names"
     }
 
@@ -663,7 +687,7 @@ function remindme () {
     # functions
     get_commands_by_expression "^\s*function\s+<name>\s*\(\)\s*{" 2 "$CUSTOM_FUNCTIONS"
 
-    cmd_list=$(for key in "${!line_to_cmd[@]}"; do echo "$key ${line_to_cmd[$key]}"; done )  # include line-number for possible sorting
+    cmd_list=$(for key in "${!line_to_cmd[@]}"; do commecho "$key ${line_to_cmd[$key]}"; done )  # include line-number for possible sorting
     [ -n "$sort" ] && cmd_list=$(echo "$cmd_list" | sort -k2) || cmd_list=$(echo "$cmd_list" | sort -n -k1) # If user specified alphabetical sorting, sort by command name. Otherwise sort by line num
     [ -z "$include_line_num" ] && cmd_list=$(echo "$cmd_list" | cut -d" " -f2-)  # if flag not specified, remove line numbers
 
@@ -912,6 +936,14 @@ function media_merge_audio_video () {
     ffmpeg -i "$video_file" -i "$audio_file" -c:v copy -c:a libvorbis "$output"
 }
 
+# compare 2 media files
+# arg 1: media-file 1 , arg 1: media-file 2
+function media_compare () {
+    md_1=$(media_metadata "$1")
+    md_2=$(media_metadata "$2")
+    _side_by_side --lined "$md_1" "$md_2"
+}
+
 # TODO - create a function that uses youtube-dl and other website downloaders; have it accept any download-link. 
 
 
@@ -1110,7 +1142,7 @@ function network_search () {
 }
 
 # get local files size and inner-files count
-# -s (sort by size)
+# arg1: dir to explore , -s (optional: sort by size)
 function explore () {
     location=${1:-.}  # use given address, default to current location
     location=$(readlink -f "$location")  # use absolute path (and use no '/' at the end)
@@ -1479,7 +1511,28 @@ function color_word () {
 function _colored_echo () {
     # apply colors (arg 1) to all lines
     formatted=$( echo "${@:2}" | while IFS= read -r line; do echo "${1}${line}"; done )
-    _draw_formatted "$formatted"
+    _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
+}
+# comment-colorized echo
+function commecho () {
+    bullet_point_color='<=green=>'
+    double_cat_line_color='<=bold=><=blue=>'
+    single_cat_line_color='<=blue=>'
+    plus_line_color='<=uline=><=yellow=>'
+    sharp_comment_color='<=yellow=>'
+    colon_comment_color='<=yellow=>'
+    angled_brackets_color='<=bold=><=red=>'
+    colored_line_symbols='\+|>|>>'
+    reset='<=reset=>'
+    formatted="$@"  # get all of the input
+    formatted=$(echo "$formatted" | sed -E "/^($colored_line_symbols)/!s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-choice) but not in lines that get entirely colored  <- needs to run first, to not modify the color tags
+    formatted=$(echo "$formatted" | sed "s/^* /${bullet_point_color}*${reset} /g")  # replace beginning '* ' with a colored asterisk and space  (bullet-points)
+    formatted=$(echo "$formatted" | sed "s/^>>.*$/${double_cat_line_color}&/g")  # recolor lines beginning '>>'  (topics)
+    formatted=$(echo "$formatted" | sed "s/^>.*$/${single_cat_line_color}&/g")  # recolor lines beginning '>'  (sub-topics)
+    formatted=$(echo "$formatted" | sed "s/^+.*$/${plus_line_color}&/g")  # recolor lines beginning '+'  (notes)
+    formatted=$(echo "$formatted" | sed "s/  #.*$/${sharp_comment_color}&/g")  # recolor after '  #'  (code-comments)
+    formatted=$(echo "$formatted" | sed "s/  :.*$/${colon_comment_color}&/g")  # recolor after '  :'  (item-comments)
+     _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
 }
 # echo in red
 function recho () {
