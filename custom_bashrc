@@ -1080,7 +1080,7 @@ function list_human_users() {
 # list users and their various resources usage.
 # --gpu (also display gpu data) ; --not_sudo (don't try to get restricted data as root)
 function resources_used () {
-    maybe_sudo=$([[ " $* " =~ " --not_sudo " ]] && echo "" || echo "_sudo_if_necessary")  # if flagged, run regularly as non-superuser. If not, try inputting password in case it's necessary
+    maybe_sudo=$([[ "$@" =~ ^"--not_sudo"$ ]] && echo "" || echo "_sudo_if_necessary")  # if flagged, run regularly as non-superuser. If not, try inputting password in case it's necessary
 
     thread_count=$(nproc)
     bottleneck_threshold=$(echo "scale=3; 100/$thread_count" | bc -l)
@@ -1125,7 +1125,7 @@ function resources_used () {
     echo "$(uecho 'Total RAM usage:') $total_ram_usage"
     echo "$(uecho 'Total Disk usage:') $total_disk_usage  *For '/' only. Run devs function to see more."  
     # TODO - check if there is a GPU at all, and support AMD (or Intel) drivers (need to detect)
-    [[ " $* " =~ " --gpu " ]] && ( uecho "GPU utilization info:" ; nvidia-smi -q -d MEMORY,COMPUTE,UTILIZATION ) # if flag --gpu is specified
+    [[ "$@" =~ ^"--gpu"$ ]] && ( uecho "GPU utilization info:" ; nvidia-smi -q -d MEMORY,COMPUTE,UTILIZATION ) # if flag --gpu is specified
     
 }
 
@@ -1169,7 +1169,7 @@ function explore () {
     done <<< "$filenames"
 
     data="${folders[@]}${files[@]}"    
-    [[ " $* " =~ " -s " ]] && data=$(echo -e "${data}" | sort -h)  # if flag -s specified, sort ; first datum is size, so that's what we sort by
+    [[ "$@" =~ ^"-s"$ ]] && data=$(echo -e "${data}" | sort -h)  # if flag -s specified, sort ; first datum is size, so that's what we sort by
     echo -e "${data}" | column -t -s $'\t' -N $(becho "total_size,file_count,inodes,name")  # separate nicely with tabs
     echo "current dir total files: $total_files"
     echo "current dir total size: $(du -sh "$location" | cut -f1)"
@@ -1790,7 +1790,7 @@ banner="
     necessary_terminal_height=$sprite_height
     if ((necessary_terminal_height > terminal_height)); then recho "Cancelled animation-playing; your terminal needs to be higher." ; return 1 ; fi
     # make sure that there's vertical space for the ascii animation
-    if [[ " $* " =~ " -v " ]]; then
+    if [[ "$@" =~ ^"-v"$ ]]; then
         clear  # make more room for the extra prints
     else
         # make the necessary room needed for the animation
@@ -1835,8 +1835,8 @@ banner="
         read -t "$key_press_wait" -N 1 exit_key && break
 
 
-        [[ " $* " =~ " -v " ]] && echo "banner_width: $banner_width , runner_width: $runner_width , total_run: $total_run"
-        [[ " $* " =~ " -v " ]] && echo "iteration took ${time_lapse}s , key_press_wait: ${key_press_wait}s , distance-window width: $window_dist , distance ran: $d , distance remaining: $runner_width_still_visible"
+        [[ "$@" =~ ^"-v"$ ]] && echo "banner_width: $banner_width , runner_width: $runner_width , total_run: $total_run"
+        [[ "$@" =~ ^"-v"$ ]] && echo "iteration took ${time_lapse}s , key_press_wait: ${key_press_wait}s , distance-window width: $window_dist , distance ran: $d , distance remaining: $runner_width_still_visible"
 
     done
 
