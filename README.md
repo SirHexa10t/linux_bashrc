@@ -125,3 +125,12 @@ You might need to rerun the function in a subdirectory, as it purposely doesn't 
 
 
 
+
+![command_media_compare](md_imgs/media_compare.jpg)
+###### Figure 4: "media_compare" - comparison between media files
+Displays side-by-side comparison of media files (movies, pictures, music) metadata (dimensions, bit-size, frame rate etc.)
+
+**CASE:** Data duplication in the form of similar-content files. You need to decide which file to keep
+**SOLVED:** Get all the relevant info, in a layout that simplifies comparison. You can estimate which file is lower quality, or takes too much space.
+
+

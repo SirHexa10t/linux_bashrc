@@ -483,21 +483,35 @@ function _pad_end_w_spaces() {
     awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "$text"
 }
 
-# pastes 2 text blocks side by side
-# --lined (optional: separate with line instead of space)
+# pastes text blocks (given as args) side by side
+# --lined (optional as arg 1: separate with line instead of space)
 function _side_by_side() {
     separator=' '
-    [ "$1" = "--lined" ] && separator='|' && shift
+    [ "$1" = "--lined" ] && separator='|' && shift  # get rid of the flag, so it won't disturb us
     
-    # add more lines to text 1 if it's shorter than text 2
-    text1="$1" ; text2="$2"
-    lines_text_1=$(echo "$text1" | wc -l)
-    lines_text_2=$(echo "$text2" | wc -l)
-    difference=$(( lines_text_2 - lines_text_1 ))
-    [ $difference -gt 0 ] && text1+=$(echo -e "\n$(yes " " | head -$difference)")  # if text 2 is longer than text 1, add newlines until they're equal (add n newlines below - need a newline before those)
+    # prepare to add more lines to texts that are too short
+    line_counts=()
+    for i in "$@"; do line_counts+=($(echo "$i" | wc -l)); done  # count the number of lines for each
+    max_lines=$(max "${line_counts[@]}")
 
-    paste -d "$separator" <(_pad_end_w_spaces "$text1") <(echo "$text2")  # TODO - make this dynamic - paste n items one after another
+    args=("$@")  # for iteration. can't iterate on the index of $@ - the items start from 1, but the index starts on 0 ("bash") unlike lists that start their index at 1
+    paste_texts=()  # the values that need to be pasted
+    items_to_interpret=()  # will be made into a string that refers to the values; interpreted into a command
+    for i in "${!args[@]}"; do  
+        modified_txt_block="${args[i]}"  # actual item
+        # add empty lines
+        line_diff=$(( max_lines - line_counts[i] ))  # how many lines are "missing"
+        [ $line_diff -gt 0 ] && modified_txt_block+=$(echo -e "\n$(yes " " | head -$line_diff)")  # if text is shorter than max, add newlines (add [diff] 1-line spaces below - need an additional newline before those)
+        # pad to allow concatenating without messing up the lines
+        modified_txt_block=$(_pad_end_w_spaces "$modified_txt_block")
+        # add to list that we'll reference in the command
+        paste_texts+=("$modified_txt_block")  # data list
+        items_to_interpret+=('<(echo "${paste_texts['$i']}")')  # pointers to data
+    done
+    
+    eval "paste -d '$separator' ${items_to_interpret[@]}"
 }
+
 
 # TODO - unused, so remove?
 # get device name such as "/dev/sda2". You must provide one argument: the UUID of the device.
@@ -619,6 +633,12 @@ function date () {
 
 # Basic functionalities
 # =====================
+
+function max () {
+    max=$1
+    for n in "$@"; do [[ $n -gt $max ]] && max=$n ; done
+    echo $max
+}
 
 # TODO - command grep. "command_like <expression>"
 # list custom commands.
@@ -936,12 +956,12 @@ function media_merge_audio_video () {
     ffmpeg -i "$video_file" -i "$audio_file" -c:v copy -c:a libvorbis "$output"
 }
 
-# compare 2 media files
-# arg 1: media-file 1 , arg 1: media-file 2
+# compare between media files
+# all args are media-file paths
 function media_compare () {
-    md_1=$(media_metadata "$1")
-    md_2=$(media_metadata "$2")
-    _side_by_side --lined "$md_1" "$md_2"
+    md_results=()
+    for i in "$@"; do md_results+=("$(media_metadata "$i")"); done
+    _side_by_side --lined "${md_results[@]}" 
 }
 
 # TODO - create a function that uses youtube-dl and other website downloaders; have it accept any download-link. 
