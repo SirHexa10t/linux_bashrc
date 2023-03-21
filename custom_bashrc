@@ -484,10 +484,13 @@ function _pad_end_w_spaces() {
 }
 
 # pastes text blocks (given as args) side by side
-# --lined (optional as arg 1: separate with line instead of space)
+# --lined (optional before texts: separate with line instead of space) , --glued (optional before texts: no delimiter) , --no_padding (optional before texts: no padding)
 function _side_by_side() {
-    separator=' '
+    separator=' ' ; no_padding=''
     [ "$1" = "--lined" ] && separator='|' && shift  # get rid of the flag, so it won't disturb us
+    [ "$1" = "--glued" ] && separator='' && shift  # get rid of the flag, so it won't disturb us
+    [ "$1" = "--no_padding" ] && no_padding='true' && shift  # get rid of the flag, so it won't disturb us
+
     
     # prepare to add more lines to texts that are too short
     line_counts=()
@@ -503,7 +506,7 @@ function _side_by_side() {
         line_diff=$(( max_lines - line_counts[i] ))  # how many lines are "missing"
         [ $line_diff -gt 0 ] && modified_txt_block+=$(echo -e "\n$(yes " " | head -$line_diff)")  # if text is shorter than max, add newlines (add [diff] 1-line spaces below - need an additional newline before those)
         # pad to allow concatenating without messing up the lines
-        modified_txt_block=$(_pad_end_w_spaces "$modified_txt_block")
+        [ -z "$no_padding" ] && modified_txt_block=$(_pad_end_w_spaces "$modified_txt_block")
         # add to list that we'll reference in the command
         paste_texts+=("$modified_txt_block")  # data list
         items_to_interpret+=('<(echo "${paste_texts['$i']}")')  # pointers to data
@@ -636,7 +639,7 @@ function date () {
 
 function max () {
     max=$1
-    for n in "$@"; do [[ $n -gt $max ]] && max=$n ; done
+    for n in "$@"; do (( $(echo "$n > $max" | bc -l) )) && max=$n ; done
     echo $max
 }
 
@@ -1458,7 +1461,7 @@ function _get_cursor_row () {
 
 # get <arg 1> spaces
 function _repeat_space_n_times () {
-    printf "%${1}s" | tr ' ' " "
+    for (( i = 0; i < "$1"; ++i )); do echo -n " "; done
 }
 
 # create a block of whitespace
@@ -1467,8 +1470,9 @@ function _repeat_whitespace_rows () {
     (($1 <= 0)) && return
     (($2 <= 0)) && return
     
+    whitespace_line=$(_repeat_space_n_times "$2")
     for (( i=1; i<=$1; i++ )); do
-        printf "%${2}s\n" " "
+        echo "$whitespace_line"
     done
 }
 
@@ -1751,12 +1755,6 @@ function _spinning_wait_for_task () {
     done
 }
 
-# get only first n columns of text-block
-# arg 1: n (num of columns), arg 2: text-block
-function _reveal_n_first_columns () {
-    echo "$2" | awk '{print substr($0, 1, n)}' n=$1
-}
-
 
 # short "LET'S GO" animation. -v : verbose (debugging)
 function animate_lets_go () {
@@ -1793,12 +1791,14 @@ banner="
     # the invisible wall appears after the [full width of the banner + invisible window] , so that the window would keep pushing the runner past it 
 
     # ----------- Define sprites, and terminal limits -----------
+    is_verbose=''
+    [[ "$@" =~ ^"-v"$ ]] && is_verbose='true'
 
     terminal_width=$(tput cols)
     terminal_height=$(tput lines)
     banner_width=$(sed -n '2p' <<< "$banner" | wc -c)  # width of banner, going by 2nd line
     runner_width=$(sed -n '2p' <<< "$frame1" | wc -c)  # width of runner, going by 2nd line of the first frame
-    sprite_height=$(echo "$banner" | wc -l)  # same for all sprites involved
+    sprite_height=$(($(echo "$banner" | wc -l)-1))  # same for all sprites involved
 
     runner_frames=("$frame1" "$frame2")
     runner_frames_count="${#runner_frames[@]}"
@@ -1810,7 +1810,7 @@ banner="
     necessary_terminal_height=$sprite_height
     if ((necessary_terminal_height > terminal_height)); then recho "Cancelled animation-playing; your terminal needs to be higher." ; return 1 ; fi
     # make sure that there's vertical space for the ascii animation
-    if [[ "$@" =~ ^"-v"$ ]]; then
+    if [ -n "$is_verbose" ]; then
         clear  # make more room for the extra prints
     else
         # make the necessary room needed for the animation
@@ -1820,12 +1820,10 @@ banner="
 
 
     # ----------- Define iteration variables -----------
-
-    total_run=$terminal_width # $(( banner_width + window_width ))  # the total run distance (not drawing beyond that). Runner starts fading at $((total_run - runner_width))
-    iter_time=0.01  # iteration time in seconds
+    progress_speed=3  # positions moved in each iteration (minimum 1)
+    total_run=$terminal_width  # $(( banner_width + window_width ))  # the total run distance (not drawing beyond that). Runner starts fading at $((total_run - runner_width))
+    iter_time=0.035  # iteration time in seconds
     min_key_input_time=0.003  # minimum time to listen to user input
-
-    i=0  # runner frame iterator
 
     exit_key=''  # save the pressed key that stopped the animation
 
@@ -1833,30 +1831,39 @@ banner="
    
     echo -ne "\033[s"  # Save cursor position
 
+    # arg 1: n (width to reveal) , arg 2: text-block to partially reveal
+    function _reveal_first_n_cols () {
+        [ "$1" -le 0 ] && return  # negative or 0 width wanted. Return nothing.
+        max_width=$(sed -n '2p' <<< "$2" | wc -c)  # width of sprite, going by 2nd line
+        
+        if [ "$1" -lt "$max_width" ]; then echo "$2" | awk '{print substr($0, 1, n)}' n=$1;  # partially reveal the text
+        else echo "$2";  # revealing-width is too big, just echo back everything
+        fi
+    }
+
     # d is total distance progressed
-    for ((d=1; d<=$total_run; d++)); do
+    for ((d=1, runner_i=0; d<=$total_run; d+="$progress_speed" , runner_i++ , runner_i%=runner_frames_count)); do
         time_start=$(date +%s.%N)
 
-        i=$(( (i+1) % $runner_frames_count ))  # which frame gets drawn (loop)
-        window_dist=$((d - banner_width-1))  # extra distance of runner past banner, minimum is 0 (starts counting up once banner is full)  # -1 for the newline char
+        window_dist=$((d - banner_width))  # extra distance of runner past banner, minimum is 0 (starts counting up once banner is full)
         runner_width_still_visible=$((total_run - d))  # how much of the runner gets drawn (drawn fully until reaching the wall).
 
-        banner_sprite=$(_reveal_n_first_columns "$d" "$banner")
+        banner_sprite=$(_reveal_first_n_cols "$d" "$banner")
         extra_dist_sprite=$(_repeat_whitespace_rows "$sprite_height" "$window_dist")
-        cut_back_runner_sprite=$(_reveal_n_first_columns "$runner_width_still_visible" "${runner_frames[$i]}")  # runner disappears into an invisible wall, by drawing less of it as it runs further away
-        echo -e "$(paste -d ' ' <(gecho "$banner_sprite") <(echo "$extra_dist_sprite") <(echo "$cut_back_runner_sprite"))"  # print by putting one after the other, delimiter is space
-        echo -ne "\033[u"  # Restore cursor position
+        cut_back_runner_sprite=$(_reveal_first_n_cols "$runner_width_still_visible" "${runner_frames[$runner_i]}")  # runner disappears into an invisible wall, by drawing less of it as it runs further away
+        _side_by_side --glued --no_padding "$(gecho "$banner_sprite")" "$extra_dist_sprite" "$cut_back_runner_sprite"
+        
+        [ -n "$is_verbose" ] || echo -ne "\033[u"  # Restore cursor position (but not if you're debugging - you need to see each frame)
 
         # TODO - shorten iteration time (optimize)
         # wait for the rest of the iteration
-        time_lapse=$(echo "$(date +%s.%N) - $time_start" | bc)  # each iteration takes about 2.5 milliseconds
-        condition=$(echo "$min_key_input_time > $iter_time - $time_lapse" | bc)  # is minimum wait time larger than the time left to wait for iteration
-        key_press_wait=$([ "$condition" -eq 1 ] && echo "$min_key_input_time" || echo "$iter_time - $time_lapse" | bc)  # pick the larger of the two
+        time_remaining=$( echo "$time_start + $iter_time - $(date +%s.%N)" | bc )
+        key_press_wait=$(max "$time_remaining" "$min_key_input_time")
         read -t "$key_press_wait" -N 1 exit_key && break
 
-
-        [[ "$@" =~ ^"-v"$ ]] && echo "banner_width: $banner_width , runner_width: $runner_width , total_run: $total_run"
-        [[ "$@" =~ ^"-v"$ ]] && echo "iteration took ${time_lapse}s , key_press_wait: ${key_press_wait}s , distance-window width: $window_dist , distance ran: $d , distance remaining: $runner_width_still_visible"
+        [ -n "$is_verbose" ] && echo "banner_width: $banner_width , runner_width: $runner_width , total_run: $total_run"
+        [ -n "$is_verbose" ] && echo "iteration took $( echo "$(date +%s.%N) - $time_start" | bc )'s , key_press_wait: ${key_press_wait}s , distance-window width: $window_dist , distance ran: $d , distance remaining: $runner_width_still_visible"
+        
 
     done
 
@@ -1864,8 +1871,7 @@ banner="
     echo -ne "\033[u"  # Restore cursor position
     banner_final=$(dagecho "$banner")  # recolored banner
     space_window_final=$( _repeat_whitespace_rows "$sprite_height" $(($total_run - $banner_width)) )
-    everything_final=$(paste -d ' ' <(echo "$banner_final") <(echo "$space_window_final") )
-    echo -e "$everything_final"
+    _side_by_side "$banner_final" "$space_window_final"
     if [ -z "$exit_key" ]; then  # if the user didn't terminate manually; there's time to do more animations
         # draw over again
         echo -ne "\033[u"  # Restore cursor position
