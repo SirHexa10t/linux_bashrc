@@ -1516,16 +1516,16 @@ function _colored_echo () {
 # comment-colorized echo
 function commecho () {
     bullet_point_color='<=green=>'
-    double_cat_line_color='<=bold=><=blue=>'
-    single_cat_line_color='<=blue=>'
-    plus_line_color='<=uline=><=yellow=>'
-    sharp_comment_color='<=yellow=>'
-    colon_comment_color='<=yellow=>'
+    double_cat_line_color=$(_tag_persist '<=bold=><=blue=>')
+    single_cat_line_color=$(_tag_persist '<=blue=>')
+    plus_line_color=$(_tag_persist '<=uline=><=yellow=>')
+    sharp_comment_color=$(_tag_persist '<=yellow=>')
+    colon_comment_color=$(_tag_persist '<=yellow=>')
     angled_brackets_color='<=bold=><=red=>'
-    colored_line_symbols='\+|>|>>'
+    
     reset='<=reset=>'
     formatted="$@"  # get all of the input
-    formatted=$(echo "$formatted" | sed -E "/^($colored_line_symbols)/!s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-choice) but not in lines that get entirely colored  <- needs to run first, to not modify the color tags
+    formatted=$(echo "$formatted" | sed -E "s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-choice) but not in lines that get entirely colored  <- needs to run first, to not modify the color tags
     formatted=$(echo "$formatted" | sed "s/^* /${bullet_point_color}*${reset} /g")  # replace beginning '* ' with a colored asterisk and space  (bullet-points)
     formatted=$(echo "$formatted" | sed "s/^>>.*$/${double_cat_line_color}&/g")  # recolor lines beginning '>>'  (topics)
     formatted=$(echo "$formatted" | sed "s/^>.*$/${single_cat_line_color}&/g")  # recolor lines beginning '>'  (sub-topics)
@@ -1575,6 +1575,10 @@ function yuecho () {
     _colored_echo '<=bold=><=uline=><=yellow=>' "${@}"
 }
 
+# make given tag persistant
+function _tag_persist () {
+    echo "<=persist${@}this=>"
+}
 # recolors text by replacing color tags with their appropriate color-codes
 # arg 1: text
 function _draw_formatted () {
@@ -1593,12 +1597,32 @@ function _draw_formatted () {
     [<=reset=>]='\033[0m'
     )
 
-    # replace key-names with coloring-values within the text
-    # ------------------------------------------------------
-    text_to_draw=$1
+    # basic preparations
+    text_to_draw="$1"
+    reset_key='<=reset=>'
+
+    # apply persistance by tags
+    # -------------------------
+    # persistence means that a specified color-tag needs to return by default (after other specified colors are reset) for the rest of the line
+    persist_tag_open='<=persist'
+    persist_tag_close='this=>'
+    # If there's use of persistence, handle it line-by-line. If not, skip it (save time)
+    [[ "$text_to_draw" =~ ($persist_tag_open)(.*)($persist_tag_close) ]] && text_to_draw=$(
+        echo "$text_to_draw" | while IFS= read -r line; do  # read current text line by line (without losing the leading/trailing spaces)
+            if [[ "$line" =~ (.*)($persist_tag_open)(.*)($persist_tag_close)(.*) ]]; then  # each line can have up to 1 persisting color-tag
+                part_to_leave_alone="${BASH_REMATCH[1]}"
+                tag_to_persist="${BASH_REMATCH[3]}"  # get the tag that's necessary to persist
+                part_to_modify="${BASH_REMATCH[5]}"
+                modified="$(echo "$part_to_modify" | sed "s/$reset_key/${reset_key}${tag_to_persist}/g")"  # attach the persisting tag after each reset tag
+                echo "${part_to_leave_alone}${tag_to_persist}${modified}"  # we place back the cleaned tag and modified line, skipping the opening/closing tag, they're no longer needed.
+            else
+                echo "$line"
+            fi
+        done
+    )
 
     # add resets
-    reset_key='<=reset=>'
+    # ----------
     reset_value="${colors[$reset_key]}"
     reset_value_escaped=$(printf "%q" "$reset_value")  # for sed. It needs pre-reset string.
     regex_tag='<=[a-zA-Z_]+=>'
@@ -1611,6 +1635,7 @@ function _draw_formatted () {
     text_to_draw=$(echo "$text_to_draw" | sed -r "s/$/&$reset_value_escaped/g")  # add resets at the ends of lines
 
     # insert whitespaces
+    # ------------------
     repeated_char=' '
     while [[ "$text_to_draw" =~ '<='([0-9]+)'WS=>' ]]; do  # while there's still a whitespace-tag
         num="${BASH_REMATCH[1]}"
@@ -1620,6 +1645,7 @@ function _draw_formatted () {
     done
 
     # swap-in all the colors (replace keys with values)
+    # -------------------------------------------------
     for str in "${!colors[@]}"; do
         text_to_draw="${text_to_draw//$str/${colors[$str]}}"
     done
