@@ -36,33 +36,42 @@ Some commands utilize packages which you may need to install
 
 This bashrc was written for Linux Mint 21 / 21.1, but should work for the most part with any distro.
 
-
 ## Usage
 
-Beginner-instructions can be found within the file.
+
+### Sourcing:
+
+The best way to use this project is to source the "custom_bashrc" file. It's the most modular approach; also arguably the easiest.
+
+Simply download this project and **paste the following code at the end of your bashrc file**. Remember to edit it by specifying the "CUSTOM_BASHRC_FILE" path
+
+Your personal bashrc should be "$HOME/.bashrc", but you can alternatively source for all users through the "/etc/bash.bashrc" file (requires sudo)
+
+```
+# source custom bashrc file (more modular than modifying the actual bashrc file)
+CUSTOM_BASHRC_FILE="<path-to-project>/custom_bashrc"
+
+if [ -e "$CUSTOM_BASHRC_FILE" ]; then source "$CUSTOM_BASHRC_FILE" 
+else echo "couldn't find custom_bashrc file at $CUSTOM_BASHRC_FILE , fix it at $(readlink -f -- "$BASH_SOURCE")";  # print faulty file-dir, and this (current) file's location
+fi
+```
+
+
+### Sourcing extra scripts (commands that reference non-bash scripts)
+
+No need to do anything.
+
+There is another bashrc file in this project called "script_calls_bashrc", which dynamically adds aliases that refer to scripts in a nearby folder (you can add your own scripts there)
+
+By default, custom_bashrc sources the scripts' bashrc-file by relative path. Just don't move custom_bashrc out of the project-folder.
+
+
+### Using the custom_bashrc commands:
+
+The sourced bashrc files print a message when they're done loading; the message suggests running a command that tells you where/how to begin usage.
 
 User-specific settings can be set at the top of the file, in the appropriate "My settings" section.
 Just look-up the variables' names within this same file, you'll see what they're used for.
-
-If you want to work on a bashrc file in a git-project but don't want to debug directly from your modified file
-(i.e. you want to keep a copy that could run after you remove the project or its volume), you can add the following
-snippet before your bashrc's source of the external file:
-
-```
-# You need to make sure the following 2 values are set right.
-CUSTOM_BASHRC_FILE="$HOME/custom_bashrc"
-CUSTOM_BASHRC_FILE_SOURCE="<path-to-project>/custom_bashrc"
-
-# if the repository's version was updated later, overwrite your default bashrc external file (and touch it to update the modification date)
-if test "$CUSTOM_BASHRC_FILE_SOURCE" -nt "$CUSTOM_BASHRC_FILE"; then
-    cp "$CUSTOM_BASHRC_FILE_SOURCE" "$CUSTOM_BASHRC_FILE"
-    touch "$CUSTOM_BASHRC_FILE"
-    echo 'copied-over bashrc file from repository'
-fi
-
-# the sourcing of your file
-if [ -e "$CUSTOM_BASHRC_FILE" ]; then source "$CUSTOM_BASHRC_FILE"; fi
-```
 
 
 ## Use Cases (examples)
@@ -132,5 +141,11 @@ Displays side-by-side comparison of media files (movies, pictures, music) metada
 
 **CASE:** Data duplication in the form of similar-content files. You need to decide which file to keep
 **SOLVED:** Get all the relevant info, in a layout that simplifies comparison. You can estimate which file is lower quality, or takes too much space.
+
+
+
+![command_remindme](md_imgs/commands_reminder.jpg)
+###### Figure 5: "remindme" - see which commands the bashrc file offers
+Lists the bash commands that this project provides - can be used for lookup, reading the short documentation, or as the command's name implies - a reminder
 
 

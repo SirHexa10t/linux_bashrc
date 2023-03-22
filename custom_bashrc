@@ -6,20 +6,6 @@
 #---------------------------------------------------------------------------------------------
 
 
-# Add everything here (see note below) to own user's .bashrc file (or in /etc/bash.bashrc if you want it to be global), then reset your terminal
-# Relevant .bashrc files:
-#   /etc/bash.bashrc
-#   $HOME/.bashrc
-
-# (note) It's more modular (and arguably easier) to just save this file somewhere and refer to it from bashrc.
-# To do that, just paste the following 2 lines (uncommented) at the end of your bashrc. Make sure the filename's correct of-course.
-#   CUSTOM_BASHRC_FILE="$HOME/custom_bashrc"
-#   if [ -e "$CUSTOM_BASHRC_FILE" ]; then source "$CUSTOM_BASHRC_FILE"; fi
-
-# To apply your bashrc to sudo as well, edit the file: /etc/sudoers , and put the following line in it (without the comment):
-# Defaults        env_keep += "BASH_FUNC_*"
-
-
 # please ignore - stuff that's needed early in this file; not meant for the user 
 #################################################################################
 _alias_names_query='alias | grep -E "^alias" | sed "s/^alias \([^=]*\)=.*/\1/"'  # this is needed very early (and very late) for lookup of existing aliases
@@ -112,7 +98,6 @@ fi
 # Basic functionalitiy override !
 # ===============================
 
-# TODO - add remindme's screenshot to README
 # TODO - lookup (grep) within "remindme"
 # TODO - "whatnow" - tag commands (things like "network" or "visual" or "filesystem") and list the tags for (optional) interactive picking 
 # TODO - find all "] &&" and see that they operate fine
@@ -603,7 +588,11 @@ function _unique_in_first () {
 
 ## I don't know what black magic is involved, but you need both the above sudo alias and this function to support alias interpretation.
 # Sources this file if the command is a function from this page.
+# Remember: sudo has its own environment. You can perform actions such as file modification, but you can't apply session-env altering commands such as "cd"
 function sudo () {
+    # We basically source this file when calling sudo, which is convenient to the user. The "right" way to do so is to put something in the style of the following line (without the comment) in /etc/sudoers :
+    # Defaults        env_keep += "BASH_FUNC_*"
+
     # needs to be "silent" to avoid screwing up scripts that rely on the output of the sudo'd commands
     # if arg 1 (only arg 1 supported, deal with it) is in the list of this file's functions, source this file. Otherwise, run sudo regularly.
     if [ -n "${CUSTOM_FUNCTIONS_MAP[$1]}" ]; then
@@ -644,6 +633,7 @@ function max () {
 }
 
 # TODO - command grep. "command_like <expression>"
+# TODO - catch titles ("# [A-Za-z]" and "# [=*]"  or  "# [A-Za-z]" and "##+")
 # list custom commands.
 # --show_hidden (list inner-workings commands) ; --sort (sort alphabetically) ; --include_line_num
 function remindme () {
@@ -1531,7 +1521,7 @@ function color_word () {
 
 # TODO - detect if the terminal is bright instead of dark? If it's white, the colored prints should be darker; so you should remove the "\033[1m" prefix
 # recolors all lines with specified color
-# arg 1: color (ee available colors in "_draw_formatted") , arg 2: text to color
+# arg 1: color (see available colors in "_draw_formatted") , arg 2: text to color
 function _colored_echo () {
     # apply colors (arg 1) to all lines
     formatted=$( echo "${@:2}" | while IFS= read -r line; do echo "${1}${line}"; done )
@@ -1864,7 +1854,6 @@ banner="
         [ -n "$is_verbose" ] && echo "banner_width: $banner_width , runner_width: $runner_width , total_run: $total_run"
         [ -n "$is_verbose" ] && echo "iteration took $( echo "$(date +%s.%N) - $time_start" | bc )'s , key_press_wait: ${key_press_wait}s , distance-window width: $window_dist , distance ran: $d , distance remaining: $runner_width_still_visible"
         
-
     done
 
     # dim the banner (and progress the cursor) by pasting over it at-once
