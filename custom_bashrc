@@ -104,7 +104,9 @@ fi
 
 # TODO - find places in code that print line-by-line and speed them up by buffering and printing everything at-once (noticably faster), unless those are in a (potentially) long processes
 
+# TODO - make function variables "local"? (check if it matters)
 
+# TODO - define this file's constants with capital letters?
 
 
 # The space at the end makes bash auto-complete the next word as well. 'sudo ' alone makes aliases work in sudo, but not functions.
@@ -164,9 +166,38 @@ alias sysinfo_full='inxi -FxxzJy90'
 # Get metadata of a specified audio/video/image file
 alias media_metadata='ffprobe -v error -show_entries stream=width,height,r_frame_rate,nb_frames,codec_name,channels,bit_rate,duration -show_entries format=filename,size -hide_banner -pretty -print_format json'
 
-
 # open window at current terminal directory
 alias gui='xdg-open "$(pwd)"'
+
+# echo in red
+alias recho='_colored_echo "<=bold=><=red=>"'
+
+# echo in green
+alias gecho='_colored_echo "<=bold=><=green=>"'
+
+# echo in dark green
+alias dagecho='_colored_echo "<=green=>"'
+
+# echo in blue
+alias becho='_colored_echo "<=bold=><=blue=>"'
+
+# echo in yellow
+alias yecho='_colored_echo "<=bold=><=yellow=>"'
+
+# underlined echo
+alias uecho='_colored_echo "<=bold=><=uline=>"'
+
+# underlined echo in red
+alias ruecho='_colored_echo "<=bold=><=uline=><=red=>"'
+
+# underlined echo in green
+alias guecho='_colored_echo "<=bold=><=uline=><=green=>"'
+
+# underlined echo in blue
+alias buecho='_colored_echo "<=bold=><=uline=><=blue=>"'
+
+# underlined echo in yellow
+alias yuecho='_colored_echo "<=bold=><=uline=><=yellow=>"'
 
 
 # Service/Application handling
@@ -535,7 +566,7 @@ function _hashmap_instructions () {
     			continue
     		;;
             '--list')  # MUST come last!
-                shift 1
+                shift
     			the_list="$@"
                 while [ "$#" -gt 0 ]; do shift; done  # no more args, shift them all.
     			continue
@@ -637,23 +668,22 @@ function max () {
 # list custom commands.
 # --show_hidden (list inner-workings commands) ; --sort (sort alphabetically) ; --include_line_num
 function remindme () {
-    # declare -p CUSTOM_FUNCTIONS
     show_hidden='' ; include_line_num='' ; sort=''
     while [[ $# -gt 0 ]]; do
     	case "$1" in
             '--show_hidden')
     			show_hidden='true'
-    			shift 1
+    			shift
     			continue
     		;;
             '--include_line_num')
     			include_line_num='true'
-    			shift 1
+    			shift
     			continue
     		;;
             '--sort')
     			sort='true'
-    			shift 1
+    			shift
     			continue
     		;;
             *)
@@ -725,6 +755,8 @@ function find_proc () {
 
 # kill processes by substring, with a confirmation prompt that specifies what's being killed
 function kill_interactively () {
+    # TODO - add display of top-cpu processes to kill - "you didn't specify what to kill, here are the top-10 CPU intensive processes, if you want to kill any of them, input a number or their name"
+
     [ $# -ge 1 ] || { recho "You need to provide a substring to find (and later kill) processes with." ; return ; }
     
     pids=$(pgrep -i "$1")  # get all PIDs
@@ -861,7 +893,7 @@ function archive_tar7z () {
     	case "$1" in
     		'-o'|'--overwrite')
     			overwrite='true'
-    			shift 1
+    			shift
     			continue
     		;;
     		'-p'|'--password')
@@ -871,7 +903,7 @@ function archive_tar7z () {
             ;;
     		*)
                 filenames+=("$1")
-                shift 1
+                shift
     		;;
     	esac
     done
@@ -1070,7 +1102,7 @@ function list_human_users() {
     		;;
             '--require_home')
     			require_home='true'
-    			shift 1
+    			shift
     			continue
     		;;
             *)
@@ -1521,12 +1553,41 @@ function color_word () {
 
 # TODO - detect if the terminal is bright instead of dark? If it's white, the colored prints should be darker; so you should remove the "\033[1m" prefix
 # recolors all lines with specified color
-# arg 1: color (see available colors in "_draw_formatted") , arg 2: text to color
+# any early arg: color (see available colors in "_draw_formatted") , any early arg: -p (optional - turn tag to persistant) , any early arg: -n (optional - no coloring, just tagging) , any early arg: -t (optional - just return the tag itself) , last arg: text to color
 function _colored_echo () {
-    # apply colors (arg 1) to all lines
-    formatted=$( echo "${@:2}" | while IFS= read -r line; do echo "${1}${line}"; done )
-    _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
+    no_drawing='' ; persist='' ; tag='' ; only_tag=''
+    while [[ $# -gt 0 ]]; do
+        if [ "$1" == '-n' ]; then  # just put in the tags, don't draw
+            no_drawing='true'
+            shift
+        elif [ "$1" == '-p' ]; then  # persisting tag
+            persist='true'
+            shift
+        elif [ "$1" == '-t' ]; then  # only return the tag, don't do any text/color-related work
+            only_tag='true'
+            shift
+        elif [ -z "$tag" ] && [[ "$1" =~ ^'<='.+'=>'$ ]]; then  # found the tag for the first time
+            tag="$1"
+            shift
+        else  # regular text - we're done scanning for options
+            break
+        fi
+    done
+
+    [ -n "$persist" ] && tag=$(_tag_persist "$tag")  # if requested to "upgrade" to persistant tag
+
+    [ -n "$only_tag" ] && echo "$tag" && return  # if requested to only return the tag
+
+    formatted=$( echo "$@" | while IFS= read -r line; do echo "${tag}${line}<=reset=>"; done )
+    if [ -n "$no_drawing" ]; then
+        echo "$formatted"
+        return
+    else
+        _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
+        return
+    fi
 }
+
 # comment-colorized echo
 function commecho () {
     bullet_point_color='<=green=>'
@@ -1536,10 +1597,10 @@ function commecho () {
     sharp_comment_color=$(_tag_persist '<=yellow=>')
     colon_comment_color=$(_tag_persist '<=yellow=>')
     angled_brackets_color='<=bold=><=red=>'
-    
     reset='<=reset=>'
+
     formatted="$@"  # get all of the input
-    formatted=$(echo "$formatted" | sed -E "s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-choice) but not in lines that get entirely colored  <- needs to run first, to not modify the color tags
+    formatted=$(echo "$formatted" | sed -E "s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-input). Needs to run first, to not modify the color tags
     formatted=$(echo "$formatted" | sed "s/^* /${bullet_point_color}*${reset} /g")  # replace beginning '* ' with a colored asterisk and space  (bullet-points)
     formatted=$(echo "$formatted" | sed "s/^>>.*$/${double_cat_line_color}&/g")  # recolor lines beginning '>>'  (topics)
     formatted=$(echo "$formatted" | sed "s/^>.*$/${single_cat_line_color}&/g")  # recolor lines beginning '>'  (sub-topics)
@@ -1548,51 +1609,13 @@ function commecho () {
     formatted=$(echo "$formatted" | sed "s/  :.*$/${colon_comment_color}&/g")  # recolor after '  :'  (item-comments)
      _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
 }
-# echo in red
-function recho () {
-    _colored_echo '<=bold=><=red=>' "${@}"
-}
-# echo in green
-function gecho () {
-    _colored_echo '<=bold=><=green=>' "${@}"
-}
-# echo in dark green
-function dagecho () {
-    _colored_echo '<=green=>' "${@}"
-}
-# echo in blue
-function becho () {
-	_colored_echo '<=bold=><=blue=>' "${@}"
-}
-# echo in yellow
-function yecho () {
-	_colored_echo '<=bold=><=yellow=>' "${@}"
-}
-# underlined echo
-function uecho () {
-    _colored_echo '<=bold=><=uline=>' "${@}"
-}
-# underlined echo in red
-function ruecho () {
-    _colored_echo '<=bold=><=uline=><=red=>' "${@}"
-}
-# underlined echo in green
-function guecho () {
-	_colored_echo '<=bold=><=uline=><=green=>' "${@}"
-}
-# underlined echo in blue
-function buecho () {
-    _colored_echo '<=bold=><=uline=><=blue=>' "${@}"
-}
-# underlined echo in yellow
-function yuecho () {
-    _colored_echo '<=bold=><=uline=><=yellow=>' "${@}"
-}
 
 # make given tag persistant
 function _tag_persist () {
     echo "<=persist${@}this=>"
 }
+
+
 # recolors text by replacing color tags with their appropriate color-codes
 # arg 1: text
 function _draw_formatted () {
@@ -1627,7 +1650,9 @@ function _draw_formatted () {
                 part_to_leave_alone="${BASH_REMATCH[1]}"
                 tag_to_persist="${BASH_REMATCH[3]}"  # get the tag that's necessary to persist
                 part_to_modify="${BASH_REMATCH[5]}"
-                modified="$(echo "$part_to_modify" | sed "s/$reset_key/${reset_key}${tag_to_persist}/g")"  # attach the persisting tag after each reset tag
+                modified="$part_to_modify"
+                modified="$(echo "$modified" | sed "s/$reset_key/${reset_key}${tag_to_persist}/g")"  # attach the persisting tag after each reset tag
+                modified="$(echo "$modified" | sed "s/\x1b\[0m/&$tag_to_persist/g")"  # attach the persisting tag after each previously-translated reset tag (escape)
                 echo "${part_to_leave_alone}${tag_to_persist}${modified}"  # we place back the cleaned tag and modified line, skipping the opening/closing tag, they're no longer needed.
             else
                 echo "$line"
@@ -1641,12 +1666,11 @@ function _draw_formatted () {
     reset_value_escaped=$(printf "%q" "$reset_value")  # for sed. It needs pre-reset string.
     regex_tag='<=[a-zA-Z_]+=>'
     regex_ws_tag='<=([0-9]+)WS=>'
-    text_to_draw="${text_to_draw//$reset_key/$reset_value}"  # replace reset on its own, because otherwise we'd replace it with 2 consecutive color resets (still works, but isn't right)
-    text_to_draw=$(echo "$text_to_draw" | sed -r "s/($regex_tag)/$reset_value_escaped\1/g")  # put reset before each color tag
-    text_to_draw=$(echo "$text_to_draw" | sed -r "s/($regex_tag)($reset_value_escaped)($regex_tag)/\1\3/g")  # delete reset in between tags (to avoid canceling-out the prior tag)
-    text_to_draw=$(echo "$text_to_draw" | sed -r "s/($regex_tag)($reset_value_escaped)($regex_tag)/\1\3/g")  # doesn't work for 3 consecutive tags, so we just repeat it...
+    text_to_draw="${text_to_draw//$reset_key/$reset_value}"  # replace reset on its own, because otherwise we'd replace it with 2 consecutive color resets later (still works, but isn't right)
+    text_to_draw=$(echo "$text_to_draw" | sed -r "/^($regex_tag)+/!s/($regex_tag)+/$reset_value_escaped&/g")  # put reset before each group of color tags, but not if they're at the start
     text_to_draw=$(echo "$text_to_draw" | sed -r "s/($regex_ws_tag)/$reset_value_escaped\1/g")  # put reset before spaces-insert
-    text_to_draw=$(echo "$text_to_draw" | sed -r "s/$/&$reset_value_escaped/g")  # add resets at the ends of lines
+    text_to_draw=$(echo "$text_to_draw" | sed -r "/$reset_value_escaped$/!s/$/&$reset_value_escaped/g")  # add resets at the ends of lines, but only if they're missing
+    
 
     # insert whitespaces
     # ------------------
