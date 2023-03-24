@@ -33,7 +33,6 @@ function _announce_pkg_installed () {
 SUDO_FILE=$(which sudo)
 THIS_FILE=$(readlink -f -- "$BASH_SOURCE")
 THIS_FOLDER=$(dirname "$THIS_FILE")
-TESTS_FILE="$THIS_FOLDER/run_tests.sh"  # Will run at the end of the sourcing of this file, for convenient debugging. Put whatever you want in such a file and change the address if you will.
 SCRIPTS_BASHRC_FILE="$THIS_FOLDER/script_calls_bashrc"  # optional extention file
 IS_USER_ROOT=$(if [ "$USER" = "root" ]; then echo "true"; else echo "false"; fi)
 IS_FIRST_SOURCING=$([ ! -v CUSTOM_ALIASES_INITIAL ] && echo 'true' || echo 'false')
@@ -45,10 +44,16 @@ fi
 
 # My settings / constants (customize this to your needs/liking)
 #################################################################################
+HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
+
+TESTS_FILE="$THIS_FOLDER/run_tests.sh"  # Will run at the end of the sourcing of this file, for convenient debugging. Put whatever you want in such a file and change the address if you will.
+
+
 QEMU_VOLUME_UUID='A80899A4089971D4'
 LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
 
-HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
+# CACHE_LOCATION='/cache_space'  # setup a caching disk in case you want tmp caching buffer to be someplace else than system's temporary directory
+SUBDIR_MOUNTS_FILE='folder_mounts.csv'
 
 
 # My binds
@@ -240,7 +245,7 @@ alias psg='find_proc'
 # =================
 
 # Reminders for linux system tools and command options
-alias howdoi_linux='commecho "
+alias howdoi_linux='commecho -l "\
 >> Packages
 * sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
 * sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for \"no prompt\")
@@ -270,7 +275,7 @@ alias howdoi_linux='commecho "
 "'
 
 # Reminders for user/groups management
-alias howdoi_users='commecho "
+alias howdoi_users='commecho -l "\
 * groups <username>  # display the groups of a user
 * usermod -aG <groupA,groupB,groupC> <username>  # add user to group(s). You can even add to group sudo (makes into superuser in Ubuntu).
 * getent group  # list all groups and their user-members
@@ -281,7 +286,7 @@ alias howdoi_users='commecho "
 "'
 
 # Reminders for the basic gimmicks of bash
-alias howdoi_bash_terminal='commecho "
+alias howdoi_bash_terminal='commecho -l "\
 >> terminal
 * apt search <term>  # look for substring in known packages. As usual, nala can also be used
 * man <command>  # read the manual of the command
@@ -298,7 +303,8 @@ alias howdoi_bash_terminal='commecho "
 + \"\$my_var\" is the value of variable my_var, \"\$1\" is the first argument in current scope (and so on), \"\$@\" is all arguments in current scope, \"\$#\" is the number of args, \"\$\$\" is current PID, \"\$?\" is the return code of last operation, \$(<cmd here>) is used to run commands within commands (can also use \`<cmd here>\`)
 * declare -p <variable>  # Note: no use of $. Print the variable to check data / data-type
 + add \"& disown\" after a command to have it run in its own thread so that it wont stop when the terminal closes
-+ add \"2> /dev/null\" after a command to throw away warning/error messages it might bring up
++ add \"<0/1/2> > <filename>\" after a command to write input(0)/output(1)/error(2) streams to a file. Specify \"&\" to write both 1 and 2. You can also use numbers 3 to 9, those are free descriptors for you to use as you like.
++   add \"2> /dev/null\" after a command to throw away warning/error messages it might bring up
 * time <command>  # get time measurement for command runtime. No need for quotes or any encapsulation, just prepend \"time\". Example: time ls -l
 * extra_dist=\$(( (a > b) ? (a - b) : 0 ))  # example for ternary in bash (use the \"&&\",\"||\" ternary instead when you have a condition in \"[]\"). The double-parentheses mean you dont need \"$\" to reference variables and that the math operations get evaluated
 * espeak <text>  # read-out (audio) the given text. A bit of a gimmick, sounds very robotic
@@ -310,15 +316,26 @@ alias howdoi_bash_terminal='commecho "
 * Terminal CTRL+Z : send to background (leave any interactive UI for a while). Resume by running: fg
 "'
 
+# Reminders for some neat time-saving GUI keybind tricks
+alias howdoi_gui_shortcut='commecho -l "\
+* Built-in Nemo [space] :  select (click) a file/folder, and press [space] to get a summary/preview; press again to close
+* Custom Gnome-Nemo CTRL+SHIT+T :  open Terminal at current Nemo location
+* Built-in Gnome CTRL+ALT+T :  open Terminal
+* Built-in Gnome(?) CTRL+ALT+[backspace] :  log out of current session (resets your GUI)
+* Built-in Debian(?) CTRL+ALT+F1 :  enter TTY mode (terminal without anything graphic to lock/interrupt you)
+* Built-in Debian(?) CTRL+ALT+F7 :  exit TTY mode
+* Evdev installation LCTRL+RCTRL  :  switch mouse and keyboard (and maybe other things) between guest/host. Wont work if you gave the VM your USB device directly.
+"'
+
 # common media file operations
-alias howdoi_media_and_docs='commecho "
+alias howdoi_media_and_docs='commecho -l "\
 * pdftk <file1> <file2> <file3> cat output <merged_name.pdf>  # create a unified pdf file 
 * xournal <pdf_filepath>  # edit a pdf file with option to add signatures
 * ffmpeg  # general media (audio / video) handling package, you can find some usages in this bashrc file
 "'
 
 # Reminders for microsoft-format handling tools
-alias howdoi_microsoft='commecho "
+alias howdoi_microsoft='commecho -l "\
 * lnkinfo <lnk-file>  # display link info
 * dos2unix <file>  # convert files from windows to unix encoding
 * sudo ntfsfix <device> -v  # run check-disk on NTFS device
@@ -326,20 +343,20 @@ alias howdoi_microsoft='commecho "
 "'
 
 # Snippets and tricks for Chromium-based browsers
-alias howdoi_chromium='commecho "
+alias howdoi_chromium='commecho -l "\
 * chrome://flags/#hardware-media-key-handling  # Advanced operation flags. Specifically media-key-handline - disable this to get rid of the banner that appears when you change volume
 * document.getElementsByTagName("video")[0].playbackRate = 4  # change youtube playback speed (example here: x4)
 "'
 
 
 # Reminders for android-related tools
-alias howdoi_android='commecho "
+alias howdoi_android='commecho -l "\
 * scrcpy  # run daemon that casts the connected Android device screen onto a window, and shares the clicks within it back to the Android device
 * scrcpy -r <filename.mp4>  # save a video recording of your connected android device activity (needs USB-Debug and File-Transfer mode)
 "'
 
 # Reminders for network management
-alias howdoi_network='commecho "
+alias howdoi_network='commecho -l "\
 >> Own network info
 * ip addr  # display own networking interfaces
 * sudo netstat -tulpn  # display active network connections and filter by port number
@@ -357,7 +374,7 @@ alias howdoi_network='commecho "
 "'
 
 # Reminders for the basics of systemd
-alias howdoi_manage_services='commecho "
+alias howdoi_manage_services='commecho -l "\
 >> Crontab
 * crontab -e  # edit routine-scheduled tasks
 >> systemd
@@ -369,7 +386,7 @@ alias howdoi_manage_services='commecho "
 "'
 
 # Reminders for docker
-alias howdoi_manage_docker='commecho "
+alias howdoi_manage_docker='commecho -l "\
 >> view (might need to run sudo to find all)
 * docker ps -a  # list ALL containers
 * docker images -a  # list all images
@@ -386,7 +403,7 @@ alias howdoi_manage_docker='commecho "
 "'
 
 # Reminders for vm tools and command options (mostly stuff you can't do through Virtual Machine Manager)
-alias howdoi_manage_vm='commecho "
+alias howdoi_manage_vm='commecho -l "\
 * systemctl restart libvirtd  # restart the libvirt daemon vm-manager
 * virsh start <name>  # start VM
 * virsh domrename <old_name> <new_name>  # rename vm
@@ -400,7 +417,8 @@ alias howdoi_manage_vm='commecho "
 "'
 
 # Reminders for the basic gimmicks of tmux terminal
-alias howdoi_use_tmux='commecho "tmux offers split-panes and sessions for terminals.
+alias howdoi_use_tmux='commecho -l "\
+tmux offers split-panes and sessions for terminals.
 >> Good for managing a server:
 + tmux terminals persist even after disconnection. They keep running until restart the server or send a closure command.
 + tmux windows can be named, listed and looked up.
@@ -431,7 +449,7 @@ alias howdoi_use_tmux='commecho "tmux offers split-panes and sessions for termin
 # TODO - cargo (maven-like manager) cheatsheet. Reference: https://www.youtube.com/watch?v=zF34dRivLOw
 
 # Reminders for ascii-related commands and handling
-alias howdoi_ascii='commecho "
+alias howdoi_ascii='commecho -l "\
 + Create ASCII writings in this site: http://patorjk.com/software/taag/
 * figlet <text>  # write ASCII styled text, different fonts are also supported
 * banner <text>  # write ASCII styled text
@@ -442,17 +460,6 @@ alias howdoi_ascii='commecho "
 * <text_output_command> | pv -qL 200  # write text progressively (like being typed, or (if fast) etched by a laser engraver). Try testing with neofetch. Try adding pipe to lolcat.
 "'
 
-
-# Reminders for some neat time-saving GUI keybind tricks
-alias howdoi_shortcut='commecho "
-* Built-in Nemo [space] :  select (click) a file/folder, and press [space] to get a summary/preview; press again to close
-* Custom Gnome-Nemo CTRL+SHIT+T :  open Terminal at current Nemo location
-* Built-in Gnome CTRL+ALT+T :  open Terminal
-* Built-in Gnome(?) CTRL+ALT+[backspace] :  log out of current session (resets your GUI)
-* Built-in Debian(?) CTRL+ALT+F1 :  enter TTY mode (terminal without anything graphic to lock/interrupt you)
-* Built-in Debian(?) CTRL+ALT+F7 :  exit TTY mode
-* Evded installation LCTRL+RCTRL  :  switch mouse and keyboard (and maybe other things) between guest/host. Wont work if you gave the VM your USB device directly.
-"'
 
 
 # Custom
@@ -484,7 +491,7 @@ alias arrange_monitors='nvidia-settings --load-config-only && nvidia-settings --
 
 # attempt to run command given command (args) - if it fails, run with sudo
 function _sudo_if_necessary () {
-    [ $# -ge 1 ] || { recho "WTF are you expecting me to sudo? Give me a command-string as argument" ; return ; }
+    [ $# -ge 1 ] || { errcho "WTF are you expecting me to sudo? Give me a command-string as argument" ; return ; }
 
     normal_output=$(eval "$@" 2>/dev/null)
     [ $? -ne 0 ] && eval "sudo $@" || echo "$normal_output"
@@ -572,14 +579,14 @@ function _hashmap_instructions () {
     			continue
     		;;
             *)
-                recho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+                errcho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
     			shift
     		;;
         esac
     done
 
-    [ -z "$hashmap_name" ] && recho "no name provided for your hashmap" && return 1
-    [ -z "$the_list" ] && recho "no list provided" && return 1
+    [ -z "$hashmap_name" ] && errcho "no name provided for your hashmap" && return 1
+    [ -z "$the_list" ] && errcho "no list provided" && return 1
 
     hasmap_builder="declare -A $hashmap_name=("
     for item in $the_list; do hasmap_builder+=" [$item]='1'"; done 
@@ -592,7 +599,7 @@ function _hashmap_instructions () {
 # gets variable name, evaluates it and returns hashmap-creation-string for same varname with suffix _map or _MAP
 # call like this: eval $(_hashmap_this_var 'list_name')
 function _hashmap_this_var () {
-    [ "$#" -eq 1 ] || { recho "You need to provide variable-name as an argument" ; return ; }  # TODO - check this file for all places where "ge 1" was used, maybe mistakenly instead of "eq 1"
+    [ "$#" -eq 1 ] || { errcho "You need to provide variable-name as an argument" ; return ; }  # TODO - check this file for all places where "ge 1" was used, maybe mistakenly instead of "eq 1"
     
     # uses the '=' to avoid screwing up a substring in the declaration prior to var-name
     eval $(declare -p "$1" | sed "s/${1}=/new_list=/")  # get list declaration and declare it for a name we know locally
@@ -687,7 +694,7 @@ function remindme () {
     			continue
     		;;
             *)
-                recho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+                errcho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
     			shift
     		;;
         esac
@@ -708,7 +715,7 @@ function remindme () {
         num_of_rows_above="$2"
         cmd_names="${@:3}"  # args 3 and onwards
 
-        [ -z "$cmd_names" ] && recho 'No commands given to search!' && return
+        [ -z "$cmd_names" ] && errcho 'No commands given to search!' && return
 
         while read -r name; do
             if [ -z "$show_hidden" ] && [[ "${name:0:1}" == '_' ]]; then continue; fi  # if not showing hidden functions and current function starts with '_', skip it
@@ -747,7 +754,7 @@ function mang () {
 
 # Find processes by substring. Print error if given no args ; print everything if given empty string
 function find_proc () {
-    [ $# -ge 1 ] || { recho "No substring provided to look through with." ; return ; }
+    [ $# -ge 1 ] || { errcho "No substring provided to look through with." ; return ; }
 
     ps -eo pid,ppid,user,%cpu,%mem,stat,start,time,cmd --sort=-%cpu | awk -v search="$1" 'BEGIN{IGNORECASE=1} NR==1 || $0 ~ search {print}' \
     | color_word --word "$1"  # color the sought term
@@ -757,7 +764,7 @@ function find_proc () {
 function kill_interactively () {
     # TODO - add display of top-cpu processes to kill - "you didn't specify what to kill, here are the top-10 CPU intensive processes, if you want to kill any of them, input a number or their name"
 
-    [ $# -ge 1 ] || { recho "You need to provide a substring to find (and later kill) processes with." ; return ; }
+    [ $# -ge 1 ] || { errcho "You need to provide a substring to find (and later kill) processes with." ; return ; }
     
     pids=$(pgrep -i "$1")  # get all PIDs
     [ -z "$pids" ] && becho "no processes found" && return 0;
@@ -765,13 +772,13 @@ function kill_interactively () {
     pids_spaces=$(echo "$pids_commas" | tr ',' ' ')  # save PIDs with space-separation (for killing)
     proc_info=$(ps -p "$pids_commas" -o pid,ppid,user,%cpu,%mem,stat,start,time,cmd --sort=-%cpu)
 
-    prompt="$(echo "$proc_info" ; recho "The listed processes will be killed. Are you sure?")"
+    prompt="$(echo "$proc_info" ; becho -p "The listed processes $(recho will be killed). Are you sure?")"
     if _prompt_yn "$prompt"; then _sudo_if_necessary kill ${pids_spaces} ; else echo "Quitting." && return ; fi
 
     _wait_n_seconds 2
 
     pids=$(pgrep -i "$1")  # get all PIDs, again
-    [ -z "$pids" ] && becho "Confirmed no new processes with same substring" || recho "Found live processes with the same name you just eliminated"
+    [ -z "$pids" ] && becho "Confirmed no new processes with same substring" || errcho "Found live processes with the same name you just eliminated"
 }
 
 
@@ -826,7 +833,7 @@ function iommu_find () {
 
     lookup="$1"
     if [ -z "$lookup" ]; then
-        recho "You didn't specify a device substring/word to look-up (Example: \"USB\"). So here are all IOMMUs/devices and connected USB peripherals:"
+        errcho "You didn't specify a device substring/word to look-up (Example: \"USB\"). So here are all IOMMUs/devices and connected USB peripherals:"
         echo "$all_iommu_devices"
         lsusb
         return 0 
@@ -908,7 +915,7 @@ function archive_tar7z () {
     	esac
     done
 
-    [ -n "$filenames" ] || { recho "You need to specify files (or folders) to archive" ; return 1; }
+    [ -n "$filenames" ] || { errcho "You need to specify files (or folders) to archive" ; return 1; }
 
     # note: don't try running multiple in async; tar and 7z already run multi-threaded
     for f in "${filenames[@]}"; do
@@ -967,14 +974,14 @@ function media_merge_audio_video () {
     			continue
             ;;
     		*)
-                recho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+                errcho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
                 return 1
     		;;
     	esac
     done
 
-    [ -z "$video_file" ] && recho "no video file specified" && return 1
-    [ -z "$audio_file" ] && recho "no audio file specified" && return 1
+    [ -z "$video_file" ] && errcho "no video file specified" && return 1
+    [ -z "$audio_file" ] && errcho "no audio file specified" && return 1
 
     output="${video_file%.*}_replaced_audio.${video_file##*.}"  # add "_replaced_audio" before the video file's .<format>
 
@@ -1106,7 +1113,7 @@ function list_human_users() {
     			continue
     		;;
             *)
-                recho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+                errcho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
     			shift
     		;;
         esac
@@ -1292,7 +1299,7 @@ args:
                     first_free_arg_is_exp='true'
                     exp=$1
                 else
-                    recho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+                    errcho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
                 fi
     			shift
     		;;
@@ -1337,7 +1344,7 @@ function launch_vm_w_lookingglass() {
         if echo $(virsh list --all --name) | grep -w -q "$vm_name"; then  # match whole word (case sensitive), quietly
             valid=1
         else
-            recho "Invalid VM name"
+            errcho "Invalid VM name"
         fi
     done
 
@@ -1372,12 +1379,12 @@ function launch_vm_w_lookingglass() {
     elif [ "$vm_state" == "paused" ]; then
         virsh resume "$vm_name" && gecho "resuming $vm_name"
     else
-        recho "Can't handle VM state: $vm_state"
-        if [ "$vm_state" == "blocked" ]; then recho "the VM '$vm_name' is blocked on resource";
-        elif [ "$vm_state" == "shutdown" ]; then recho "$vm_name is still shutting down";
-        elif [ "$vm_state" == "crashed" ]; then recho "the VM '$vm_name' has crashed";
-        elif [ "$vm_state" == "pmsuspended" ]; then recho "the VM '$vm_name' is in a suspended state as a result of power management";
-        else recho "Error: VM state isn't defined (fix this function)"
+        errcho "Can't handle VM state: $vm_state"
+        if [ "$vm_state" == "blocked" ]; then errcho "the VM '$vm_name' is blocked on resource";
+        elif [ "$vm_state" == "shutdown" ]; then errcho "$vm_name is still shutting down";
+        elif [ "$vm_state" == "crashed" ]; then errcho "the VM '$vm_name' has crashed";
+        elif [ "$vm_state" == "pmsuspended" ]; then errcho "the VM '$vm_name' is in a suspended state as a result of power management";
+        else errcho "Error: VM state isn't defined (fix this function)"
         fi
         return 1
     fi
@@ -1498,6 +1505,14 @@ function _repeat_whitespace_rows () {
     done
 }
 
+# removes whitespaces from line-starts
+function rm_leading_whitespaces () {
+    expression='s/^[[:space:]]*//'
+    if ! [ -t 0 ]; then sed "$expression" ;
+    else echo "$@" | sed "$expression";
+    fi
+}
+
 # print string with a similarly-lengthed line
 # arg 1: string , arg 2 (optional): line-char (default is '-')
 function _underline () {
@@ -1589,25 +1604,56 @@ function _colored_echo () {
 }
 
 # comment-colorized echo
+# -l (optional: include legend)
 function commecho () {
     bullet_point_color='<=green=>'
     double_cat_line_color=$(_tag_persist '<=bold=><=blue=>')
     single_cat_line_color=$(_tag_persist '<=blue=>')
-    plus_line_color=$(_tag_persist '<=uline=><=yellow=>')
+    plus_line_color=$(_tag_persist '<=bold=><=yellow=>')
     sharp_comment_color=$(_tag_persist '<=yellow=>')
     colon_comment_color=$(_tag_persist '<=yellow=>')
-    angled_brackets_color='<=bold=><=red=>'
+    double_quotes_color='<=bold=><=red=>'
+    # angled_brackets_color='<=italic=>'  # problematic when within a color that's already within persisting color  # TODO - fix (improve the coloring function)
     reset='<=reset=>'
 
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+        	'-l'|'--legend')
+                legend_items=(
+                "$(_draw_formatted "${double_cat_line_color}topic")"
+                "$(_draw_formatted "${single_cat_line_color}sub-topic")"
+                "$(_draw_formatted "${plus_line_color}trick/tip")"
+                "$(_draw_formatted "${sharp_comment_color}# comment/explanation")"
+                "$(_draw_formatted "${double_quotes_color}\"specifics\"")"
+                # "$(_draw_formatted "${angled_brackets_color}<your-choice>")"
+                )
+                # Alternatively use this (with the command substitution, so IFS change won't stay) if you want tab-separation: $(IFS=$'\t'; echo "${legend_items[*]}
+                printf -v joined '%s , ' "${legend_items[@]}" && joined=${joined%???}  # print list separated by comma+spaces into variable, and remove last 3 chars because there's an extra comma at the end
+                echo -e "Legend: $joined\n"  # with an extra line (that's what the -e is there for), to separate the legend from the data
+                shift
+        		continue
+        	;;
+        	*)
+                break  # no more options, now it's just data
+        	;;
+        esac
+    done
+
     formatted="$@"  # get all of the input
-    formatted=$(echo "$formatted" | sed -E "s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-input). Needs to run first, to not modify the color tags
+    # formatted=$(echo "$formatted" | sed -E "s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-input). Needs to run first, to not modify the color tags
+    formatted=$(echo "$formatted" | sed -E "s/(\"[^\"]+\")/$double_quotes_color\1$reset/g")  # recolor within " " (specifics)
     formatted=$(echo "$formatted" | sed "s/^* /${bullet_point_color}*${reset} /g")  # replace beginning '* ' with a colored asterisk and space  (bullet-points)
     formatted=$(echo "$formatted" | sed "s/^>>.*$/${double_cat_line_color}&/g")  # recolor lines beginning '>>'  (topics)
     formatted=$(echo "$formatted" | sed "s/^>.*$/${single_cat_line_color}&/g")  # recolor lines beginning '>'  (sub-topics)
     formatted=$(echo "$formatted" | sed "s/^+.*$/${plus_line_color}&/g")  # recolor lines beginning '+'  (notes)
     formatted=$(echo "$formatted" | sed "s/  #.*$/${sharp_comment_color}&/g")  # recolor after '  #'  (code-comments)
     formatted=$(echo "$formatted" | sed "s/  :.*$/${colon_comment_color}&/g")  # recolor after '  :'  (item-comments)
-     _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
+    _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
+}
+
+# print to error output
+function errcho () {
+    recho "$@" >&2
 }
 
 # make given tag persistant
@@ -1631,7 +1677,7 @@ function _draw_formatted () {
     # stylizing
     [<=bold=>]='\033[1m' [<=dark=>]='\033[2m' [<=italic=>]='\033[3m' [<=uline=>]='\033[4m' [<=flicker=>]='\033[5m' [<=fast_flicker=>]='\033[6m' [<=switch_fg_bg=>]='\033[7m' [<=hidden=>]='\033[8m' [<=crossed=>]='\033[9m'
     # reset
-    [<=reset=>]='\033[0m'
+    [<=bold_reset=>]='\033[22m' [<=italics_reset=>]='\033[23m' [<=reset=>]='\033[0m'
     )
 
     # basic preparations
@@ -1819,10 +1865,10 @@ banner="
 
     # check that the screen is wide enough
     necessary_terminal_width=$((banner_width + runner_width))
-    if ((necessary_terminal_width > terminal_width)); then recho "Cancelled animation-playing; your terminal needs to be wider." ; return 1 ; fi
+    if ((necessary_terminal_width > terminal_width)); then errcho "Cancelled animation-playing; your terminal needs to be wider." ; return 1 ; fi
     # check that the screen is high enough
     necessary_terminal_height=$sprite_height
-    if ((necessary_terminal_height > terminal_height)); then recho "Cancelled animation-playing; your terminal needs to be higher." ; return 1 ; fi
+    if ((necessary_terminal_height > terminal_height)); then errcho "Cancelled animation-playing; your terminal needs to be taller." ; return 1 ; fi
     # make sure that there's vertical space for the ascii animation
     if [ -n "$is_verbose" ]; then
         clear  # make more room for the extra prints
