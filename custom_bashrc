@@ -502,7 +502,7 @@ function _sudo_if_necessary () {
 # Also works with pipes. Could be problematic for table formatting if color is involved (colors are extra unseen chars)
 function _pad_end_w_spaces() {
     text="$1"  # assume that text is provided as an argument
-    if [ -z "$text" ] && ! [ -t 0 ]; then text=$(cat); fi  # if no text given and there's a stream from a pipe, get the stream contents as text
+    if [ -z "$text" ] && ! [ -t 0 ]; then text=$(cat); fi  # if no arg given and there's a stream from a pipe, get the stream contents as text
     awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "$text"
 }
 
@@ -1028,6 +1028,40 @@ function prepare_ntfs_for_writable_mount () {
 # }
 
 
+# write a live-usb interactively. Careful: DESTRUCTIVE!!!
+function write_iso_to_usb () {
+    valid=0
+    usb_dev_path=''
+    # interactively get user's choice of usb-drive
+    while [ $valid -eq 0 ]; do
+        becho "USB devices detected:"
+        lsblk -o PATH,MODE,FSTYPE,SIZE,MOUNTPOINTS,LABEL,TYPE,PTTYPE,VENDOR,MODEL,STATE,TRAN | awk '{if(NR==1 || $NF=="usb") print}'
+        becho "============================================"
+
+        read -p "Choose the USB device to write into by specifying PATH ('/dev/???') of the disk (not partition): " usb_dev_path  # Read the user's input
+        # check that reply is not empty, and is in the list of found devices
+        if [[ ! "$usb_dev_path" =~ ^[[:space:]]*$ ]] && lsblk -o PATH,TRAN | awk '$2=="usb" {print $1}' | grep -w -q "$usb_dev_path"; then  # match whole word (case sensitive), quietly
+            brand=$(lsblk -d "$usb_dev_path" -o VENDOR,MODEL | tail -n+2 | xargs)  # keep only vendor and model, no title, one space
+            capacity=$(lsblk -d "$usb_dev_path" -o SIZE | tail -n+2)  # keep only size, no title
+            # another check with the user, because this is serious
+            _prompt_yn "Are you sure? This will $(recho PERMANENTLY DELETE) the contents of your \"$capacity $brand\" drive." && valid=1
+        else
+            errcho "Invalid device: \"$usb_dev_path\""
+        fi
+    done
+
+    # interactively get user's choice of usb-drive
+    iso_file_path=''
+    while [ ! -e "$iso_file_path" ]; do
+        read -p "Provide your image file (typically *.iso): " iso_file_path  # Read the user's input
+        [ ! -e "$iso_file_path" ] && recho "invalid file: $iso_file_path"
+    done
+
+    _prompt_yn "Last time I'll ask. Write live media using \"$iso_file_path\" into drive \"$usb_dev_path\"?" || { recho "Aborting" ; return ; }
+    
+    sudo dd bs=4M if="$iso_file_path" of="$usb_dev_path" status=progress oflag=sync
+}
+
 # Debug and Check Operations
 # ==========================
 
@@ -1335,13 +1369,12 @@ function launch_vm_w_lookingglass() {
     valid=0
     while [ $valid -eq 0 ]
     do
-        vm_names=$(virsh list --all --name)
         becho "Choose the name of the VM you want to launch:"
         virsh list --all
         becho "============================================"
 
         read -p "Enter the name of the VM: " vm_name  # Read the user's input
-        if echo $(virsh list --all --name) | grep -w -q "$vm_name"; then  # match whole word (case sensitive), quietly
+        if virsh list --all --name | grep -w -q "$vm_name"; then  # match whole word (case sensitive), quietly
             valid=1
         else
             errcho "Invalid VM name"
@@ -1361,7 +1394,12 @@ function launch_vm_w_lookingglass() {
 
     # Show user the parameters and ask for approval (quit if disapproved)
     becho "Please authorize the following. Note: no two running VMs may have the same looking-glass session-file or VNC-port at the same time"
-    if _prompt_yn "$(becho "VM:") $vm_name, $(becho "looking-glass_name:") $shmem_name, $(becho "VNC-port:") $portnum. Launch with these parameters?"; then echo "Starting..."; else echo "Quitting. If the details were off, modify your VM's xml file (easiest through VM Manager)" && return ; fi
+    if _prompt_yn "$(becho "VM:") $vm_name, $(becho "looking-glass_name:") $shmem_name, $(becho "VNC-port:") $portnum. Launch with these parameters?"; then
+        echo "Starting..." 
+    else 
+        echo "Quitting. If the details were off, modify your VM's xml file (easiest through VM Manager, but you can also run: \"virsh edit $vm_name\")" 
+        return
+    fi
 
     becho "Making sure os-virtual-drive file's volume is mounted"
     mount_media_by_uuid "$QEMU_VOLUME_UUID"
@@ -1508,8 +1546,8 @@ function _repeat_whitespace_rows () {
 # removes whitespaces from line-starts
 function rm_leading_whitespaces () {
     expression='s/^[[:space:]]*//'
-    if ! [ -t 0 ]; then sed "$expression" ;
-    else echo "$@" | sed "$expression";
+    if ! [ -t 0 ]; then sed "$expression" ;  # modify the data from pipe
+    else echo "$@" | sed "$expression";  # or modify the data from args
     fi
 }
 
@@ -1529,7 +1567,7 @@ function _underline () {
 # -t/--text <text> (specify text to color, if it's not piped-in) ; -w/--word <word> (substring to color, no option needed if it's the only arg and text is piped-in) ; -c/--color <color-string> (see available colors in "_draw_formatted", default is red)
 function color_word () {
     text='' ; word='' ; color='<=bold=><=red=>'
-    if [ $# -eq 1 ] && ! [ -t 0 ]; then  # only 1 arg + streamed input. Given arg is the word to color.
+    if [ $# -eq 1 ] && ! [ -t 0 ]; then  # only 1 arg + streamed input. Given arg is the word that needs to be colored.
         word="$1"
     else  # "regular" case
         while [[ $# -gt 0 ]]; do
@@ -1651,7 +1689,7 @@ function commecho () {
     _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
 }
 
-# print to error output
+# echo into error output
 function errcho () {
     recho "$@" >&2
 }
