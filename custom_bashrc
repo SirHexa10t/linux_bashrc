@@ -46,7 +46,7 @@ fi
 #################################################################################
 HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
-TESTS_FILE="$THIS_FOLDER/run_tests.sh"  # Will run at the end of the sourcing of this file, for convenient debugging. Put whatever you want in such a file and change the address if you will.
+TESTS_FILE="$THIS_FOLDER/run_tests.sh"  # Convenient debugging; if file exists, automatically runs when this bashrc file finishes loading. The contents (and address) are up to you.
 
 
 QEMU_VOLUME_UUID='A80899A4089971D4'
@@ -122,7 +122,7 @@ alias man='man '
 
 # replace apt with nala. Same thing but prettier
 # conditional alias - only if package is installed
-_announce_pkg_installed 'nala' && alias apt='nala'
+[ -n "$(which apt)" ] && _announce_pkg_installed 'nala' && alias apt='nala'
 
 # rsync copy instead of cp - recursive by default and shows progress percentage
 _announce_pkg_installed 'rsync' && alias cp='rsync -ah --info=progress2'
@@ -217,8 +217,14 @@ alias run_docker_desktop='systemctl --user start docker-desktop'
 # System management
 # =================
 
-# upgrade your system.
-alias updatengrade='sudo apt update && sudo apt-get full-upgrade -y && sudo apt-get autoremove -y'
+# TODO - figure why the official Nix upgrade is aimed at non-latest version: "nix-channel --update; nix-env -iA nixpkgs.nix nixpkgs.cacert"
+# TODO - support more systems
+# Upgrade your system. Includes autoremove
+alias updatengrade='\
+[ -n "$(which apt)" ] && sudo apt update && sudo apt-get full-upgrade -y && sudo apt-get autoremove -y
+[ -n "$(which dnf)" ] && sudo dnf check-update && sudo dnf distro-sync -y && sudo dnf autoremove -y
+[ -n "$(which nix)" ] && nix-channel --update && nix-env --upgrade
+'
 
 # rebuild boot parameters using GRUB
 alias rebuild_boot='sudo update-grub'
@@ -227,8 +233,8 @@ alias rebuild_boot='sudo update-grub'
 alias rebuild_ramfs='sudo update-initramfs -u'
 
 
-# function aliases (alternate names)
-# ==================================
+# function aliases (alternative names)
+# ====================================
 
 # Synonymous to "remindme" with extra information (less useful to user).
 alias list_cmds='remindme --show_hidden --include_line_num'
@@ -247,14 +253,7 @@ alias psg='find_proc'
 # Reminders for linux system tools and command options
 alias howdoi_linux='commecho -l "\
 >> Packages
-* sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
-* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for \"no prompt\")
-* sudo dpkg -r <package>  # remove a package installed from a .deb file
-* sudo dpkg --purge <package>  # purge a package installed from a .deb file
-* dpkg-query --list <package>  # print info related to installed package (autocompletes the name), works for all installations including from .deb
-* apt list  # list all packages in followed repositories
-*   apt list --installed  # list installed packages
-*   dpkg -l  # show all installed packages in table format
+* dpkg -l  # show all installed packages in table format
 >> Messing around with the system itself
 * reboot  # reboots the system (gracefully)
 * sudo systemctl start sshd  # start ssh service for external access
@@ -272,6 +271,21 @@ alias howdoi_linux='commecho -l "\
 * log-file: /var/log/dmesg  :  log for kernel ring buffer
 *   dmesg -k | grep -E \"warn|error\"  # the command dmesg displays kernel logs buffer
 * log-file: /var/log/kern.log  :  log for kernel ring buffer
+"'
+
+alias howdoi_debian_cinnamon='commecho -l "\
+>> Packages (Debian)
+* sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
+* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for \"no prompt\")
+* sudo dpkg -r <package>  # remove a package installed from a .deb file
+* sudo dpkg --purge <package>  # purge a package installed from a .deb file
+* dpkg-query --list <package>  # print info related to installed package (autocompletes the name), works for all installations including from .deb
+* apt list  # list all packages in followed repositories
+*   apt list --installed  # list installed packages
+*   dpkg -l  # show all installed packages in table format
+>> configurations (nemo)
+* ~/Templates/  :  anything you put in this folder will be a new-file template when you right-click in nemo
+* ~/.local/share/nemo/scripts/  :  anything you put in this folder will be an executable-script available when you right-click in nemo
 "'
 
 # Reminders for user/groups management
@@ -664,6 +678,7 @@ function date () {
 # Basic functionalities
 # =====================
 
+# maximum number among given args
 function max () {
     max=$1
     for n in "$@"; do (( $(echo "$n > $max" | bc -l) )) && max=$n ; done
@@ -725,7 +740,8 @@ function remindme () {
             expression=$(echo "$expression_template" | sed "s/<name>/$name/")
             line_num=$( grep -nE "$expression" "$THIS_FILE" | cut -d: -f1 )  # get line number
             matched=$(grep -B "$num_of_rows_above" -E "$expression" "$THIS_FILE")  # match declaration and some rows above for documentation
-            matched=$(echo "$matched" | grep -E '^#[^#]' |  grep -vE '^#[[:space:]]*TODO' )  # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO
+            # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO or =====
+            matched=$(echo "$matched" | grep -E '^#[^#]' |  grep -vE '^#[[:space:]]*TODO' |  grep -vE '^#[[:space:]]*===' )  
             matched=$(echo "${matched}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
             line_to_cmd["$line_num"]="$name  $matched"
         done <<< "$cmd_names"
@@ -744,6 +760,33 @@ function remindme () {
 
     echo "$(becho The following commands were overridden, but retain their original functionality:)  $(printf "%s, " "${unoriginal[@]}" | sed 's/, $//')"
     echo "$cmd_list"
+}
+
+# Check if you spelled given word correctly. Get definition to make sure, or suggestions if it's misspelled 
+function spellcheck () {
+    word="$1"
+    [ -z "$word" ] && { errcho "Provide an argument (English word) to spell-check" ; return 1; }
+
+    corrections="$(aspell -a <<< "$word" | grep '^& ' | sed 's|.*: ||' | sed 's|,||g')"  # corrections are listed after "& ", or just as "*" if there are none (word is correct). Then
+    if [ -z "$corrections" ] ; then
+        gecho "✔ $(guecho $word)"  # can alternatively use checkmark: ✓
+        # list definitions
+        source="https://www.wordnik.com/words/$word"
+        echo "Fetching word definition from $source :"
+        definition_page="$(curl -s "$source")"
+        # print main definition
+        becho "$(echo "$definition_page" | sed -n "s|<meta content='$word: \(.*\)' name='description'>|\1|p")"
+        # print other definitions
+        other_defs="$(echo "$definition_page" | grep '<abbr title="partOfSpeech">' | sed -n 's|.*<abbr title="partOfSpeech">\(.*\)</li>|\1|p' | sed 's/<[^>]*>//g')"
+        for marked_word in noun verb adjective adverb pronoun preposition conjunction interjection; do other_defs="$(color_word -t "$other_defs" -w "$marked_word" -c '<=italic=><=yellow=>')" ; done
+        echo "$other_defs"
+    else
+        recho -p "✖ $(ruecho $word)\tDid you mean:"  # can alternatively use fail: ✕
+        marked_corrections=()
+        for correction in $corrections; do marked_corrections+=("$(py_word2_diff "$word" "$correction")") ; done
+        echo "${marked_corrections[@]}" | sed 's| | , |g'
+    fi
+    
 }
 
 # man grep - find word in manual, with a bit of context (lines above/below).
