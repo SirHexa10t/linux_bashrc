@@ -144,7 +144,7 @@ Displays side-by-side comparison of media files (movies, pictures, music) metada
 
 
 
-![command_remindme](md_imgs/commands_reminder.jpg)
+![command_remindme](md_imgs/commands_reminder2.jpg)
 ###### Figure 5: "remindme" - see which commands the bashrc file offers
 Lists the bash commands that this project provides - can be used for lookup, reading the short documentation, or as the command's name implies - a reminder
 
