@@ -28,7 +28,7 @@ function _announce_pkg_installed () {
 } 
 
 
-# Session data
+## Session data
 #################################################################################
 SUDO_FILE=$(which sudo)
 THIS_FILE=$(readlink -f -- "$BASH_SOURCE")
@@ -42,7 +42,7 @@ if [ "$IS_FIRST_SOURCING" = true ]; then  # only do if not defined already (can 
     CUSTOM_FUNCTIONS_INITIAL=$(eval "$_function_names_query")
 fi
 
-# My settings / constants (customize this to your needs/liking)
+## My settings / constants (customize this to your needs/liking)
 #################################################################################
 HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
@@ -56,7 +56,8 @@ LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
 SUBDIR_MOUNTS_FILE='folder_mounts.csv'
 
 
-# My binds
+
+# ---------- BINDS ----------
 #################################################################################
 # "\C-" is CTRL, "\e" (or "\M-") is alt. Shift might not be supported, but if it is: "\S-" is Shift (and maybe also backslash and capitalize, like this for Shift-X: "\X").
 # Flag -x is "execute".
@@ -94,13 +95,13 @@ if ! _is_user_root; then  # no binding keys when running as root.
 
 fi
 
-# My keyword shortcuts
+# ---------- ALIASES ----------
 #################################################################################
 
 # aliases work as "command (re)placements", i.e. they'll replace words that are commands but not args
 
 
-# Basic functionalitiy override !
+## Basic functionalitiy override !
 # ===============================
 
 # TODO - lookup (grep) within "remindme"
@@ -128,7 +129,7 @@ alias man='man '
 _announce_pkg_installed 'rsync' && alias cp='rsync -ah --info=progress2'
 
 
-# Common
+# Lookup
 # ======
 
 # ----- Lookups / Getting-info
@@ -139,10 +140,6 @@ alias g='grep -iF --color=auto'
 # grep, catches 3 lines before/after (+6 total) match, case insensitive (i), and no regex involved (F)
 alias g3='grep -iF --color=auto -C 3'
 
-# TODO - maybe make into a function that prints the chowned files (distinguishing the filenames from $@ is difficult though)
-# take ownership of file (add file-name after this command) 
-alias claim='sudo chown $USER:$USER'
-
 # history grep
 alias hg='history | grep -iF --color=auto'
 
@@ -150,29 +147,9 @@ alias hg='history | grep -iF --color=auto'
 # Custom ls, like "ll". Add -S to sort by (non-recursive) size
 alias lll='becho "Blocks Permissions Hard-Links Owner Group Size Date_Modified Filename" ; ls -tarlushFN --color=always --time-style="+%Y-%m-%d_%T" --group-directories-first'
 
-# reset terminal (includs bashrc reload)
-alias anew='exec bash'
 
-# Show current network connections to the server through port 80
-alias port80="sudo netstat -tulpn | grep :80"
-
-# get own IP
-alias whatsmyip='becho "My private IPs:"; ip addr show | grep inet | grep -v inet6 | awk '\''{print $2}'\'' | cut -d/ -f1  ;  becho "My IPv4:" ; dig @resolver4.opendns.com myip.opendns.com +short '
-
-# get addresses on LAN
-alias whatsmynetwork="buecho 'LAN devices:' ; arp -a  ;  buecho 'Connections:' ; netstat -atn"
-
-# Get basic hardware and system list
-alias sysinfo_short='echo "For simpler neat hardware specs, run \"neofetch\" or \"screenfetch\""; inxi -bD'
-
-# Get comprehensive system/specs details
-alias sysinfo_full='inxi -FxxzJy90'
-
-# Get metadata of a specified audio/video/image file
-alias media_metadata='ffprobe -v error -show_entries stream=width,height,r_frame_rate,nb_frames,codec_name,channels,bit_rate,duration -show_entries format=filename,size -hide_banner -pretty -print_format json'
-
-# open window at current terminal directory
-alias gui='xdg-open "$(pwd)"'
+# Visuals/Stylizing
+# =================
 
 # echo in red
 alias recho='_colored_echo "<=bold=><=red=>"'
@@ -205,6 +182,7 @@ alias buecho='_colored_echo "<=bold=><=uline=><=blue=>"'
 alias yuecho='_colored_echo "<=bold=><=uline=><=yellow=>"'
 
 
+
 # Service/Application handling
 # ============================
 
@@ -216,6 +194,9 @@ alias run_docker_desktop='systemctl --user start docker-desktop'
 
 # System management
 # =================
+
+# reset terminal (includs bashrc reload)
+alias anew='exec bash'
 
 # TODO - figure why the official Nix upgrade is aimed at non-latest version: "nix-channel --update; nix-env -iA nixpkgs.nix nixpkgs.cacert"
 # TODO - support more systems
@@ -231,6 +212,40 @@ alias rebuild_boot='sudo update-grub'
 
 # rebuild RAMFS to apply changes like in modprobe (blacklisting services)
 alias rebuild_ramfs='sudo update-initramfs -u'
+
+# Get basic hardware and system list
+alias sysinfo_short='echo "For simpler neat hardware specs, run \"neofetch\" or \"screenfetch\""; inxi -bD'
+
+# Get comprehensive system/specs details
+alias sysinfo_full='inxi -FxxzJy90'
+
+
+# File/filesystem management
+# ==========================
+
+# TODO - maybe make into a function that prints the chowned files (distinguishing the filenames from $@ is difficult though)
+# take ownership of file (add file-name after this command) 
+alias claim='sudo chown $USER:$USER'
+
+# Get metadata of a specified audio/video/image file
+alias media_metadata='ffprobe -v error -show_entries stream=width,height,r_frame_rate,nb_frames,codec_name,channels,bit_rate,duration -show_entries format=filename,size -hide_banner -pretty -print_format json'
+
+# open window at current terminal directory
+alias gui='xdg-open "$(pwd)"'
+
+
+# Network management
+# ==================
+
+# Show current network connections to the server through port 80
+alias port80="sudo netstat -tulpn | grep :80"
+
+# get own IP
+alias whatsmyip='becho "My private IPs:"; ip addr show | grep inet | grep -v inet6 | awk '\''{print $2}'\'' | cut -d/ -f1  ;  becho "My IPv4:" ; dig @resolver4.opendns.com myip.opendns.com +short '
+
+# get addresses on LAN
+alias whatsmynetwork="buecho 'LAN devices:' ; arp -a  ;  buecho 'Connections:' ; netstat -atn"
+
 
 
 # function aliases (alternative names)
@@ -483,25 +498,16 @@ alias howdoi_ascii='commecho -l "\
 alias arrange_monitors='nvidia-settings --load-config-only && nvidia-settings --assign CurrentMetaMode="HDMI-0: nvidia-auto-select +1920+1080, DP-0: nvidia-auto-select +1920+0, DP-2: nvidia-auto-select +3840+1080, DP-4: 1920x1080_240 +0+1080"'
 
 
-# Legacy
-# ======
-
-# # Aliases for safe and forced reboots
-# alias rebootsafe='sudo shutdown -r now'
-# alias rebootforce='sudo shutdown -r -n now'
 
 
 
-
-
-
-# My functions
+# ---------- FUNCTIONS ----------
 #################################################################################
 
 # TODO - a "checksum" function that gets both file to checksum and the checksum-result file, determines which is which, runs the appropriate checksum on the file and compares with the result file; prints the match result 
 
-# Common operations - just for the use of functions
-# =================================================
+# Common internal operations - for the use of functions
+# =====================================================
 
 # attempt to run command given command (args) - if it fails, run with sudo
 function _sudo_if_necessary () {
@@ -686,9 +692,8 @@ function max () {
 }
 
 # TODO - command grep. "command_like <expression>"
-# TODO - catch titles ("# [A-Za-z]" and "# [=*]"  or  "# [A-Za-z]" and "##+")
 # list custom commands.
-# --show_hidden (list inner-workings commands) ; --sort (sort alphabetically) ; --include_line_num
+# --show_hidden (list inner-workings commands) ; --sort (sort alphabetically) ; --include_line_num (print definition line-num)
 function remindme () {
     show_hidden='' ; include_line_num='' ; sort=''
     while [[ $# -gt 0 ]]; do
@@ -721,7 +726,6 @@ function remindme () {
     declare -A line_to_cmd  # map of line number to respective command definition (name and comment)
 
     # TODO - list key binds too
-    # TODO - if not "sort", print categories by finding the line above "# =="
     # TODO - once tags are added, (color-)mark some commands as "useful"; specifically those you can use often
 
 
@@ -755,7 +759,8 @@ function remindme () {
 
     # categories (comments, not callable)
     if [ -z "$sort" ]; then  # if not sorting by name (so, sorting by line number - categories are relevant)
-        topic_comments="$(grep -n -B 1 "^# ===" "$THIS_FILE" | sed -E '/^[0-9]+\-.*/!d')"  # get also one line above the underline matches, and throw away the actual matched (underline) lines
+        topic_comments="$(grep -n -B 1 "^# ===" "$THIS_FILE" | sed -E '/^[0-9]+\-# .*/!d')"  # get also one line above the underline matches, and throw away the actual matched (underline) lines
+        topic_comments+="\n$(grep -n -B 1 "^#####" "$THIS_FILE" | sed -E '/^[0-9]+\-# .*/!d')"  # add titles (binds/aliases/functions)
         while IFS=- read -r number comment; do line_to_cmd["$number"]="$comment" ; done <<< "$topic_comments"
     fi
 
