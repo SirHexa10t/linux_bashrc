@@ -753,7 +753,13 @@ function remindme () {
     # functions
     get_commands_by_expression "^\s*function\s+<name>\s*\(\)\s*{" 2 "$CUSTOM_FUNCTIONS"
 
-    cmd_list=$(for key in "${!line_to_cmd[@]}"; do commecho "$key ${line_to_cmd[$key]}"; done )  # include line-number for possible sorting
+    # categories (comments, not callable)
+    if [ -z "$sort" ]; then  # if not sorting by name (so, sorting by line number - categories are relevant)
+        topic_comments="$(grep -n -B 1 "^# ===" "$THIS_FILE" | sed -E '/^[0-9]+\-.*/!d')"  # get also one line above the underline matches, and throw away the actual matched (underline) lines
+        while IFS=- read -r number comment; do line_to_cmd["$number"]="$comment" ; done <<< "$topic_comments"
+    fi
+
+    cmd_list=$(for key in "${!line_to_cmd[@]}"; do echo "$key $(commecho "${line_to_cmd[$key]}")"; done )  # include line-number for possible line-num sorting
     [ -n "$sort" ] && cmd_list=$(echo "$cmd_list" | sort -k2) || cmd_list=$(echo "$cmd_list" | sort -n -k1) # If user specified alphabetical sorting, sort by command name. Otherwise sort by line num
     [ -z "$include_line_num" ] && cmd_list=$(echo "$cmd_list" | cut -d" " -f2-)  # if flag not specified, remove line numbers
 
@@ -784,7 +790,7 @@ function spellcheck () {
         recho -p "✖ $(ruecho $word)\tDid you mean:"  # can alternatively use fail: ✕
         marked_corrections=()
         for correction in $corrections; do marked_corrections+=("$(py_word2_diff "$word" "$correction")") ; done
-        echo "${marked_corrections[@]}" | sed 's| | , |g'
+        printf '%s , ' "${marked_corrections[@]}" | sed 's/,\s*$/\n/'  # list to string separated by spaced commas
     fi
     
 }
@@ -1693,7 +1699,9 @@ function commecho () {
     plus_line_color=$(_tag_persist '<=bold=><=yellow=>')
     sharp_comment_color=$(_tag_persist '<=yellow=>')
     colon_comment_color=$(_tag_persist '<=yellow=>')
+    sharp_documentation_color=$(_tag_persist '<=green=>')
     double_quotes_color='<=bold=><=red=>'
+    warning_color='<=flicker=><=uline=><=bold=><=red=>'
     # angled_brackets_color='<=italic=>'  # problematic when within a color that's already within persisting color  # TODO - fix (improve the coloring function)
     reset='<=reset=>'
 
@@ -1705,12 +1713,14 @@ function commecho () {
                 "$(_draw_formatted "${single_cat_line_color}sub-topic")"
                 "$(_draw_formatted "${plus_line_color}trick/tip")"
                 "$(_draw_formatted "${sharp_comment_color}# comment/explanation")"
+                "$(_draw_formatted "${sharp_documentation_color}# documentation")"
                 "$(_draw_formatted "${double_quotes_color}\"specifics\"")"
+                "$(_draw_formatted "${warning_color}\"WARNING!!\"")"
                 # "$(_draw_formatted "${angled_brackets_color}<your-choice>")"
                 )
                 # Alternatively use this (with the command substitution, so IFS change won't stay) if you want tab-separation: $(IFS=$'\t'; echo "${legend_items[*]}
-                printf -v joined '%s , ' "${legend_items[@]}" && joined=${joined%???}  # print list separated by comma+spaces into variable, and remove last 3 chars because there's an extra comma at the end
-                echo -e "Legend: $joined\n"  # with an extra line (that's what the -e is there for), to separate the legend from the data
+                # print list separated by comma+spaces into variable, and remove comma and any space after it
+                echo -e "Legend: $(printf '%s , ' "${legend_items[@]}" | sed 's/,\s*$//' )\n"  # with an extra line (that's what the -e is there for), to separate the legend from the data
                 shift
         		continue
         	;;
@@ -1728,7 +1738,9 @@ function commecho () {
     formatted=$(echo "$formatted" | sed "s/^>.*$/${single_cat_line_color}&/g")  # recolor lines beginning '>'  (sub-topics)
     formatted=$(echo "$formatted" | sed "s/^+.*$/${plus_line_color}&/g")  # recolor lines beginning '+'  (notes)
     formatted=$(echo "$formatted" | sed "s/  #.*$/${sharp_comment_color}&/g")  # recolor after '  #'  (code-comments)
+    formatted=$(echo "$formatted" | sed "s/^# /${sharp_documentation_color}&/g")  # recolor after '# '  (page's documentation)
     formatted=$(echo "$formatted" | sed "s/  :.*$/${colon_comment_color}&/g")  # recolor after '  :'  (item-comments)
+    formatted=$(echo "$formatted" | sed "s/[A-Z]\+![!]\+/${warning_color}&/g")  # recolor capitalized words with at least two '!' exclamation marks
     _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
 }
 
