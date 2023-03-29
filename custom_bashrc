@@ -4,9 +4,10 @@
 #---------------------------------------------------------------------------------------------
 #----CUSTOM-----------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------
+# You're welcome to paste this file in your bashrc, but I urge you to source it instead.
 
 
-# please ignore - stuff that's needed early in this file; not meant for the user 
+## please ignore - stuff that's needed early in this file; not meant for the user 
 #################################################################################
 _alias_names_query='alias | grep -E "^alias" | sed "s/^alias \([^=]*\)=.*/\1/"'  # this is needed very early (and very late) for lookup of existing aliases
 _function_names_query='declare -F | awk '\''{print $3}'\'  # not as complex as aliases, but if aliases are here, so should this be.
@@ -48,12 +49,16 @@ HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the c
 
 TESTS_FILE="$THIS_FOLDER/run_tests.sh"  # Convenient debugging; if file exists, automatically runs when this bashrc file finishes loading. The contents (and address) are up to you.
 
-
-QEMU_VOLUME_UUID='A80899A4089971D4'
-LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"
+# Constants for VM functions
+QEMU_VOLUME_UUID='A80899A4089971D4'  # the drive that contains VMs' disk data; must be mounted when running a VM
+LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"  # run VM in a window
 
 # CACHE_LOCATION='/cache_space'  # setup a caching disk in case you want tmp caching buffer to be someplace else than system's temporary directory
-SUBDIR_MOUNTS_FILE='folder_mounts.csv'
+# CACHE_BLK_UUID='/dev/disk/by-uuid/b25fb935-b252-466f-8e45-63c8e7f62acf'
+# udisksctl mount -b "$CACHE_BLK_UUID" && ln -s $(udisksctl info -b "$CACHE_BLK_UUID" | grep MountPoints | awk '{print $2}') "$CACHE_LOCATION"  # symlink at desired location
+# [ -e "$CACHE_LOCATION" ] && export TMPDIR="$CACHE_LOCATION"  # if dir exists, use it
+SUBDIR_MOUNTS_FILE='folder_mounts'
+
 
 
 
@@ -506,8 +511,9 @@ alias arrange_monitors='nvidia-settings --load-config-only && nvidia-settings --
 
 # TODO - a "checksum" function that gets both file to checksum and the checksum-result file, determines which is which, runs the appropriate checksum on the file and compares with the result file; prints the match result 
 
-# Common internal operations - for the use of functions
-# =====================================================
+
+# Command and mechanics override
+# ==============================
 
 # attempt to run command given command (args) - if it fails, run with sudo
 function _sudo_if_necessary () {
@@ -517,68 +523,52 @@ function _sudo_if_necessary () {
     [ $? -ne 0 ] && eval "sudo $@" || echo "$normal_output"
 }
 
-# useful for drawings or neat concatenating of tables like so: 'paste <(_pad_end_w_spaces "$(df -h)") <(_pad_end_w_spaces "$(df -hi)") <(_pad_end_w_spaces "$(df -hi)")'
-# Append spaces to text lines for a rectangular look; i.e. end uniformly on the same column.
-# Also works with pipes. Could be problematic for table formatting if color is involved (colors are extra unseen chars)
-function _pad_end_w_spaces() {
-    text="$1"  # assume that text is provided as an argument
-    if [ -z "$text" ] && ! [ -t 0 ]; then text=$(cat); fi  # if no arg given and there's a stream from a pipe, get the stream contents as text
-    awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "$text"
+## I don't know what black magic is involved, but you need both the above sudo alias and this function to support alias interpretation.
+# Sources this file if the command is a function from this page.
+# Remember: sudo has its own environment. You can perform actions such as file modification, but you can't apply session-env altering commands such as "cd"
+function sudo () {
+    # We basically source this file when calling sudo, which is convenient to the user. The "right" way to do so is to put something in the style of the following line (without the comment) in /etc/sudoers :
+    # Defaults        env_keep += "BASH_FUNC_*"
+
+    # needs to be "silent" to avoid screwing up scripts that rely on the output of the sudo'd commands
+    # if arg 1 (only arg 1 supported, deal with it) is in the list of this file's functions, source this file. Otherwise, run sudo regularly.
+    if [ -n "${CUSTOM_FUNCTIONS_MAP[$1]}" ]; then
+        custom_function_cmd="source $THIS_FILE && $@"
+        "$SUDO_FILE" bash -c "$custom_function_cmd"
+    else
+        "$SUDO_FILE" "$@"
+    fi
 }
 
-# pastes text blocks (given as args) side by side
-# --lined (optional before texts: separate with line instead of space) , --glued (optional before texts: no delimiter) , --no_padding (optional before texts: no padding)
-function _side_by_side() {
-    separator=' ' ; no_padding=''
-    [ "$1" = "--lined" ] && separator='|' && shift  # get rid of the flag, so it won't disturb us
-    [ "$1" = "--glued" ] && separator='' && shift  # get rid of the flag, so it won't disturb us
-    [ "$1" = "--no_padding" ] && no_padding='true' && shift  # get rid of the flag, so it won't disturb us
+# TODO - do about the same for chmod and chown - print the directory/files with the changed data (maybe cancel that, getting the filenames in every case isn't simple)
+# add a print of local files after changing directory
+function cd () {
+    builtin cd "$@" && \
+        ls -AF --color=always --group-directories-first 
+}
 
-    
-    # prepare to add more lines to texts that are too short
-    line_counts=()
-    for i in "$@"; do line_counts+=($(echo "$i" | wc -l)); done  # count the number of lines for each
-    max_lines=$(max "${line_counts[@]}")
+# make mkdir more "reasonable" with a flag that is always nice to have ; -p doesn't print error if dir exists
+function mkdir () {
+    [[ $* == *-p* ]] && extra_flag="" || extra_flag="-p"  # if flag not present, store it in var 
+    /usr/bin/mkdir "$extra_flag" "$@"
+}
 
-    args=("$@")  # for iteration. can't iterate on the index of $@ - the items start from 1, but the index starts on 0 ("bash") unlike lists that start their index at 1
-    paste_texts=()  # the values that need to be pasted
-    items_to_interpret=()  # will be made into a string that refers to the values; interpreted into a command
-    for i in "${!args[@]}"; do  
-        modified_txt_block="${args[i]}"  # actual item
-        # add empty lines
-        line_diff=$(( max_lines - line_counts[i] ))  # how many lines are "missing"
-        [ $line_diff -gt 0 ] && modified_txt_block+=$(echo -e "\n$(yes " " | head -$line_diff)")  # if text is shorter than max, add newlines (add [diff] 1-line spaces below - need an additional newline before those)
-        # pad to allow concatenating without messing up the lines
-        [ -z "$no_padding" ] && modified_txt_block=$(_pad_end_w_spaces "$modified_txt_block")
-        # add to list that we'll reference in the command
-        paste_texts+=("$modified_txt_block")  # data list
-        items_to_interpret+=('<(echo "${paste_texts['$i']}")')  # pointers to data
-    done
-    
-    eval "paste -d '$separator' ${items_to_interpret[@]}"
+# make date output in a specific format by default
+function date () {
+    args=$([ $# == 0 ] && echo "+%Y-%m-%d_%T" || echo "$@")  # if provided 0 args, set the time-format to own preference
+    /usr/bin/date "$args"
 }
 
 
-# TODO - unused, so remove?
-# get device name such as "/dev/sda2". You must provide one argument: the UUID of the device.
-function _get_dev_name_from_uuid () {
-    [ $# -ge 1 ] || { echo "You need to provide UUID as an argument" ; return ; }
-    blkid | grep "UUID=\"$1\"" | awk -F: '{print $1}'
-}
 
-# adds y/n prompt. Call like this:  if prompt_yn "<prompt q>?"; then echo "<starting-process msg>"; else echo "<cancellation msg>" && return ; fi
-function _prompt_yn() {   
-    response=""
-    # keep prompting the user until they provide a valid response
-    while [ "$response" != "y" ] && [ "$response" != "n" ]; do
-        # prompt the user for a yes/no response
-        read -p "$1 [Y/n] " response
-        case "$response" in
-            y|Y ) return 0 ;;  # if the response is "y", return a boolean value indicating success
-            n|N ) return 1 ;;  # if the response is "n", return a boolean value indicating failure
-            *) echo "just type y or n" ;;  # if the response is anything else, print an error message and continue prompting
-        esac
-    done
+# Data structure handling
+# =======================
+
+# print maximum number among given args
+function max () {
+    max=$1
+    for n in "$@"; do (( $(echo "$n > $max" | bc -l) )) && max=$n ; done
+    echo $max
 }
 
 # turn a list into a hashmap; you need to evaluate the output (can't return a hashmap directly)
@@ -641,55 +631,27 @@ function _unique_in_first () {
 }
 
 
-# Basic functionalities override !
-# ================================
+# Basic user interactivity
+# ========================
 
-## I don't know what black magic is involved, but you need both the above sudo alias and this function to support alias interpretation.
-# Sources this file if the command is a function from this page.
-# Remember: sudo has its own environment. You can perform actions such as file modification, but you can't apply session-env altering commands such as "cd"
-function sudo () {
-    # We basically source this file when calling sudo, which is convenient to the user. The "right" way to do so is to put something in the style of the following line (without the comment) in /etc/sudoers :
-    # Defaults        env_keep += "BASH_FUNC_*"
-
-    # needs to be "silent" to avoid screwing up scripts that rely on the output of the sudo'd commands
-    # if arg 1 (only arg 1 supported, deal with it) is in the list of this file's functions, source this file. Otherwise, run sudo regularly.
-    if [ -n "${CUSTOM_FUNCTIONS_MAP[$1]}" ]; then
-        custom_function_cmd="source $THIS_FILE && $@"
-        "$SUDO_FILE" bash -c "$custom_function_cmd"
-    else
-        "$SUDO_FILE" "$@"
-    fi
-}
-
-# TODO - do about the same for chmod and chown - print the directory/files with the changed data (maybe cancel that, getting the filenames in every case isn't simple)
-# add a print of local files after changing directory
-function cd () {
-    builtin cd "$@" && \
-        ls -AF --color=always --group-directories-first 
-}
-
-# make mkdir more "reasonable" with a flag that is always nice to have ; -p doesn't print error if dir exists
-function mkdir () {
-    [[ $* == *-p* ]] && extra_flag="" || extra_flag="-p"  # if flag not present, store it in var 
-    /usr/bin/mkdir "$extra_flag" "$@"
-}
-
-# make date output in a specific format by default
-function date () {
-    args=$([ $# == 0 ] && echo "+%Y-%m-%d_%T" || echo "$@")  # if provided 0 args, set the time-format to own preference
-    /usr/bin/date "$args"
+# adds y/n prompt. Call like this:  if prompt_yn "<prompt q>?"; then echo "<starting-process msg>"; else echo "<cancellation msg>" && return ; fi
+function _prompt_yn () {   
+    response=""
+    # keep prompting the user until they provide a valid response
+    while [ "$response" != "y" ] && [ "$response" != "n" ]; do
+        # prompt the user for a yes/no response
+        read -p "$1 [Y/n] " response
+        case "$response" in
+            y|Y ) return 0 ;;  # if the response is "y", return a boolean value indicating success
+            n|N ) return 1 ;;  # if the response is "n", return a boolean value indicating failure
+            *) echo "just type y or n" ;;  # if the response is anything else, print an error message and continue prompting
+        esac
+    done
 }
 
 
-# Basic functionalities
-# =====================
-
-# maximum number among given args
-function max () {
-    max=$1
-    for n in "$@"; do (( $(echo "$n > $max" | bc -l) )) && max=$n ; done
-    echo $max
-}
+# Info display and lookups
+# ========================
 
 # TODO - command grep. "command_like <expression>"
 # list custom commands.
@@ -760,7 +722,7 @@ function remindme () {
     # categories (comments, not callable)
     if [ -z "$sort" ]; then  # if not sorting by name (so, sorting by line number - categories are relevant)
         topic_comments="$(grep -n -B 1 "^# ===" "$THIS_FILE" | sed -E '/^[0-9]+\-# .*/!d')"  # get also one line above the underline matches, and throw away the actual matched (underline) lines
-        topic_comments+="\n$(grep -n -B 1 "^#####" "$THIS_FILE" | sed -E '/^[0-9]+\-# .*/!d')"  # add titles (binds/aliases/functions)
+        topic_comments+="$(echo ; grep -n -B 1 "^#####" "$THIS_FILE" | sed -E '/^[0-9]+\-# .*/!d')"  # add titles (binds/aliases/functions), after a newline
         while IFS=- read -r number comment; do line_to_cmd["$number"]="$comment" ; done <<< "$topic_comments"
     fi
 
@@ -806,381 +768,25 @@ function mang () {
     man "$1" | grep -iF --color=auto -C 3 -- "$2"  # the "--" allows you to lookup dashes in your expression
 }
 
-# Find processes by substring. Print error if given no args ; print everything if given empty string
-function find_proc () {
-    [ $# -ge 1 ] || { errcho "No substring provided to look through with." ; return ; }
 
-    ps -eo pid,ppid,user,%cpu,%mem,stat,start,time,cmd --sort=-%cpu | awk -v search="$1" 'BEGIN{IGNORECASE=1} NR==1 || $0 ~ search {print}' \
-    | color_word --word "$1"  # color the sought term
-}
+# Administration - network
+# ========================
 
-# kill processes by substring, with a confirmation prompt that specifies what's being killed
-function kill_interactively () {
-    # TODO - add display of top-cpu processes to kill - "you didn't specify what to kill, here are the top-10 CPU intensive processes, if you want to kill any of them, input a number or their name"
-
-    [ $# -ge 1 ] || { errcho "You need to provide a substring to find (and later kill) processes with." ; return ; }
+# search network activity by port (specify number) or substring
+function network_search () {
+    if [ -z "$1" ]; then echo "You didn't provide anything to filter by. Aborting." && return 1 ; fi
     
-    pids=$(pgrep -i "$1")  # get all PIDs
-    [ -z "$pids" ] && becho "no processes found" && return 0;
-    pids_commas=$(echo "$pids" | tr '\n' ',' | sed 's/,$//')  # save PIDs with comma-separation (for listing)
-    pids_spaces=$(echo "$pids_commas" | tr ',' ' ')  # save PIDs with space-separation (for killing)
-    proc_info=$(ps -p "$pids_commas" -o pid,ppid,user,%cpu,%mem,stat,start,time,cmd --sort=-%cpu)
-
-    prompt="$(echo "$proc_info" ; becho -p "The listed processes $(recho will be killed). Are you sure?")"
-    if _prompt_yn "$prompt"; then _sudo_if_necessary kill ${pids_spaces} ; else echo "Quitting." && return ; fi
-
-    _wait_n_seconds 2
-
-    pids=$(pgrep -i "$1")  # get all PIDs, again
-    [ -z "$pids" ] && becho "Confirmed no new processes with same substring" || errcho "Found live processes with the same name you just eliminated"
-}
-
-
-# Maintenance and Update Operations
-# =================================
-
-# install from given (deb file's) URL
-function install_deb_from_url () {
-    pkg_name=$(echo "$1" | awk -F/ '{print $NF}')  # get the string after last '/'
-    installation_msg="Installed debian (.deb) package: $pkg_name. If you want to remove it, run: 'sudo dpkg -r $pkg_name'"
-    wget "$1" && sudo gdebi -n "./$pkg_name" && echo "$installation_msg"  # download and install
-    rm "$pkg_name"  # remove .deb file
-}
-
-# Permanently append a string to PATH.
-# Add directories like "/home/<you>/.local/bin"
-function add_to_path () {
-    # check if given arg is already in PATH
-    if [[ $PATH == *$1* ]]; then
-        echo "$1 is already in PATH!"
-        return
+    if [[ $1 =~ ^[0-9]+$ ]]; then  # numerical - filter as a port number
+        sudo netstat -tulpn | grep ":$1"
+    else  # non-numerical, look-up as a substring
+        sudo netstat | grep -iF --color=auto "$1"
     fi
-    export PATH=$PATH:$1
-	# change the line where "PATH=" appears
-    sudo sed -i "/PATH=/c\PATH=$PATH" /etc/environment
-    printf "From now on:\n`sudo cat /etc/environment`\n"
-}
-
-# Mounts, and handles mount-dir. Safe to run when unnecessary, it'll just throw an error.
-# arg 1: uuid of device
-function mount_media_by_uuid () {
-    udisksctl mount -b "/dev/disk/by-uuid/$1"  # add -t <mountpoint>  to change mount-location
-}
-
-
-# Find iommu groups that deal with given word. Useful for passing devices onto VMs.
-# arg 1: device substring (example: "usb", or "nvidia", or "SATA") (optional; if not specified, you get all IOMMUs)
-function iommu_find () {
-    iommu_group_prefix='IOMMU Group '
-
-    # arg 1: accepted files. Example: /sys/kernel/iommu_groups/*/devices/*
-    function _stringify_iommu_files () {
-        for file in $1; do
-            iommu_group=$(echo "$file" | awk -F'/' '{print $(NF-2)}')
-            device_num=$(basename "$file")
-            device_string=$(lspci -nns "$device_num" | sed 's/^[[:alnum:]:.]* //')  # get the device description, but drop the initial number
-            echo "${iommu_group_prefix}$iommu_group: device $device_num : $device_string"
-        done
-    }
-
-    all_iommu_devices=$(_stringify_iommu_files '/sys/kernel/iommu_groups/*/devices/*' | sort -V)
-
-    lookup="$1"
-    if [ -z "$lookup" ]; then
-        errcho "You didn't specify a device substring/word to look-up (Example: \"USB\"). So here are all IOMMUs/devices and connected USB peripherals:"
-        echo "$all_iommu_devices"
-        lsusb
-        return 0 
-    fi
-
-    # if you reach here, term search was specified
-    group_texts=()
-    iommu_groupnums=$(grep -i "$lookup" <<< "$all_iommu_devices" | sed "s/^${iommu_group_prefix}\([0-9]\+\):.*$/\1/" | sort -V | uniq)
-    for num in $iommu_groupnums; do
-        group_texts+=("$(_stringify_iommu_files "/sys/kernel/iommu_groups/$num/devices/*" | sort -V | color_word "$lookup")")
-    done
-
-    becho "IOMMU devices:"
-    printf "%s\n" "${group_texts[@]}"
-
-    becho "USB peripherals:"
-    lsusb | grep -iF --color=auto "$lookup"
-
-    # To add a device by IOMMU device number (xxxx:xx:xx.x), go to VM Manager, and add "PCI Host Device" with the same number 
-}
-
-
-# TODO - optimize, maybe use list_human_users() ?
-# list crontabs of all users
-function all_crontabs () {
-    cat /etc/passwd | awk -F: '{ print $1; }' \
-    | while read user; do
-            crontab -u $user -l 2>/dev/null | grep "^[^#*/;]" | awk '{
-                    print "'$user': "$0;
-            }';
-    done
-    
-    sudo crontab -u root -l 2>/dev/null | grep "^[^#*/;]" | awk '{ print "root: "$0; }';
-
-}
-
-
-# finds files that shouldnt be executable and chmods them
-function revoke_exe_mod () {
-    location=${1:-.}  # use given address, default to current location
-    format=${2:-'txt'}  # use given format, default to txt
-    files=$(find "$location" -type f -name "*.$format")  # get txt (or specified) files recursively
-    while read -r file; do
-        # if file is executable
-        if [ -x "$file" ]; then
-            # revoke exe permission (run as sudo IF necessary)
-            _sudo_if_necessary "chmod -x \"$file\"" && echo "file no longer executable: $file"
-        fi
-    done <<< "$files"
 }
 
 
 
-# File handline (media and data)
-# ==============================
-
-
-# Archive files into .tar.7z format. You can specify any file / file-path, the archive would still be saved to current working directory.
-# -o/--overwrite (optional: replace old 7z archive instead of adding another one) ; -p/--password <pass> (optional: encrypt with password) ; all the rest are file-names
-function archive_tar7z () {
-    # anything unspecified as option/flag is file to archive
-    filenames=() ; overwrite='' ; password=''
-    while [[ $# -gt 0 ]]; do
-    	case "$1" in
-    		'-o'|'--overwrite')
-    			overwrite='true'
-    			shift
-    			continue
-    		;;
-    		'-p'|'--password')
-    			password="$2"
-    			shift 2
-    			continue
-            ;;
-    		*)
-                filenames+=("$1")
-                shift
-    		;;
-    	esac
-    done
-
-    [ -n "$filenames" ] || { errcho "You need to specify files (or folders) to archive" ; return 1; }
-
-    # note: don't try running multiple in async; tar and 7z already run multi-threaded
-    for f in "${filenames[@]}"; do
-        # archive without including whole directory leading to the file
-        full_path="$(realpath "$f")"  # get full path
-        folderpath="$(dirname "$full_path")"
-        filename="$(basename "$full_path")"
-        archive_name="${filename}.tar.7z"
-
-        # determine if the archiving will be done with encryption (password-protected)
-        optional_encryption=''
-        if [ -n "$password" ]; then  # entering an empty string as password doesn't (and shouldn't) count as password
-            becho "writing $archive_name with password encryption"
-            optional_encryption="-p$password"
-            archive_name=$(echo "$archive_name" | sed 's/.tar.7z$/_encrypted.tar.7z/')  # add "_encrypted" to file suffix name. You can't mix encrypted and unencrypted, so they shouldn't be named the same way
-        fi
-
-        # if similarly-named archive exists (involves overwrite-flag)
-        if [ -e "$archive_name" ]; then
-            already_exists_msg=$(recho "archive \"$archive_name\" already exists")
-            if [ -n "$overwrite" ]; then 
-                echo "$already_exists_msg. Removing it."
-                rm "$archive_name"
-            else
-                echo "$already_exists_msg. Creating archive with current date."
-                archive_name=$(echo "$archive_name" | sed "s/.tar.7z$/_$(date +%Y-%m-%d).tar.7z/")  # add "_<today>" to file suffix name to avoid mixing with old archive
-                [ -e "$archive_name" ] && rm "$archive_name" && recho "deleted an existing archive with the same name-date"  # if even the dated archive exists, delete it
-            fi
-
-        fi
-        
-        tar -C "$folderpath" -cvzf - "$filename" | 7za a -si "$archive_name" "$optional_encryption"
-    done
-    
-}
-
-# arg 1: media_file
-function media_remove_audio () {
-    output="${1%.*}_noaudio.${1##*.}"  # add "_noaudio" before the file's .<format>
-    ffmpeg -i "$1" -c copy -an "$output"
-}
-
-# usage: -v/--video <video_file>  -a/--audio <audio_file>
-function media_merge_audio_video () {
-    video_file='' ; audio_file=''
-    while [[ $# -gt 0 ]]; do
-    	case "$1" in
-    		'-v'|'--video')
-    			video_file="$2"
-    			shift 2
-    			continue
-    		;;
-    		'-a'|'--audio')
-    			audio_file="$2"
-    			shift 2
-    			continue
-            ;;
-    		*)
-                errcho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
-                return 1
-    		;;
-    	esac
-    done
-
-    [ -z "$video_file" ] && errcho "no video file specified" && return 1
-    [ -z "$audio_file" ] && errcho "no audio file specified" && return 1
-
-    output="${video_file%.*}_replaced_audio.${video_file##*.}"  # add "_replaced_audio" before the video file's .<format>
-
-    ffmpeg -i "$video_file" -i "$audio_file" -c:v copy -c:a libvorbis "$output"
-}
-
-# compare between media files
-# all args are media-file paths
-function media_compare () {
-    md_results=()
-    for i in "$@"; do md_results+=("$(media_metadata "$i")"); done
-    _side_by_side --lined "${md_results[@]}" 
-}
-
-# TODO - create a function that uses youtube-dl and other website downloaders; have it accept any download-link. 
-
-
-# ----- Microsoft handling 
-
-# fix device-mountable-as-read-only issue, caused by Windows leaving some garbage on the disk
-function prepare_ntfs_for_writable_mount () {
-    lsblk -o UUID,NAME,FSTYPE,LABEL | awk 'NR==1 || $3 == "ntfs"'
-
-    read -p "Choose a UUID to fix (with chkdsk) from the above device-list: " uuid  # Read the user's input
-    
-    lsblk -o UUID,NAME,FSTYPE,LABEL | awk -v uuid="$uuid" 'NR==1 || $1 == uuid'
-    if _prompt_yn "Are you sure this is the right device?"; then echo "Running. Don't touch the device until we're done..."; else echo "Quitting." && return ; fi
-
-    # unmount if necessary
-    if findmnt -o UUID | grep "$uuid" > /dev/null; then umount -l "/dev/disk/by-uuid/${uuid}"; fi
-
-    # fix ntfs device
-    sudo ntfsfix -b "/dev/disk/by-uuid/$uuid"
-}
-
-
-# TODO
-# function reinstall() { : 'performs remove and then install'
-#     if [] then;
-#     sudo apt remove "$1" -y && sudo apt install "$1" -y
-#     fi
-#     else
-#     echo "package $1 isn't even installed"
-# }
-
-
-# write a live-usb interactively. Careful: DESTRUCTIVE!!!
-function write_iso_to_usb () {
-    valid=0
-    usb_dev_path=''
-    # interactively get user's choice of usb-drive
-    while [ $valid -eq 0 ]; do
-        becho "USB devices detected:"
-        lsblk -o PATH,MODE,FSTYPE,SIZE,MOUNTPOINTS,LABEL,TYPE,PTTYPE,VENDOR,MODEL,STATE,TRAN | awk '{if(NR==1 || $NF=="usb") print}'
-        becho "============================================"
-
-        read -p "Choose the USB device to write into by specifying PATH ('/dev/???') of the disk (not partition): " usb_dev_path  # Read the user's input
-        # check that reply is not empty, and is in the list of found devices
-        if [[ ! "$usb_dev_path" =~ ^[[:space:]]*$ ]] && lsblk -o PATH,TRAN | awk '$2=="usb" {print $1}' | grep -w -q "$usb_dev_path"; then  # match whole word (case sensitive), quietly
-            brand=$(lsblk -d "$usb_dev_path" -o VENDOR,MODEL | tail -n+2 | xargs)  # keep only vendor and model, no title, one space
-            capacity=$(lsblk -d "$usb_dev_path" -o SIZE | tail -n+2)  # keep only size, no title
-            # another check with the user, because this is serious
-            _prompt_yn "Are you sure? This will $(recho PERMANENTLY DELETE) the contents of your \"$capacity $brand\" drive." && valid=1
-        else
-            errcho "Invalid device: \"$usb_dev_path\""
-        fi
-    done
-
-    # interactively get user's choice of usb-drive
-    iso_file_path=''
-    while [ ! -e "$iso_file_path" ]; do
-        read -p "Provide your image file (typically *.iso): " iso_file_path  # Read the user's input
-        [ ! -e "$iso_file_path" ] && recho "invalid file: $iso_file_path"
-    done
-
-    _prompt_yn "Last time I'll ask. Write live media using \"$iso_file_path\" into drive \"$usb_dev_path\"?" || { recho "Aborting" ; return ; }
-    
-    sudo dd bs=4M if="$iso_file_path" of="$usb_dev_path" status=progress oflag=sync
-}
-
-# Debug and Check Operations
-# ==========================
-
-# Writes data to volume, to check its capacity. Careful: DESTRUCTIVE!!!
-function test_drive_volume () {
-    if [ -z "$1" ]; then echo "You didn't provide a drive-name (run lsblk if you're not sure. Should be like '/dev/sdg' ). Aborting." && return 1 ; fi
-    
-    if _prompt_yn "Your data on $1 is about to be destroyed. Are you sure?"; then echo "Running. Don't remove the device."; else echo "Aborting." && return 1 ; fi
-    sudo f3probe --destructive --time-ops "$1"
-}
-
-
-
-# Info: Stats
-# ===========
-
-# get comprehensive overview of devices/volumes
-function devs() {
-    # df results (mounted volumes)
-    df_results=$(df -h -x tmpfs --output=source,fstype,itotal,ipcent,size,pcent,file,target)
-    df_title=$(echo "$df_results" | head -n1)
-    df_content=$(echo "$df_results" | tail -n+2 | sort -k1,1)
-    df_results=$(echo -e "${df_title}\n${df_content}" | _pad_end_w_spaces)  # reattaching (now the contents are sorted), and ending lines neatly
-
-    # device names (used as identifiers)
-    df_devices=$(echo "$df_content" | awk 'NR>1 {print $1}')
-    lsblk_devices=$(lsblk -o PATH | tail -n+2 | sort)
-
-    # lsblk minus df results
-    # ----------------------
-    unmounted_devices=$(comm -23 <(echo "$lsblk_devices") <(echo "$df_devices"))  # devices in lsblk but not df
-    lsblk_unmounted=$(lsblk -d $(paste -sd ' ' <<< "$unmounted_devices") -o PATH,MODE,FSTYPE,SIZE,LABEL,TYPE,PTTYPE,MODEL,STATE --sort PATH) 
-    
-    # df results + extra data for same entries
-    # ----------------------------------------
-    lsblk_complementary_to_df=$(lsblk -d $(paste -sd ' ' <<< "$df_devices") -o MODE,LABEL,TYPE,PTTYPE,MODEL,STATE,PATH --sort PATH)  # same devices as in df, different columns
-    # map the extra data in lsblk to "PATH", which is the same as lsblk's "Filesystem"
-    declare -A lsblk_hashmap
-    while read -r line; do
-        key="${line##* }"
-        value="${line% *}"
-        lsblk_hashmap["$key"]="$value"
-    done <<< "$lsblk_complementary_to_df"
-    lsblk_hashmap['Filesystem']=${lsblk_hashmap['PATH']}
-    
-    # place the maps right after the df results
-    df_and_lsblk=()
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        dev_name=$(echo $line | awk '{print $1}')
-        modified_line="$line ${lsblk_hashmap[$dev_name]}"
-        df_and_lsblk+=("$modified_line")
-    done <<< "$df_results"
-    
-    
-    # print results
-    becho 'mounted volumes:'  # results from df with extra details on the same entries from lsblk
-    for i in "${df_and_lsblk[@]}"; do echo "$i" ; done
-
-    becho 'non-mounted volumes:'
-    echo "$lsblk_unmounted"
-
-    becho 'identifiers and metadata:'
-    lsblk -a -o NAME,MOUNTPOINT,LABEL,UUID,PTUUID,PARTUUID,SERIAL | awk 'NR==1 || ($1 !~ "loop[0-9]")'
-}
-
+# Administration - users
+# ======================
 
 # list password-owning users with uid >= 1000.
 # --max_uid <number> (listed users' uid limit)  ; --require_home (only list users with home-dir) 
@@ -1215,7 +821,6 @@ function list_human_users() {
     done
     echo "root"  # always assume root might be humanly-used somewhere
 }
-
 
 # list users and their various resources usage.
 # --gpu (also display gpu data) ; --not_sudo (don't try to get restricted data as root)
@@ -1269,56 +874,345 @@ function resources_used () {
     
 }
 
+# Administration - services
+# =========================
 
-# search network activity by port (specify number) or substring
-function network_search () {
-    if [ -z "$1" ]; then echo "You didn't provide anything to filter by. Aborting." && return 1 ; fi
+# TODO - optimize, maybe use list_human_users() ?
+# list crontabs of all users
+function all_crontabs () {
+    cat /etc/passwd | awk -F: '{ print $1; }' \
+    | while read user; do
+            crontab -u $user -l 2>/dev/null | grep "^[^#*/;]" | awk '{
+                    print "'$user': "$0;
+            }';
+    done
     
-    if [[ $1 =~ ^[0-9]+$ ]]; then  # numerical - filter as a port number
-        sudo netstat -tulpn | grep ":$1"
-    else  # non-numerical, look-up as a substring
-        sudo netstat | grep -iF --color=auto "$1"
+    sudo crontab -u root -l 2>/dev/null | grep "^[^#*/;]" | awk '{ print "root: "$0; }';
+
+}
+
+# interactively create a new systemd service (using templates)
+# arg 1: (optional) service name
+function create_systemd_service () {
+    if [ -n "$1" ]; then
+        service_name="$1"
+    else
+        read -p "Choose the name of your service: " service_name  # Read the user's input
     fi
+    service_name=${service_name%.service}  # remove the '.service' if it's there
+    file_name="${service_name}.service"
+    service_file="/etc/systemd/system/${file_name}"
+    [ -s "$service_file" ] && is_empty='NON-empty file - CONTENTS WILL BE DELETED' || is_empty='empty file'
+    if _prompt_yn "You'll modify as sudoer: $service_file ($is_empty). Are you ready?"; then echo "Creating file..."; else echo "Come back when you have everything you need." && return ; fi
+    
+    # provide a template
+    initial_str=''
+    _prompt_yn "Need a template?" && read -r -d '' initial_str << EOT
+[Unit]
+# rewrite this (don't worry about spaces)
+Description=<Insert purpose here>
+; Before=<what this service should preceed, e.g. "network.target">
+; After=<what should run before this service, e.g. "somethingelse.service">
+
+# should dependencies be inherited by unit's After/Before/Conflicts/BindsTo/PartOf/Wants directives?
+; DefaultDependencies=yes/no  
+
+[Service]
+# you may want a different user.
+User=root
+; WorkingDirectory=<path to run at, maybe a project-dir>
+ExecStart=<command that starts the service>
+
+# no: The service should not be restarted. This is the default value.
+# on-success: The service should be restarted when it exits successfully.
+# on-failure: The service should be restarted when it exits with a non-zero exit code or when it terminates abnormally.
+# on-abnormal: The service should be restarted when it terminates abnormally.
+# on-abort: The service should be restarted when it is terminated by a signal.
+# always: The service should be restarted regardless of the exit code or termination status.
+; Restart=no/on-success/on-failure/on-abnormal/on-abort/always
+
+# simple: The service is a simple service that runs a single command or process. This is the default value.
+# forking: The service is a forking service that creates a new process group when it starts. This type of service is typically used for programs that fork and background themselves when they start.
+# oneshot: The service is a one-shot service that runs a command or script and then exits. This type of service is typically used for tasks that need to be performed once and then stopped.
+# dbus: The service is a D-Bus service that exports objects over the D-Bus message bus. This type of service is typically used for services that communicate over D-Bus.
+# notify: The service is a notify service that sends a notification when it is ready. This type of service is typically used for services that need to signal their readiness to other services or clients.
+; Type=simple/forking/oneshot/dbus/notify
+
+
+[Install]
+# who should automatically start this service. multi-user.target is common, it's the state in which multiple users can log in
+; WantedBy=multi-user.target  
+EOT
+    # offer template adjustment
+    if [ -n "$initial_str" ] && _prompt_yn "Include guiding comments in the template?"; then echo "Leaving in comments."; else initial_str=$(grep -v "^#" <<< "$initial_str") ; fi
+
+    # insert template into the file (create/clear file if necessary)
+    sudo sh -c "echo \"$initial_str\" > \"$service_file\""
+
+    # let the user determine the contents of the service
+    sudo nano "$service_file"
+
+    if _prompt_yn "We're done. Want me to reload, enable and start the service?"; then
+        becho 'reloading systemd...'
+        sudo systemctl daemon-reload  # rescan services
+    
+        becho 'enabling after boot...'
+        sudo systemctl enable "$file_name"  # enable after boot
+    
+        becho 'starting service...'
+        sudo systemctl start "$file_name"
+
+        _wait_n_seconds '3'
+
+        becho "Here's its status now:"
+        sudo systemctl status "$file_name"
+    fi
+
 }
 
-# get local files size and inner-files count
-# arg1: dir to explore , -s (optional: sort by size)
-function explore () {
-    location=${1:-.}  # use given address, default to current location
-    location=$(readlink -f "$location")  # use absolute path (and use no '/' at the end)
 
-    folders=""
-    files=""
-    total_files=0  # Files (recursive) counter. Can technically just recount current dir, but the results might not be cached
 
-    filenames=$(find "$location" -maxdepth 1 -type f,d,l)  # get files (files, dirs, links) in given dir
-    filenames=$(echo "$filenames" | grep -vw "^$location$")  # throw out the given location (exact match from line start to end)
+# Administration - processes
+# ==========================
 
-    [ -z "${filenames}" ] && return 1  # nothing to iterate over
+# kill processes by substring, with a confirmation prompt that specifies what's being killed
+function kill_interactively () {
+    # TODO - add display of top-cpu processes to kill - "you didn't specify what to kill, here are the top-10 CPU intensive processes, if you want to kill any of them, input a number or their name"
 
-    while IFS= read -r filename; do
-        size=$(du -sh "$filename" | cut -f1)  # determine size (same command for files/folders)
-        inodes=$(du -s --inodes "$filename" | cut -f1)
-        count=$(find "$filename" -type f,l | wc -l)  # count files and links found. It's just '1' for a file, but the code's shorter this way
-        total_files=$(($total_files + $count))
+    [ $# -ge 1 ] || { errcho "You need to provide a substring to find (and later kill) processes with." ; return ; }
+    
+    pids=$(pgrep -i "$1")  # get all PIDs
+    [ -z "$pids" ] && becho "no processes found" && return 0;
+    pids_commas=$(echo "$pids" | tr '\n' ',' | sed 's/,$//')  # save PIDs with comma-separation (for listing)
+    pids_spaces=$(echo "$pids_commas" | tr ',' ' ')  # save PIDs with space-separation (for killing)
+    proc_info=$(ps -p "$pids_commas" -o pid,ppid,user,%cpu,%mem,stat,start,time,cmd --sort=-%cpu)
 
-        # handle as dir or file
-        if [ -d "$filename" ]; then folders+="$size\t$count\t$inodes\t$filename/\n";
-        else files+="$size\t$count\t$inodes\t$filename\n";
+    prompt="$(echo "$proc_info" ; becho -p "The listed processes $(recho will be killed). Are you sure?")"
+    if _prompt_yn "$prompt"; then _sudo_if_necessary kill ${pids_spaces} ; else echo "Quitting." && return ; fi
+
+    _wait_n_seconds 2
+
+    pids=$(pgrep -i "$1")  # get all PIDs, again
+    [ -z "$pids" ] && becho "Confirmed no new processes with same substring" || errcho "Found live processes with the same name you just eliminated"
+}
+
+# Find processes by substring. Print error if given no args ; print everything if given empty string
+function find_proc () {
+    [ $# -ge 1 ] || { errcho "No substring provided to look through with." ; return ; }
+
+    ps -eo pid,ppid,user,%cpu,%mem,stat,start,time,cmd --sort=-%cpu | awk -v search="$1" 'BEGIN{IGNORECASE=1} NR==1 || $0 ~ search {print}' \
+    | color_word --word "$1"  # color the sought term
+}
+
+
+
+# Administration - env and packages
+# =================================
+
+# install from given (deb file's) URL
+function install_deb_from_url () {
+    pkg_name=$(echo "$1" | awk -F/ '{print $NF}')  # get the string after last '/'
+    installation_msg="Installed debian (.deb) package: $pkg_name. If you want to remove it, run: 'sudo dpkg -r $pkg_name'"
+    wget "$1" && sudo gdebi -n "./$pkg_name" && echo "$installation_msg"  # download and install
+    rm "$pkg_name"  # remove .deb file
+}
+
+# Permanently append a string to PATH.
+# Add directories like "/home/<you>/.local/bin"
+function add_to_path () {
+    # check if given arg is already in PATH
+    if [[ $PATH == *$1* ]]; then
+        echo "$1 is already in PATH!"
+        return
+    fi
+    export PATH=$PATH:$1
+	# change the line where "PATH=" appears
+    sudo sed -i "/PATH=/c\PATH=$PATH" /etc/environment
+    printf "From now on:\n`sudo cat /etc/environment`\n"
+}
+
+# TODO
+# function reinstall() { : 'performs remove and then install'
+#     if [] then;
+#     sudo apt remove "$1" -y && sudo apt install "$1" -y
+#     fi
+#     else
+#     echo "package $1 isn't even installed"
+# }
+
+
+# Administration - hardware
+# =========================
+
+# Find iommu groups that deal with given word. Useful for passing devices onto VMs.
+# arg 1: device substring (example: "usb", or "nvidia", or "SATA") (optional; if not specified, you get all IOMMUs)
+function iommu_find () {
+    iommu_group_prefix='IOMMU Group '
+
+    # arg 1: accepted files. Example: /sys/kernel/iommu_groups/*/devices/*
+    function _stringify_iommu_files () {
+        for file in $1; do
+            iommu_group=$(echo "$file" | awk -F'/' '{print $(NF-2)}')
+            device_num=$(basename "$file")
+            device_string=$(lspci -nns "$device_num" | sed 's/^[[:alnum:]:.]* //')  # get the device description, but drop the initial number
+            echo "${iommu_group_prefix}$iommu_group: device $device_num : $device_string"
+        done
+    }
+
+    all_iommu_devices=$(_stringify_iommu_files '/sys/kernel/iommu_groups/*/devices/*' | sort -V)
+
+    lookup="$1"
+    if [ -z "$lookup" ]; then
+        errcho "You didn't specify a device substring/word to look-up (Example: \"USB\"). So here are all IOMMUs/devices and connected USB peripherals:"
+        echo "$all_iommu_devices"
+        lsusb
+        return 0 
+    fi
+
+    # if you reach here, term search was specified
+    group_texts=()
+    iommu_groupnums=$(grep -i "$lookup" <<< "$all_iommu_devices" | sed "s/^${iommu_group_prefix}\([0-9]\+\):.*$/\1/" | sort -V | uniq)
+    for num in $iommu_groupnums; do
+        group_texts+=("$(_stringify_iommu_files "/sys/kernel/iommu_groups/$num/devices/*" | sort -V | color_word "$lookup")")
+    done
+
+    becho "IOMMU devices:"
+    printf "%s\n" "${group_texts[@]}"
+
+    becho "USB peripherals:"
+    lsusb | grep -iF --color=auto "$lookup"
+
+    # To add a device by IOMMU device number (xxxx:xx:xx.x), go to VM Manager, and add "PCI Host Device" with the same number 
+}
+
+
+# Disk/device handling
+# ====================
+
+# get comprehensive overview of devices/volumes
+function devs () {
+    # df results (mounted volumes)
+    df_results=$(df -h -x tmpfs --output=source,fstype,itotal,ipcent,size,pcent,file,target)
+    df_title=$(echo "$df_results" | head -n1)
+    df_content=$(echo "$df_results" | tail -n+2 | sort -k1,1)
+    df_results=$(echo -e "${df_title}\n${df_content}" | _pad_end_w_spaces)  # reattaching (now the contents are sorted), and ending lines neatly
+
+    # device names (used as identifiers)
+    df_devices=$(echo "$df_content" | awk 'NR>1 {print $1}')
+    lsblk_devices=$(lsblk -o PATH | tail -n+2 | sort)
+
+    # lsblk minus df results
+    # ----------------------
+    unmounted_devices=$(comm -23 <(echo "$lsblk_devices") <(echo "$df_devices"))  # devices in lsblk but not df
+    lsblk_unmounted=$(lsblk -d $(paste -sd ' ' <<< "$unmounted_devices") -o PATH,MODE,FSTYPE,SIZE,LABEL,TYPE,PTTYPE,MODEL,STATE --sort PATH) 
+    
+    # df results + extra data for same entries
+    # ----------------------------------------
+    lsblk_complementary_to_df=$(lsblk -d $(paste -sd ' ' <<< "$df_devices") -o MODE,LABEL,TYPE,PTTYPE,MODEL,STATE,PATH --sort PATH)  # same devices as in df, different columns
+    # map the extra data in lsblk to "PATH", which is the same as lsblk's "Filesystem"
+    declare -A lsblk_hashmap
+    while read -r line; do
+        key="${line##* }"
+        value="${line% *}"
+        lsblk_hashmap["$key"]="$value"
+    done <<< "$lsblk_complementary_to_df"
+    lsblk_hashmap['Filesystem']=${lsblk_hashmap['PATH']}
+    
+    # place the maps right after the df results
+    df_and_lsblk=()
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        dev_name=$(echo $line | awk '{print $1}')
+        modified_line="$line ${lsblk_hashmap[$dev_name]}"
+        df_and_lsblk+=("$modified_line")
+    done <<< "$df_results"
+    
+    
+    # print results
+    becho 'mounted volumes:'  # results from df with extra details on the same entries from lsblk
+    for i in "${df_and_lsblk[@]}"; do echo "$i" ; done
+
+    becho 'non-mounted volumes:'
+    echo "$lsblk_unmounted"
+
+    becho 'identifiers and metadata:'
+    lsblk -a -o NAME,MOUNTPOINT,LABEL,UUID,PTUUID,PARTUUID,SERIAL | awk 'NR==1 || ($1 !~ "loop[0-9]")'
+}
+
+# TODO - unused, so remove?
+# get device name such as "/dev/sda2". You must provide one argument: the UUID of the device.
+function _get_dev_name_from_uuid () {
+    [ $# -ge 1 ] || { echo "You need to provide UUID as an argument" ; return 1; }
+    blkid | grep "UUID=\"$1\"" | awk -F: '{print $1}'
+}
+
+# Mounts, and handles mount-dir. Safe to run when unnecessary, it'll just throw an error.
+# arg 1: uuid of device
+function mount_media_by_uuid () {
+    udisksctl mount -b "/dev/disk/by-uuid/$1"  # add -t <mountpoint>  to change mount-location
+}
+
+# write a live-usb interactively. Careful: DESTRUCTIVE!!!
+function write_iso_to_usb () {
+    valid=0
+    usb_dev_path=''
+    # interactively get user's choice of usb-drive
+    while [ $valid -eq 0 ]; do
+        becho "USB devices detected:"
+        lsblk -o PATH,MODE,FSTYPE,SIZE,MOUNTPOINTS,LABEL,TYPE,PTTYPE,VENDOR,MODEL,STATE,TRAN | awk '{if(NR==1 || $NF=="usb") print}'
+        becho "============================================"
+
+        read -p "Choose the USB device to write into by specifying PATH ('/dev/???') of the disk (not partition): " usb_dev_path  # Read the user's input
+        # check that reply is not empty, and is in the list of found devices
+        if [[ ! "$usb_dev_path" =~ ^[[:space:]]*$ ]] && lsblk -o PATH,TRAN | awk '$2=="usb" {print $1}' | grep -w -q "$usb_dev_path"; then  # match whole word (case sensitive), quietly
+            brand=$(lsblk -d "$usb_dev_path" -o VENDOR,MODEL | tail -n+2 | xargs)  # keep only vendor and model, no title, one space
+            capacity=$(lsblk -d "$usb_dev_path" -o SIZE | tail -n+2)  # keep only size, no title
+            # another check with the user, because this is serious
+            _prompt_yn "Are you sure? This will $(recho PERMANENTLY DELETE) the contents of your \"$capacity $brand\" drive." && valid=1
+        else
+            errcho "Invalid device: \"$usb_dev_path\""
         fi
-    done <<< "$filenames"
+    done
 
-    data="${folders[@]}${files[@]}"    
-    [[ "$@" =~ ^"-s"$ ]] && data=$(echo -e "${data}" | sort -h)  # if flag -s specified, sort ; first datum is size, so that's what we sort by
-    echo -e "${data}" | column -t -s $'\t' -N $(becho "total_size,file_count,inodes,name")  # separate nicely with tabs
-    echo "current dir total files: $total_files"
-    echo "current dir total size: $(du -sh "$location" | cut -f1)"
-    echo "current dir inodes use: $(du -s --inodes "$location" | cut -f1)"
+    # interactively get user's choice of usb-drive
+    iso_file_path=''
+    while [ ! -e "$iso_file_path" ]; do
+        read -p "Provide your image file (typically *.iso): " iso_file_path  # Read the user's input
+        [ ! -e "$iso_file_path" ] && recho "invalid file: $iso_file_path"
+    done
+
+    _prompt_yn "Last time I'll ask. Write live media using \"$iso_file_path\" into drive \"$usb_dev_path\"?" || { recho "Aborting" ; return ; }
+    
+    sudo dd bs=4M if="$iso_file_path" of="$usb_dev_path" status=progress oflag=sync
+}
+
+# Writes data to volume, to check its capacity. Careful: DESTRUCTIVE!!!
+function test_drive_volume () {
+    if [ -z "$1" ]; then echo "You didn't provide a drive-name (run lsblk if you're not sure. Should be like '/dev/sdg' ). Aborting." && return 1 ; fi
+    
+    if _prompt_yn "Your data on $1 is about to be destroyed. Are you sure?"; then echo "Running. Don't remove the device."; else echo "Aborting." && return 1 ; fi
+    sudo f3probe --destructive --time-ops "$1"
 }
 
 
-# Info: Lookup
-# ============
+# fix device-mountable-as-read-only issue, caused by Windows leaving some garbage on the disk
+function prepare_ntfs_for_writable_mount () {
+    lsblk -o UUID,NAME,FSTYPE,LABEL | awk 'NR==1 || $3 == "ntfs"'
+
+    read -p "Choose a UUID to fix (with chkdsk) from the above device-list: " uuid  # Read the user's input
+    
+    lsblk -o UUID,NAME,FSTYPE,LABEL | awk -v uuid="$uuid" 'NR==1 || $1 == uuid'
+    if _prompt_yn "Are you sure this is the right device?"; then echo "Running. Don't touch the device until we're done..."; else echo "Quitting." && return ; fi
+
+    # unmount if necessary
+    if findmnt -o UUID | grep "$uuid" > /dev/null; then umount -l "/dev/disk/by-uuid/${uuid}"; fi
+
+    # fix ntfs device
+    sudo ntfsfix -b "/dev/disk/by-uuid/$uuid"
+}
+
+
+# Filesystem
+# ==========
 
 # case-insensitive lookup on all files in dir (and subdirs).
 # -d <dir> (specify lookup start, default is ".") ; -e <expression> (looked-up expression/substring) ; --text_limit <limit> (how long the results may be, default is maximum: 5000) ; --text_limit_short (same as --text_limit 500) ; --text_limit_medium (same as --text_limit 5000) / --text_limit_unlimited (unlimited response length)
@@ -1413,9 +1307,169 @@ args:
 }
 
 
+# get local files size and inner-files count
+# arg1: dir to explore , -s (optional: sort by size)
+function explore () {
+    location=${1:-.}  # use given address, default to current location
+    location=$(readlink -f "$location")  # use absolute path (and use no '/' at the end)
 
-# Interactive launchers/creators
-# ==============================
+    folders=""
+    files=""
+    total_files=0  # Files (recursive) counter. Can technically just recount current dir, but the results might not be cached
+
+    filenames=$(find "$location" -maxdepth 1 -type f,d,l)  # get files (files, dirs, links) in given dir
+    filenames=$(echo "$filenames" | grep -vw "^$location$")  # throw out the given location (exact match from line start to end)
+
+    [ -z "${filenames}" ] && return 1  # nothing to iterate over
+
+    while IFS= read -r filename; do
+        size=$(du -sh "$filename" | cut -f1)  # determine size (same command for files/folders)
+        inodes=$(du -s --inodes "$filename" | cut -f1)
+        count=$(find "$filename" -type f,l | wc -l)  # count files and links found. It's just '1' for a file, but the code's shorter this way
+        total_files=$(($total_files + $count))
+
+        # handle as dir or file
+        if [ -d "$filename" ]; then folders+="$size\t$count\t$inodes\t$filename/\n";
+        else files+="$size\t$count\t$inodes\t$filename\n";
+        fi
+    done <<< "$filenames"
+
+    data="${folders[@]}${files[@]}"    
+    [[ "$@" =~ ^"-s"$ ]] && data=$(echo -e "${data}" | sort -h)  # if flag -s specified, sort ; first datum is size, so that's what we sort by
+    echo -e "${data}" | column -t -s $'\t' -N $(becho "total_size,file_count,inodes,name")  # separate nicely with tabs
+    echo "current dir total files: $total_files"
+    echo "current dir total size: $(du -sh "$location" | cut -f1)"
+    echo "current dir inodes use: $(du -s --inodes "$location" | cut -f1)"
+}
+
+# finds files that shouldnt be executable and chmods them
+function revoke_exe_mod () {
+    location=${1:-.}  # use given address, default to current location
+    format=${2:-'txt'}  # use given format, default to txt
+    files=$(find "$location" -type f -name "*.$format")  # get txt (or specified) files recursively
+    while read -r file; do
+        # if file is executable
+        if [ -x "$file" ]; then
+            # revoke exe permission (run as sudo IF necessary)
+            _sudo_if_necessary "chmod -x \"$file\"" && echo "file no longer executable: $file"
+        fi
+    done <<< "$files"
+}
+
+# Archive files into .tar.7z format. You can specify any file / file-path, the archive would still be saved to current working directory.
+# -o/--overwrite (optional: replace old 7z archive instead of adding another one) ; -p/--password <pass> (optional: encrypt with password) ; all the rest are file-names
+function archive_tar7z () {
+    # anything unspecified as option/flag is file to archive
+    filenames=() ; overwrite='' ; password=''
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+    		'-o'|'--overwrite')
+    			overwrite='true'
+    			shift
+    			continue
+    		;;
+    		'-p'|'--password')
+    			password="$2"
+    			shift 2
+    			continue
+            ;;
+    		*)
+                filenames+=("$1")
+                shift
+    		;;
+    	esac
+    done
+
+    [ -n "$filenames" ] || { errcho "You need to specify files (or folders) to archive" ; return 1; }
+
+    # note: don't try running multiple in async; tar and 7z already run multi-threaded
+    for f in "${filenames[@]}"; do
+        # archive without including whole directory leading to the file
+        full_path="$(realpath "$f")"  # get full path
+        folderpath="$(dirname "$full_path")"
+        filename="$(basename "$full_path")"
+        archive_name="${filename}.tar.7z"
+
+        # determine if the archiving will be done with encryption (password-protected)
+        optional_encryption=''
+        if [ -n "$password" ]; then  # entering an empty string as password doesn't (and shouldn't) count as password
+            becho "writing $archive_name with password encryption"
+            optional_encryption="-p$password"
+            archive_name=$(echo "$archive_name" | sed 's/.tar.7z$/_encrypted.tar.7z/')  # add "_encrypted" to file suffix name. You can't mix encrypted and unencrypted, so they shouldn't be named the same way
+        fi
+
+        # if similarly-named archive exists (involves overwrite-flag)
+        if [ -e "$archive_name" ]; then
+            already_exists_msg=$(recho "archive \"$archive_name\" already exists")
+            if [ -n "$overwrite" ]; then 
+                echo "$already_exists_msg. Removing it."
+                rm "$archive_name"
+            else
+                echo "$already_exists_msg. Creating archive with current date."
+                archive_name=$(echo "$archive_name" | sed "s/.tar.7z$/_$(date +%Y-%m-%d).tar.7z/")  # add "_<today>" to file suffix name to avoid mixing with old archive
+                [ -e "$archive_name" ] && rm "$archive_name" && recho "deleted an existing archive with the same name-date"  # if even the dated archive exists, delete it
+            fi
+
+        fi
+        
+        tar -C "$folderpath" -cvzf - "$filename" | 7za a -si "$archive_name" "$optional_encryption"
+    done
+    
+}
+
+
+# Media file manipulation
+# =======================
+
+# arg 1: media_file
+function media_remove_audio () {
+    output="${1%.*}_noaudio.${1##*.}"  # add "_noaudio" before the file's .<format>
+    ffmpeg -i "$1" -c copy -an "$output"
+}
+
+# usage: -v/--video <video_file>  -a/--audio <audio_file>
+function media_merge_audio_video () {
+    video_file='' ; audio_file=''
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+    		'-v'|'--video')
+    			video_file="$2"
+    			shift 2
+    			continue
+    		;;
+    		'-a'|'--audio')
+    			audio_file="$2"
+    			shift 2
+    			continue
+            ;;
+    		*)
+                errcho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+                return 1
+    		;;
+    	esac
+    done
+
+    [ -z "$video_file" ] && errcho "no video file specified" && return 1
+    [ -z "$audio_file" ] && errcho "no audio file specified" && return 1
+
+    output="${video_file%.*}_replaced_audio.${video_file##*.}"  # add "_replaced_audio" before the video file's .<format>
+
+    ffmpeg -i "$video_file" -i "$audio_file" -c:v copy -c:a libvorbis "$output"
+}
+
+# compare between media files
+# all args are media-file paths
+function media_compare () {
+    md_results=()
+    for i in "$@"; do md_results+=("$(media_metadata "$i")"); done
+    _side_by_side --lined "${md_results[@]}" 
+}
+
+# TODO - create a function that uses youtube-dl and other website downloaders; have it accept any download-link. 
+
+
+# Virtual Machines
+# ================
 
 #TODO - offer to choose a vm by number [1-n]. Need to create a function like y_n one that gets a dicitonary as an argument 
 # interactively launch looking-glass session and VM (if not running). 
@@ -1488,96 +1542,49 @@ function launch_vm_w_lookingglass() {
 
 }
 
-# interactively create a new systemd service (using templates)
-# arg 1: (optional) service name
-function create_systemd_service () {
-    if [ -n "$1" ]; then
-        service_name="$1"
-    else
-        read -p "Choose the name of your service: " service_name  # Read the user's input
-    fi
-    service_name=${service_name%.service}  # remove the '.service' if it's there
-    file_name="${service_name}.service"
-    service_file="/etc/systemd/system/${file_name}"
-    [ -s "$service_file" ] && is_empty='NON-empty file - CONTENTS WILL BE DELETED' || is_empty='empty file'
-    if _prompt_yn "You'll modify as sudoer: $service_file ($is_empty). Are you ready?"; then echo "Creating file..."; else echo "Come back when you have everything you need." && return ; fi
-    
-    # provide a template
-    initial_str=''
-    _prompt_yn "Need a template?" && read -r -d '' initial_str << EOT
-[Unit]
-# rewrite this (don't worry about spaces)
-Description=<Insert purpose here>
-; Before=<what this service should preceed, e.g. "network.target">
-; After=<what should run before this service, e.g. "somethingelse.service">
 
-# should dependencies be inherited by unit's After/Before/Conflicts/BindsTo/PartOf/Wants directives?
-; DefaultDependencies=yes/no  
+# String handling
+# ===============
 
-[Service]
-# you may want a different user.
-User=root
-; WorkingDirectory=<path to run at, maybe a project-dir>
-ExecStart=<command that starts the service>
-
-# no: The service should not be restarted. This is the default value.
-# on-success: The service should be restarted when it exits successfully.
-# on-failure: The service should be restarted when it exits with a non-zero exit code or when it terminates abnormally.
-# on-abnormal: The service should be restarted when it terminates abnormally.
-# on-abort: The service should be restarted when it is terminated by a signal.
-# always: The service should be restarted regardless of the exit code or termination status.
-; Restart=no/on-success/on-failure/on-abnormal/on-abort/always
-
-# simple: The service is a simple service that runs a single command or process. This is the default value.
-# forking: The service is a forking service that creates a new process group when it starts. This type of service is typically used for programs that fork and background themselves when they start.
-# oneshot: The service is a one-shot service that runs a command or script and then exits. This type of service is typically used for tasks that need to be performed once and then stopped.
-# dbus: The service is a D-Bus service that exports objects over the D-Bus message bus. This type of service is typically used for services that communicate over D-Bus.
-# notify: The service is a notify service that sends a notification when it is ready. This type of service is typically used for services that need to signal their readiness to other services or clients.
-; Type=simple/forking/oneshot/dbus/notify
-
-
-[Install]
-# who should automatically start this service. multi-user.target is common, it's the state in which multiple users can log in
-; WantedBy=multi-user.target  
-EOT
-    # offer template adjustment
-    if [ -n "$initial_str" ] && _prompt_yn "Include guiding comments in the template?"; then echo "Leaving in comments."; else initial_str=$(grep -v "^#" <<< "$initial_str") ; fi
-
-    # insert template into the file (create/clear file if necessary)
-    sudo sh -c "echo \"$initial_str\" > \"$service_file\""
-
-    # let the user determine the contents of the service
-    sudo nano "$service_file"
-
-    if _prompt_yn "We're done. Want me to reload, enable and start the service?"; then
-        becho 'reloading systemd...'
-        sudo systemctl daemon-reload  # rescan services
-    
-        becho 'enabling after boot...'
-        sudo systemctl enable "$file_name"  # enable after boot
-    
-        becho 'starting service...'
-        sudo systemctl start "$file_name"
-
-        _wait_n_seconds '3'
-
-        becho "Here's its status now:"
-        sudo systemctl status "$file_name"
-    fi
-
+# useful for drawings or neat concatenating of tables like so: 'paste <(_pad_end_w_spaces "$(df -h)") <(_pad_end_w_spaces "$(df -hi)") <(_pad_end_w_spaces "$(df -hi)")'
+# Append spaces to text lines for a rectangular look; i.e. end uniformly on the same column.
+# Also works with pipes. Could be problematic for table formatting if color is involved (colors are extra unseen chars)
+function _pad_end_w_spaces () {
+    text="$1"  # assume that text is provided as an argument
+    if [ -z "$text" ] && ! [ -t 0 ]; then text=$(cat); fi  # if no arg given and there's a stream from a pipe, get the stream contents as text
+    awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "$text"
 }
 
+# pastes text blocks (given as args) side by side
+# --lined (optional before texts: separate with line instead of space) , --glued (optional before texts: no delimiter) , --no_padding (optional before texts: no padding)
+function _side_by_side () {
+    separator=' ' ; no_padding=''
+    [ "$1" = "--lined" ] && separator='|' && shift  # get rid of the flag, so it won't disturb us
+    [ "$1" = "--glued" ] && separator='' && shift  # get rid of the flag, so it won't disturb us
+    [ "$1" = "--no_padding" ] && no_padding='true' && shift  # get rid of the flag, so it won't disturb us
 
-# Visuals
-# =======
+    
+    # prepare to add more lines to texts that are too short
+    line_counts=()
+    for i in "$@"; do line_counts+=($(echo "$i" | wc -l)); done  # count the number of lines for each
+    max_lines=$(max "${line_counts[@]}")
 
-# get current row-index of cursor
-function _get_cursor_row () {
-    echo -en "\033[6n" # send the control sequence to query cursor position
-    read -sdR CURPOS # read cursor position from input buffer
-
-    # Extract the row number from the cursor position
-    echo "$CURPOS" | sed -rn 's/^.*\[(.*)\;.*$/\1/p'
+    args=("$@")  # for iteration. can't iterate on the index of $@ - the items start from 1, but the index starts on 0 ("bash") unlike lists that start their index at 1
+    paste_texts=()  # the values that need to be pasted
+    items_to_interpret=()  # will be made into a string that refers to the values; interpreted into a command
+    for i in "${!args[@]}"; do  
+        modified_txt_block="${args[i]}"  # actual item
+        # add empty lines
+        line_diff=$(( max_lines - line_counts[i] ))  # how many lines are "missing"
+        [ $line_diff -gt 0 ] && modified_txt_block+=$(echo -e "\n$(yes " " | head -$line_diff)")  # if text is shorter than max, add newlines (add [diff] 1-line spaces below - need an additional newline before those)
+        # pad to allow concatenating without messing up the lines
+        [ -z "$no_padding" ] && modified_txt_block=$(_pad_end_w_spaces "$modified_txt_block")
+        # add to list that we'll reference in the command
+        paste_texts+=("$modified_txt_block")  # data list
+        items_to_interpret+=('<(echo "${paste_texts['$i']}")')  # pointers to data
+    done
+    
+    eval "paste -d '$separator' ${items_to_interpret[@]}"
 }
 
 # get <arg 1> spaces
@@ -1603,6 +1610,15 @@ function rm_leading_whitespaces () {
     if ! [ -t 0 ]; then sed "$expression" ;  # modify the data from pipe
     else echo "$@" | sed "$expression";  # or modify the data from args
     fi
+}
+
+
+# Graphical/Visual/Stylizing
+# ==========================
+
+# echo into error output
+function errcho () {
+    recho "$@" >&2
 }
 
 # print string with a similarly-lengthed line
@@ -1656,6 +1672,15 @@ function color_word () {
 
     # insert tags around word, I makes it case-insensitive
     _draw_formatted "$(echo "$text" | sed -e "s/$word/$color&<=reset=>/gI")"
+}
+
+
+# Tag-coloring
+# ============
+
+# make given tag persistant
+function _tag_persist () {
+    echo "<=persist${@}this=>"
 }
 
 # TODO - detect if the terminal is bright instead of dark? If it's white, the colored prints should be darker; so you should remove the "\033[1m" prefix
@@ -1748,17 +1773,6 @@ function commecho () {
     formatted=$(echo "$formatted" | sed "s/[A-Z]\+![!]\+/${warning_color}&/g")  # recolor capitalized words with at least two '!' exclamation marks
     _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
 }
-
-# echo into error output
-function errcho () {
-    recho "$@" >&2
-}
-
-# make given tag persistant
-function _tag_persist () {
-    echo "<=persist${@}this=>"
-}
-
 
 # recolors text by replacing color tags with their appropriate color-codes
 # arg 1: text
@@ -1885,6 +1899,19 @@ EOM
 }
 
 
+# Animation
+# =========
+
+# get current row-index of cursor
+function _get_cursor_row () {
+    echo -en "\033[6n" # send the control sequence to query cursor position
+    read -sdR CURPOS # read cursor position from input buffer
+
+    # Extract the row number from the cursor position
+    echo "$CURPOS" | sed -rn 's/^.*\[(.*)\;.*$/\1/p'
+}
+
+
 # wait <arg 1> seconds, print a dot for each second passed.
 function _wait_n_seconds () {
     printf "Waiting $1 seconds"
@@ -1912,7 +1939,6 @@ function _spinning_wait_for_task () {
         sleep 0.1
     done
 }
-
 
 # short "LET'S GO" animation. -v : verbose (debugging)
 function animate_lets_go () {
@@ -2041,7 +2067,7 @@ banner="
 
 
 
-# Finishing touches (parsing this file and announcing that we're done to user)
+## Finishing touches (parsing this file and announcing that we're done to user)
 #################################################################################
 
 if [ "$IS_FIRST_SOURCING" = true ]; then
