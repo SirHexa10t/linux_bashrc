@@ -31,9 +31,9 @@ function _announce_pkg_installed () {
 
 ## Session data
 #################################################################################
-SUDO_FILE=$(which sudo)
-THIS_FILE=$(readlink -f -- "$BASH_SOURCE")
-THIS_FOLDER=$(dirname "$THIS_FILE")
+SUDO_FILE="$(which sudo)"
+THIS_FILE="$(readlink -f -- "$BASH_SOURCE")"
+THIS_FOLDER="$(dirname "$THIS_FILE")"
 SCRIPTS_BASHRC_FILE="$THIS_FOLDER/script_calls_bashrc"  # optional extention file
 IS_USER_ROOT=$(if [ "$USER" = "root" ]; then echo "true"; else echo "false"; fi)
 IS_FIRST_SOURCING=$([ ! -v CUSTOM_ALIASES_INITIAL ] && echo 'true' || echo 'false')
@@ -159,14 +159,20 @@ alias lll='becho "Blocks Permissions Hard-Links Owner Group Size Date_Modified F
 # echo in red
 alias recho='_colored_echo "<=bold=><=red=>"'
 
+# echo in dark red
+alias darecho='_colored_echo "<=dark=><=bold=><=red=>"'
+
 # echo in green
 alias gecho='_colored_echo "<=bold=><=green=>"'
 
 # echo in dark green
-alias dagecho='_colored_echo "<=green=>"'
+alias dagecho='_colored_echo "<=dark=><=bold=><=green=>"'
 
 # echo in blue
 alias becho='_colored_echo "<=bold=><=blue=>"'
+
+# echo in cyan
+alias cecho='_colored_echo "<=bold=><=cyan=>"'
 
 # echo in yellow
 alias yecho='_colored_echo "<=bold=><=yellow=>"'
@@ -245,12 +251,15 @@ alias gui='xdg-open "$(pwd)"'
 # Show current network connections to the server through port 80
 alias port80="sudo netstat -tulpn | grep :80"
 
-# get own IP
-alias whatsmyip='becho "My private IPs:"; ip addr show | grep inet | grep -v inet6 | awk '\''{print $2}'\'' | cut -d/ -f1  ;  becho "My IPv4:" ; dig @resolver4.opendns.com myip.opendns.com +short '
+## if the dig call fails, you can find external IP like so:  wget -qO- https://ipecho.net/plain ; echo
+# get own IP (not including "127.0.0.1")
+alias whatsmyip='becho "My private IPs:"; hostname -I | sed "s/ /\n/g"; becho "My IPv4:"; dig @resolver4.opendns.com myip.opendns.com +short '
 
 # get addresses on LAN
 alias whatsmynetwork="buecho 'LAN devices:' ; arp -a  ;  buecho 'Connections:' ; netstat -atn"
 
+# get own ISP
+alias whosmyisp='curl -s ipinfo.io/org'
 
 
 # function aliases (alternative names)
@@ -783,6 +792,55 @@ function network_search () {
     fi
 }
 
+
+# Ping various sources, see how fast you reach them.
+# Add your own addresses as args if you want them checked too. Note: you might be interested in checking through this site: https://www.cloudping.info/
+function multiping () {
+    local num_of_pings=3
+    # random_lan_device=$(ip neigh | cut -f 1 -d ' ' | grep -v '127.0.0.1' | shuf -n 1)
+    local user_choice="$@"
+    local big_domains="wikipedia.org youtube.com discord.com google.com cloudflare.com"
+    local dns_addresses="8.8.8.8 1.1.1.1"  # google and cloudflare
+    local aws_endpoints="$(curl -s "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html" | sed -n 's|\(rds.[[:alpha:]]\+-[[:alpha:]]\+-[[:digit:]]\+.amazonaws.com\)|\1|p')"
+
+    # color-print number by its "grade" (quality determined by how big it is)
+    # arg 1: number to print
+    function grade_ping () {
+        local num="$1"
+        if (( $(echo "$num < 20" | bc -l))); then cecho "$num";
+        elif (( $(echo "$num < 100" | bc -l))); then gecho "$num";
+        elif (( $(echo "$num < 200" | bc -l))); then yecho "$num";
+        elif (( $(echo "$num < 300" | bc -l))); then recho "$num";
+        else darecho "$num";
+        fi
+    }
+
+    (  # The parentheses provide a subshell, so that shell job-control wouldn't bother us
+    for address in localhost $user_choice $big_domains $dns_addresses $aws_endpoints; do
+        colored_address=$(becho "$address")
+        for protocol in 4 6; do
+            # ping (async), and average the response time, then print result.
+            {
+                protocol_name="IPv$protocol"
+                failure=''
+                ping_results="$(ping "-$protocol" -c "$num_of_pings" "$address" 2> /dev/null)"
+                if ! [ $? -eq 0 ]; then
+                    [[ "$protocol" == "4" ]] && recho "Failed pinging $address on $protocol_name"  # only print if failed at IPv4
+                    failure='true'
+                fi 
+
+                # if didn't fail, print the resutls
+                [ -z "$failure" ] && echo "$ping_results" \
+                 | awk -F 'time=' '{if (NF > 1) {print $2}}' \
+                 | awk '{ total += $1 } END { print total/NR }' | echo "$colored_address on $protocol_name, avg ping time: $(grade_ping $(cat)) ms"                
+            } &
+
+        done
+    done
+
+    wait  # wait for threads to finish (otherwise the prompt won't show back automatically)
+    )
+}
 
 
 # Administration - users
@@ -1472,6 +1530,7 @@ function media_compare () {
 # ================
 
 #TODO - offer to choose a vm by number [1-n]. Need to create a function like y_n one that gets a dicitonary as an argument 
+# TODO - offer to add USB (and other?) devices by ID (from displayed list). Filter out devices already in XML.
 # interactively launch looking-glass session and VM (if not running). 
 function launch_vm_w_lookingglass() {
     valid=0
@@ -1778,6 +1837,8 @@ function commecho () {
 # arg 1: text
 function _draw_formatted () {
     declare -A colors=(
+    # less standard colors
+    [<=orange=>]='\033[38;5;208m'
     # colors
     [<=black=>]='\033[30m' [<=red=>]='\033[31m' [<=green=>]='\033[32m' [<=yellow=>]='\033[33m' [<=blue=>]='\033[34m' [<=purple=>]='\033[35m' [<=cyan=>]='\033[36m' [<=grey=>]='\033[37m'
     # bright colors (work like regulat when stylized bold)
@@ -1932,11 +1993,12 @@ function _spinning_wait_for_task () {
     "${cmd[@]}" &  # Run the command in the background
     local pid=$!  # Get the PID of the background process
     local chars=('\' '|' '/' '-')
-    local i=0
+    local i_char=0
     while [ -d /proc/"$pid" ]; do
-        i=$(( (i+1) % 4 ))
-        printf "\r%s Running: %s" "${chars[$i]}" "${cmd[*]}"
-        sleep 0.1
+        i_char=$(( (i_char+1) % 4 ))
+        tput cuu1  # go up 1 line
+        printf "\r%s Running: %s\n" "${chars[$i_char]}" "${cmd[*]}"  # drops 1 line in case this is the last iteration - let the waited process print in a new line.
+        sleep 0.15
     done
 }
 
