@@ -19,7 +19,9 @@ while IFS= read -r filename; do
     cmd_name="${extension}_${function_name}"
     script_file="${SCRIPTS_PATH}/${filename}"
     alias_content="${cmd_name}='${script_file}'"  &&  alias "$alias_content"  # Define through alias instead of function. Though it's less dynamic that way
-    # eval "function ${extension}_${function_name} () { "$SCRIPTS_PATH/$filename"; }"  # define as function instead (keep this option in case it'll be needed, remember to add args-addition support)
+    # eval "function ${extension}_${function_name} () { "$script_file"; }"  # define as function instead (keep this option in case it'll be needed, remember to add args-addition support)
+    # eval "function ${extension}_${function_name} () { "$script_file" \"\$@\"; }"  # with args
+
 
     cmds_to_scriptfiles["$cmd_name"]="$script_file"  # used later
 done <<< "$file_names"
@@ -49,7 +51,8 @@ function list_script_calls () {
 # SCRIPTS_FILE_ALIASES="$(_unique_in_first "$( eval "$_alias_names_query")" "$CUSTOM_ALIASES_INITIAL" "$CUSTOM_ALIASES")"  # get all current aliases
 SCRIPTS_FILE_FUNCTIONS="$(_unique_in_first "$( eval "$_function_names_query")" "$CUSTOM_FUNCTIONS_INITIAL" "$CUSTOM_FUNCTIONS")"  # get all current functions
 
-if ! _is_user_root; then
+# output message only if user isn't root
+if [[ $EUID -ne 0 ]]; then
     eval "$CONFIRMATION_CMD"
     loading_success=$( [ "$?" -eq 0 ] && gecho "Successfully loaded" || recho "Failed loading" )
     echo "$loading_success scripts file \"$SCRIPTS_BASHRC_FILE\". To view added script-call commands, run: $(becho list_script_calls)"  # if user is root (sudo running), be quiet
