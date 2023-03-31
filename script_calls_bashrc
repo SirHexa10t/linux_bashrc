@@ -8,52 +8,62 @@ SCRIPTS_PATH="$THIS_FOLDER/$SCRIPTS_FOLDER"  # uses argument from custom_bashrc.
 
 CONFIRMATION_CMD='py__confirm_loaded'  # a call to a script added in just to confirm that the rest of the scripts are reached right 
 
-file_names=$(ls "$SCRIPTS_PATH")
 
-declare -A cmds_to_scriptfiles
-# Loop through the list of files and create a function for each
-while IFS= read -r filename; do
-    function_name=${filename%.*}  # keep the file name but not the ending suffix
-    extension=${filename##*.}  # gets file-type or entire filename if there's no file-type
-    [[ "$extension" == "$function_name" ]] && extension='generic'  # to avoid having functions for no-extention files named "fooname_fooname", we'll write "generic" as the file-type
-    cmd_name="${extension}_${function_name}"
-    script_file="${SCRIPTS_PATH}/${filename}"
-    alias_content="${cmd_name}='${script_file}'"  &&  alias "$alias_content"  # Define through alias instead of function. Though it's less dynamic that way
-    # eval "function ${extension}_${function_name} () { "$script_file"; }"  # define as function instead (keep this option in case it'll be needed, remember to add args-addition support)
-    # eval "function ${extension}_${function_name} () { "$script_file" \"\$@\"; }"  # with args
+# Reloads script-files into bash-calls. No need to manually call this, it's done automatically
+# --declare_commands (create aliases/functions to call scripts) , --output_commands (list found files and their appropriate calls)
+function _reload_scriptfiles () {
+    local declare_commands='' output_commands=''
+    [[ "$@" =~ ^"--declare_commands"$ ]] && declare_commands='true'
+    [[ "$@" =~ ^"--output_commands"$ ]] && output_commands='true'
 
+    local file_names=$(ls "$SCRIPTS_PATH")
+    # Loop through the list of files and create a function for each
+    while IFS= read -r filename; do
+        local function_name=${filename%.*}  # keep the file name but not the ending suffix
+        local extension=${filename##*.}  # gets file-type or entire filename if there's no file-type
+        [[ "$extension" == "$function_name" ]] && extension='generic'  # to avoid having functions for no-extention files named "fooname_fooname", we'll write "generic" as the file-type
+        local cmd_name="${extension}_${function_name}"
+        local script_file="${SCRIPTS_PATH}/${filename}"
+        if [ -n "$declare_commands" ]; then
+            local alias_content="${cmd_name}='${script_file}'"  &&  alias "$alias_content"  # Define through alias instead of function. Though it's less dynamic that way
+            # eval "function ${extension}_${function_name} () { "$script_file"; }"  # define as function instead (keep this option in case it'll be needed, remember to add args-addition support)
+            # eval "function ${extension}_${function_name} () { "$script_file" \"\$@\"; }"  # with args
+        fi
 
-    cmds_to_scriptfiles["$cmd_name"]="$script_file"  # used later
-done <<< "$file_names"
-
+        [ -n "$output_commands" ] && echo "$cmd_name:$script_file"
+    done <<< "$file_names"
+}
+_reload_scriptfiles --declare_commands
 
 function list_script_calls () {
     declare -A cmds_to_text
-    for name in ${!cmds_to_scriptfiles[@]}; do 
-        file="${cmds_to_scriptfiles[$name]}"
-        documentation=''
+    local commands=$(_reload_scriptfiles --output_commands)
+    local name file  # keep iteration vars from polluting your env
+    while IFS=: read -r name file; do 
+        local documentation=''
         if [[ "$file" == *.py ]]; then
             documentation=$(sed -n '/"""/, /"""/{ /"""/! { /"""/! p } }' "$file")  # get the documentation between 2 """ strings
             documentation=$(echo "$documentation" | paste -s -d ' ')  # merge into one line
         fi
 
         cmds_to_text["$name"]="$name  $(yecho "# ${documentation}")"
-    done
+    done <<< "$commands"
 
-    cmd_list=$(for key in "${!cmds_to_text[@]}"; do echo "${cmds_to_text[$key]}"; done | sort )
+    local cmd_list=$(for key in "${!cmds_to_text[@]}"; do echo "${cmds_to_text[$key]}"; done | sort )
     
     becho 'new script-aliases:'
     echo "$cmd_list"
-    becho 'new function-aliases:'
+    becho 'new script-functions:'
     echo "$SCRIPTS_FILE_FUNCTIONS"
 }
 
 # SCRIPTS_FILE_ALIASES="$(_unique_in_first "$( eval "$_alias_names_query")" "$CUSTOM_ALIASES_INITIAL" "$CUSTOM_ALIASES")"  # get all current aliases
-SCRIPTS_FILE_FUNCTIONS="$(_unique_in_first "$( eval "$_function_names_query")" "$CUSTOM_FUNCTIONS_INITIAL" "$CUSTOM_FUNCTIONS")"  # get all current functions
+SCRIPTS_FILE_FUNCTIONS="$(_unique_in_first "$(_function_names)" "$CUSTOM_FUNCTIONS_INITIAL" "$CUSTOM_FUNCTIONS")"  # get all current functions
 
 # output message only if user isn't root
 if [[ $EUID -ne 0 ]]; then
     eval "$CONFIRMATION_CMD"
     loading_success=$( [ "$?" -eq 0 ] && gecho "Successfully loaded" || recho "Failed loading" )
     echo "$loading_success scripts file \"$SCRIPTS_BASHRC_FILE\". To view added script-call commands, run: $(becho list_script_calls)"  # if user is root (sudo running), be quiet
+    unset loading_success
 fi

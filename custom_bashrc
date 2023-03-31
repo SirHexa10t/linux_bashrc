@@ -230,6 +230,7 @@ alias psg='find_proc'
 # Cheatsheets
 # =================
 
+# TODO - write down flatpak/appimage/snap/(other?) differences
 # Reminders for linux system tools and command options
 alias howdoi_linux='commecho -l "\
 >> Packages
@@ -657,7 +658,7 @@ function remindme () {
     # TODO - list key binds too
     # TODO - once tags are added, (color-)mark some commands as "useful"; specifically those you can use often
 
-    this_file_text="$(cat "$THIS_FILE")"  # faster than reading the file from disk several times
+    local this_file_text="$(cat "$THIS_FILE")"  # faster than reading the file from disk several times
 
     function get_commands_by_expression {
         expression_template="$1"
