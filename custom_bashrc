@@ -11,6 +11,8 @@
 
 # TODO - define this file's constants with capital letters?
 
+# TODO - add a function that backs up personal configurations and files from HOME
+
 
 #---------------------------------------------------------------------------------------------
 #----CUSTOM-----------------------------------------------------------------------------------
@@ -23,28 +25,21 @@
 function _alias_names () { alias | grep -E "^alias" | sed "s/^alias \([^=]*\)=.*/\1/" ; }  # this is needed very early (and very late) for lookup of existing aliases
 function _function_names () { declare -F | awk '{print $3}' ; }  # not as complex as aliases, but if aliases are here, so should this be.
 
-# uses a later variable definition to determine if the script runs for user: "root"
-
-# For dependencies on packages, especially in aliases.
-# Removed (non-purged) packages are considered not-installed
-function _is_pkg_installed () {
-    is_pkg_installed=$(dpkg-query -W --showformat='${Status}\n' ${1} 2>&1 | grep "install ok installed")
-    if [ "${is_pkg_installed}" == "install ok installed" ]; then return 0; else return 1; fi
-}
-
 # Returns true if pacakge is installed, false + user-message if not.
 # arg 1: package name
-function _announce_pkg_installed () {
-    if _is_pkg_installed "$1" ; then return 0; else echo "Can't use package '$1', consider installing it."; return 1; fi
-} 
+function _announce_pkg_installed () { [ -n "$(which "$1")" ] && return 0 || { echo "Can't use package '$1', consider installing it." ; return 1 ; }  } 
+
+# if the file exists, print it (can be used), otherwise place an empty string
+# arg 1: potential filename
+function _filename_or_nothing () { [ -f "$1" ] && echo "$1" || echo '' ; }
 
 
 ## Session data
 #################################################################################
 SUDO_FILE="$(which sudo)"
-THIS_FILE="$(readlink -f -- "$BASH_SOURCE")"
-THIS_FOLDER="$(dirname "$THIS_FILE")"
-SCRIPTS_BASHRC_FILE="$THIS_FOLDER/script_calls_bashrc"  # optional extention file
+CUSTOM_BASHRC_FILE="$(readlink -f -- "$BASH_SOURCE")"  # this file
+CUSTOM_BASHRC_FOLDER="$(dirname "$CUSTOM_BASHRC_FILE")"  # this file's filder
+SCRIPTS_BASHRC_FILE="$CUSTOM_BASHRC_FOLDER/script_calls_bashrc"  # optional extention file
 IS_FIRST_SOURCING=$([ ! -v CUSTOM_ALIASES_INITIAL ] && echo 'true' || echo 'false')
 
 if [ "$IS_FIRST_SOURCING" = true ]; then  # only do if not defined already (can happen if you source this file again), in which case, previous iteration's values are the right ones
@@ -56,7 +51,9 @@ fi
 #################################################################################
 HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
-TESTS_FILE="$THIS_FOLDER/run_tests.sh"  # Convenient debugging; if file exists, automatically runs when this bashrc file finishes loading. The contents (and address) are up to you.
+# Files this script could utilize. Definitions self-erase in case they don't exist, to avoid writing them accidentally
+TESTS_FILE=$(_filename_or_nothing "$CUSTOM_BASHRC_FOLDER/run_tests.sh")  # Convenient debugging; if file exists, automatically runs when this bashrc file finishes loading. The contents (and address) are up to you.
+GARBAGE_OUTPUTS=$(_filename_or_nothing "$CUSTOM_BASHRC_FOLDER/outputs.txt")  # default location to dump data into (if exists)
 
 # Constants for VM functions
 QEMU_VOLUME_UUID='A80899A4089971D4'  # the drive that contains VMs' disk data; must be mounted when running a VM
@@ -65,7 +62,7 @@ LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"  # run VM in a window
 # CACHE_LOCATION='/cache_space'  # setup a caching disk in case you want tmp caching buffer to be someplace else than system's temporary directory
 # CACHE_BLK_UUID='/dev/disk/by-uuid/b25fb935-b252-466f-8e45-63c8e7f62acf'
 # udisksctl mount -b "$CACHE_BLK_UUID" && ln -s $(udisksctl info -b "$CACHE_BLK_UUID" | grep MountPoints | awk '{print $2}') "$CACHE_LOCATION"  # symlink at desired location
-# [ -e "$CACHE_LOCATION" ] && export TMPDIR="$CACHE_LOCATION"  # if dir exists, use it
+# [ -e "$CACHE_LOCATION" ] && export TMPDIR="$CACHE_LOCATION"  # if dir exists, use it for caching instead of '/'
 SUBDIR_MOUNTS_FILE='folder_mounts'
 
 
@@ -122,7 +119,7 @@ fi
 # The space at the end makes bash auto-complete the next word as well. 'sudo ' alone makes aliases work in sudo, but not functions.
 alias sudo='sudo '
 
-# same trick as in sudo
+# same trick as in sudo - allows checking manual for overriden commands (man the override instead)
 alias man='man '
 
 # replace apt with nala. Same thing but prettier
@@ -225,7 +222,8 @@ alias what_commands='remindme'
 alias i_forgor='remindme'
 # Synonymous to "find_proc". psg is short for "ps grep"
 alias psg='find_proc'
-
+# used to allow running this function on aliases
+alias _vars_added_by='_vars_added_by '
 
 # Cheatsheets
 # =================
@@ -264,6 +262,8 @@ alias howdoi_debian_cinnamon='commecho -l "\
 * apt list  # list all packages in followed repositories
 *   apt list --installed  # list installed packages
 *   dpkg -l  # show all installed packages in table format
+>> configurations (Cinnamon?)
+* ~/.config/autostart/  :  location of startup scripts that run for your own user after startup 
 >> configurations (nemo)
 * ~/Templates/  :  anything you put in this folder will be a new-file template when you right-click in nemo
 * ~/.local/share/nemo/scripts/  :  anything you put in this folder will be an executable-script available when you right-click in nemo
@@ -274,8 +274,8 @@ alias howdoi_users='commecho -l "\
 * groups <username>  # display the groups of a user
 * usermod -aG <groupA,groupB,groupC> <username>  # add user to group(s). You can even add to group sudo (makes into superuser in Ubuntu).
 * getent group  # list all groups and their user-members
-* sudo adduser --disabled-password --gecos "" <username>  # adduser is a useradd wrapper (addused is generally better). The --disabled-password and --gecos options are required for no-prompt; gecos fills thumbnail info (cancels interactive). --no-create-home skips homedir creation. --disabled-password skips password creation and disables password login.
-*   sudo adduser <username> --gecos "" --disabled-password && echo "<username>:<password>" | sudo chpasswd  # Add user with password in one line. take care to specify the username twice, as needed here
+* sudo adduser --disabled-password --gecos \"\" <username>  # adduser is a useradd wrapper (addused is generally better). The --disabled-password and --gecos options are required for no-prompt; gecos fills thumbnail info (cancels interactive). --no-create-home skips homedir creation. --disabled-password skips password creation and disables password login.
+*   sudo adduser <username> --gecos \"\" --disabled-password && echo \"<username>:<password>\" | sudo chpasswd  # Add user with password in one line. take care to specify the username twice, as needed here
 * sudo deluser --remove-home <username>  # delete user and associate homedir
 * su - <username>  # Switch to user. Might require sudo.
 "'
@@ -498,14 +498,34 @@ function sudo () {
     # needs to be "silent" to avoid screwing up scripts that rely on the output of the sudo'd commands
     # if arg 1 (only arg 1 supported, deal with it) is in the list of this file's functions, source this file. Otherwise, run sudo regularly.
     if [ -n "${CUSTOM_FUNCTIONS_MAP[$1]}" ]; then
-        local custom_function_cmd="source $THIS_FILE && $@"
+        local custom_function_cmd="source $CUSTOM_BASHRC_FILE && $@"
         "$SUDO_FILE" $SHELL -c "$custom_function_cmd"
     elif [ -n "${CUSTOM_ALIASES_MAP[$1]}" ]; then
-        local custom_function_cmd="source $THIS_FILE && $@"
+        local custom_function_cmd="source $CUSTOM_BASHRC_FILE && $@"
         "$SUDO_FILE" $SHELL -i -c "$custom_function_cmd"
     else
         "$SUDO_FILE" "$@"
     fi
+}
+
+# debugger: prints vars that were added by following function call
+# arg 1: -s (optional: run the command silently)
+function _vars_added_by () {
+    local silent
+    [ "$1" == '-s' ] && { silent='true' ; shift ; }
+    # record vars before and after (but not in local variables, that'd complicate matters)
+    local before_file="/tmp/vars_before_running_$1" after_file="/tmp/vars_after_running_$1"  # defined as a constant prior to the "before" measurement, so it's fine
+    set -o posix ; set | sort | uniq > "$before_file"
+    if [ -n "$silent" ]; then "$@" &> /dev/null ;  # silent running
+    else "$@" ;  # regular running
+    fi
+    set -o posix ; set | sort | uniq > "$after_file"
+    
+    local found="$(diff "$before_file" "$after_file" | grep "^>")"
+    if [ -n "$found" ]; then becho "vars found after running \"$@\":" ; echo "$found" ;
+    else dagecho "No new vars found!" ; fi
+
+    rm "$before_file" "$after_file"
 }
 
 # TODO - do about the same for chmod and chown - print the directory/files with the changed data (maybe cancel that, getting the filenames in every case isn't simple)
@@ -517,13 +537,13 @@ function cd () {
 
 # make mkdir more "reasonable" with a flag that is always nice to have ; -p doesn't print error if dir exists
 function mkdir () {
-    [[ $* == *-p* ]] && extra_flag="" || extra_flag="-p"  # if flag not present, store it in var 
+    local extra_flag="$( [[ "$@" =~ ^"-p"$ ]] && echo '' || echo '-p')"  # if flag not present, store it in var 
     /usr/bin/mkdir "$extra_flag" "$@"
 }
 
 # make date output in a specific format by default
 function date () {
-    args=$([ $# == 0 ] && echo "+%Y-%m-%d_%T" || echo "$@")  # if provided 0 args, set the time-format to own preference
+    local args=$([ $# == 0 ] && echo "+%Y-%m-%d_%T" || echo "$@")  # if provided 0 args, set the time-format to own preference
     /usr/bin/date "$args"
 }
 
@@ -534,7 +554,7 @@ function date () {
 
 # print maximum number among given args
 function max () {
-    max=$1
+    local max=$1 n
     for n in "$@"; do (( $(echo "$n > $max" | bc -l) )) && max=$n ; done
     echo $max
 }
@@ -542,7 +562,7 @@ function max () {
 # turn a list into a hashmap; you need to evaluate the output (can't return a hashmap directly)
 # call like this: eval $(_hashmap_instructions --hm_name 'my_hashmap' --list "${my_list_var[@]}")
 function _hashmap_instructions () {
-    hashmap_name='' ; the_list=''
+    local hashmap_name='' the_list=''
     while [[ $# -gt 0 ]]; do
     	case "$1" in
             '--hm_name')
@@ -566,7 +586,9 @@ function _hashmap_instructions () {
     [ -z "$hashmap_name" ] && errcho "no name provided for your hashmap" && return 1
     [ -z "$the_list" ] && errcho "no list provided" && return 1
 
-    hasmap_builder="declare -A $hashmap_name=("
+    # TODO - see if you can declare with -g -A (global declaration, no need to evaluate printed reply). The difficulty I had was assigning values to the hashmap (since its name was saved in a var)
+    local hasmap_builder="declare -A $hashmap_name=("
+    local item
     for item in $the_list; do hasmap_builder+=" [$item]='1'"; done 
     hasmap_builder+=")"
     
@@ -579,22 +601,23 @@ function _hashmap_instructions () {
 function _hashmap_this_var () {
     [ "$#" -eq 1 ] || { errcho "You need to provide variable-name as an argument" ; return ; }  # TODO - check this file for all places where "ge 1" was used, maybe mistakenly instead of "eq 1"
     
-    # uses the '=' to avoid screwing up a substring in the declaration prior to var-name
-    eval $(declare -p "$1" | sed "s/${1}=/new_list=/")  # get list declaration and declare it for a name we know locally
-
-    [[ ${new_list[@]} == "" ]] && return 1  # list is empty (variable was initialized as empty string) - nothing to do
-
-
-    hm_suffix=$([[ "${1}" == "${1^^}" ]] && echo "MAP" || echo "map")  # if completely capitalized, suffix is _MAP, otherwise it's _map
-    _hashmap_instructions --hm_name "${1}_${hm_suffix}" --list "${new_list[@]}"
+    # TODO - it's possible to access the data with "${!1@A}" but only if it's lines of text, rather than list. Find a way to get the data in both cases (current solution does that by using eval and a hacky trick, which isn't optimal)
+    local pointed_data="$(eval "echo \${${1}[@]}")"  # madness: pointers (indirect access) in Bash. Echo is there to make sure you don't actually execute the found data
+    local hm_suffix=$([[ "${1}" == "${1^^}" ]] && echo "MAP" || echo "map")  # if completely capitalized, suffix is _MAP, otherwise it's _map
+    _hashmap_instructions --hm_name "${1}_${hm_suffix}" --list "$pointed_data"
 }
 
-# List the items unique to the first list. Better in runtime than comm -23, thanks to hashmap usage
+# List the items unique to the first list (string variables, not arrays). Better in runtime than comm -23, thanks to hashmap usage
 function _unique_in_first () {
-    filter_me="$1"
-    blacklist="${@:2}"
-    eval $(_hashmap_this_var 'blacklist')  # create hashmap: blacklist_map
+    # TODO - make this work on array types?
+    local filter_me="$1"
+    local blacklist="${@:2}"
 
+    # if there's nothing to filter out, just return the first arg
+    [ -z "$blacklist" ] && { echo "${filter_me[@]}" ; return ; }
+    
+    eval $(_hashmap_this_var 'blacklist')  # create hashmap: blacklist_map
+    local item
     for item in $filter_me; do [ -n "${blacklist_map[$item]}" ] || echo "$item"; done  # print if unique to first
 }
 
@@ -604,7 +627,7 @@ function _unique_in_first () {
 
 # adds y/n prompt. Call like this:  if prompt_yn "<prompt q>?"; then echo "<starting-process msg>"; else echo "<cancellation msg>" && return ; fi
 function _prompt_yn () {   
-    response=""
+    local response=""
     # keep prompting the user until they provide a valid response
     while [ "$response" != "y" ] && [ "$response" != "n" ]; do
         # prompt the user for a yes/no response
@@ -625,7 +648,7 @@ function _prompt_yn () {
 # list custom commands.
 # --show_hidden (list inner-workings commands) ; --sort (sort alphabetically) ; --include_line_num (print definition line-num)
 function remindme () {
-    show_hidden='' ; include_line_num='' ; sort=''
+    local show_hidden include_line_num sort
     while [[ $# -gt 0 ]]; do
     	case "$1" in
             '--show_hidden')
@@ -650,31 +673,33 @@ function remindme () {
         esac
     done
 
-    unoriginal=('sudo' 'man' 'cd' 'mkdir' 'cp' 'date' 'apt')  # list of overwritten shell commands 
-    eval $(_hashmap_this_var 'unoriginal')  # create hashmap: unoriginal_map
+    local unoriginal=('sudo' 'man' 'cd' 'mkdir' 'cp' 'date' 'apt')  # list of overwritten shell commands 
+    eval $(_hashmap_this_var "unoriginal")  # create hashmap: unoriginal_map
 
     declare -A line_to_cmd  # map of line number to respective command definition (name and comment)
 
     # TODO - list key binds too
     # TODO - once tags are added, (color-)mark some commands as "useful"; specifically those you can use often
+    # TODO - try running in parallel (async)
 
-    local this_file_text="$(cat "$THIS_FILE")"  # faster than reading the file from disk several times
+    local this_file_text="$(cat "$CUSTOM_BASHRC_FILE")"  # faster than reading the file from disk several times
 
     function get_commands_by_expression {
-        expression_template="$1"
-        num_of_rows_above="$2"
-        cmd_names="${@:3}"  # args 3 and onwards
+        local expression_template="$1"
+        local num_of_rows_above="$2"
+        local cmd_names="${@:3}"  # args 3 and onwards
 
         [ -z "$cmd_names" ] && errcho 'No commands given to search!' && return
 
+        local name  # iteration variables
         while read -r name; do
             if [ -z "$show_hidden" ] && [[ "${name:0:1}" == '_' ]]; then continue; fi  # if not showing hidden functions and current function starts with '_', skip it
             if [ -n "${unoriginal_map[$name]}" ]; then continue; fi  # if it's an override of a known command (user already knows what it does), don't mention it - skip
 
             # we already have the names, we need the documentation. And maybe also line number.
-            expression=$(echo "$expression_template" | sed "s/<name>/$name/")
-            line_num=$( echo "$this_file_text" | grep -nE "$expression" | cut -d: -f1 )  # get line number
-            matched=$( echo "$this_file_text" | grep -B "$num_of_rows_above" -E "$expression" )  # match declaration and some rows above for documentation
+            local expression=$(echo "$expression_template" | sed "s/<name>/$name/")
+            local line_num=$( echo "$this_file_text" | grep -nE "$expression" | cut -d: -f1 )  # get line number
+            local matched=$( echo "$this_file_text" | grep -B "$num_of_rows_above" -E "$expression" )  # match declaration and some rows above for documentation
             # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO or =====
             matched=$(echo "$matched" | grep -E '^#[^#]' |  grep -vE '^#[[:space:]]*TODO' |  grep -vE '^#[[:space:]]*===' )  
             matched=$(echo "${matched}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
@@ -690,12 +715,13 @@ function remindme () {
 
     # categories (comments, not callable)
     if [ -z "$sort" ]; then  # if not sorting by name (so, sorting by line number - categories are relevant)
-        topic_comments="$(echo "$this_file_text" | grep -n -B 1 "^# ===" | sed -E '/^[0-9]+\-# .*/!d')"  # get also one line above the underline matches, and throw away the actual matched (underline) lines
+        local topic_comments="$(echo "$this_file_text" | grep -n -B 1 "^# ===" | sed -E '/^[0-9]+\-# .*/!d')"  # get also one line above the underline matches, and throw away the actual matched (underline) lines
         topic_comments+="$(echo ; echo "$this_file_text" | grep -n -B 1 "^#####" | sed -E '/^[0-9]+\-# .*/!d')"  # add titles (binds/aliases/functions), after a newline
+        local number comment  # iteration variables
         while IFS=- read -r number comment; do line_to_cmd["$number"]="$comment" ; done <<< "$topic_comments"
     fi
 
-    cmd_list=$(for key in "${!line_to_cmd[@]}"; do echo "$key $(commecho "${line_to_cmd[$key]}")"; done )  # include line-number for possible line-num sorting
+    local cmd_list=$(for key in "${!line_to_cmd[@]}"; do echo "$key $(commecho "${line_to_cmd[$key]}")"; done )  # include line-number for possible line-num sorting
     [ -n "$sort" ] && cmd_list=$(echo "$cmd_list" | sort -k2) || cmd_list=$(echo "$cmd_list" | sort -n -k1) # If user specified alphabetical sorting, sort by command name. Otherwise sort by line num
     [ -z "$include_line_num" ] && cmd_list=$(echo "$cmd_list" | cut -d" " -f2-)  # if flag not specified, remove line numbers
 
@@ -706,25 +732,26 @@ function remindme () {
 
 # Check if you spelled given word correctly. Get definition to make sure, or suggestions if it's misspelled 
 function spellcheck () {
-    word="$1"
+    local word="$1"
     [ -z "$word" ] && { errcho "Provide an argument (English word) to spell-check" ; return 1; }
 
-    corrections="$(aspell -a <<< "$word" | grep '^& ' | sed 's|.*: ||' | sed 's|,||g')"  # corrections are listed after "& ", or just as "*" if there are none (word is correct). Then
+    local corrections="$(aspell -a <<< "$word" | grep '^& ' | sed 's|.*: ||' | sed 's|,||g')"  # corrections are listed after "& ", or just as "*" if there are none (word is correct). Then
     if [ -z "$corrections" ] ; then
         gecho "✔ $(guecho $word)"  # can alternatively use checkmark: ✓
         # list definitions
-        source="https://www.wordnik.com/words/$word"
+        local source="https://www.wordnik.com/words/$word"
         echo "Fetching word definition from $source :"
-        definition_page="$(curl -s "$source")"
+        local definition_page="$(curl -s "$source")"
         # print main definition
         becho "$(echo "$definition_page" | sed -n "s|<meta content='$word: \(.*\)' name='description'>|\1|p")"
         # print other definitions
-        other_defs="$(echo "$definition_page" | grep '<abbr title="partOfSpeech">' | sed -n 's|.*<abbr title="partOfSpeech">\(.*\)</li>|\1|p' | sed 's/<[^>]*>//g')"
+        local other_defs="$(echo "$definition_page" | grep '<abbr title="partOfSpeech">' | sed -n 's|.*<abbr title="partOfSpeech">\(.*\)</li>|\1|p' | sed 's/<[^>]*>//g')"
+        local marked_word
         for marked_word in noun verb adjective adverb pronoun preposition conjunction interjection; do other_defs="$(color_word -t "$other_defs" -w "$marked_word" -c '<=italic=><=yellow=>')" ; done
         echo "$other_defs"
     else
         recho -p "✖ $(ruecho $word)\tDid you mean:"  # can alternatively use fail: ✕
-        marked_corrections=()
+        local marked_corrections=() correction  # also defines iteration var
         for correction in $corrections; do marked_corrections+=("$(py_word2_diff "$word" "$correction")") ; done
         printf '%s , ' "${marked_corrections[@]}" | sed 's/,\s*$/\n/'  # list to string separated by spaced commas
     fi
@@ -809,8 +836,7 @@ function multiping () {
 # --max_uid <number> (listed users' uid limit)  ; --require_home (only list users with home-dir) 
 function list_human_users() {
     # defaults
-    max_uid_filter=''  # no extra filtering
-    require_home='false'
+    local require_home max_uid_filter  # no extra filtering
     while [[ $# -gt 0 ]]; do
     	case "$1" in
             '--max_uid')
@@ -830,9 +856,10 @@ function list_human_users() {
         esac
     done
 
-    users=$(getent passwd | awk -F: '$3 >= 1000 '"$max_uid_filter"' {print $1}')  # get all users with uid >= 1000, maybe with a limit (because uid increments by 1)
+    local users=$(getent passwd | awk -F: '$3 >= 1000 '"$max_uid_filter"' {print $1}')  # get all users with uid >= 1000, maybe with a limit (because uid increments by 1)
+    local user
     for user in $users; do      
-      if [ "$require_home" == 'false'  ] || [ -d "/home/$user" ]; then  # if homedir isn't required, or if it is and it does exist
+      if [ -z "$require_home" ] || [ -d "/home/$user" ]; then  # if homedir isn't required, or if it is and it does exist
           echo $user
       fi
     done
@@ -842,40 +869,60 @@ function list_human_users() {
 # list users and their various resources usage.
 # --gpu (also display gpu data) ; --not_sudo (don't try to get restricted data as root)
 function resources_used () {
-    maybe_sudo=$([[ "$@" =~ ^"--not_sudo"$ ]] && echo "" || echo "_sudo_if_necessary")  # if flagged, run regularly as non-superuser. If not, try inputting password in case it's necessary
+    local show_gpu not_sudo  # no extra filtering
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+            '--gpu')
+    			show_gpu="true"
+    			shift
+    			continue
+    		;;
+            '--not_sudo')
+    			not_sudo='true'
+    			shift
+    			continue
+    		;;
+            *)
+                errcho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+    			shift
+    		;;
+        esac
+    done
 
-    thread_count=$(nproc)
-    bottleneck_threshold=$(echo "scale=3; 100/$thread_count" | bc -l)
+    local maybe_sudo=$( [ -n "$not_sudo" ] && echo "" || echo "_sudo_if_necessary")  # if flagged, run regularly as non-superuser. If not, try inputting password in case it's necessary
+
+    local thread_count=$(nproc)
+    local bottleneck_threshold=$(echo "scale=3; 100/$thread_count" | bc -l)
 
     # human-users lookup    
-    human_users=$(list_human_users --max_uid 2000)
+    local human_users=$(list_human_users --max_uid 2000)
     eval $(_hashmap_this_var 'human_users')  # create hashmap: human_users_map
 
-    current_users=$(ps -eo user= | sort | uniq)  # all current users running on the system
+    local current_users=$(ps -eo user= | sort | uniq)  # all current users running on the system
     eval $(_hashmap_this_var 'current_users')  # create hashmap: current_users_map
 
-    all_users=$(echo -e "$current_users\n$human_users" | sort | uniq)  # all users (joined list but kept only unique)
-    headers='USER,CPU,RAM,@HOME-size'
-    usage_summary=''
+    local all_users=$(echo -e "$current_users\n$human_users" | sort | uniq)  # all users (joined list but kept only unique)
+    local headers='USER,CPU,RAM,@HOME-size'
+    local usage_summary user
     for user in $all_users; do
         # determine if the line would be printed in color
-        prnt_cmd=$([ -n "${human_users_map[$user]}" ] && echo "gecho" || echo "echo")  # ternary for choice of command to use
+        local prnt_cmd=$([ -n "${human_users_map[$user]}" ] && echo "gecho" || echo "echo")  # ternary for choice of command to use
         # CPU usage%, "-" if not in "current_users" (users in process list)
-        cpu_usage=$([ -n "${current_users_map[$user]}" ] && echo $(ps -u $user -o %cpu,%pid | awk '{cpu+=$1} END {printf "%.2f%%\n", cpu/'$thread_count'}') || echo "-")  # user's CPU usage. Divided by num of threads because a ps line with 100% is just 100% single-thread, not 100% on all cores
+        local cpu_usage=$([ -n "${current_users_map[$user]}" ] && echo $(ps -u $user -o %cpu,%pid | awk '{cpu+=$1} END {printf "%.2f%%\n", cpu/'$thread_count'}') || echo "-")  # user's CPU usage. Divided by num of threads because a ps line with 100% is just 100% single-thread, not 100% on all cores
         # RAM usage%, "-" if not in "current_users" (users in process list)
-        mem_usage=$([ -n "${current_users_map[$user]}" ] && echo $(ps -u $user -o %mem= | awk '{mem+=$1} END {print mem"%"}') || echo "-")  # user's RAM usage
+        local mem_usage=$([ -n "${current_users_map[$user]}" ] && echo $(ps -u $user -o %mem= | awk '{mem+=$1} END {print mem"%"}') || echo "-")  # user's RAM usage
         # Disk usage of user's home-dir. "-" if home-dir doesn't exist
-        disk_usage=$([ -d "/home/$user" ] && echo $($maybe_sudo du -sh "/home/$user" | cut -f1) || echo "-")  # specify home-dir disk usage (if applicable)
+        local disk_usage=$([ -d "/home/$user" ] && echo $($maybe_sudo du -sh "/home/$user" | cut -f1) || echo "-")  # specify home-dir disk usage (if applicable)
 
-        current_user_usage=$($prnt_cmd "$user\t$cpu_usage\t$mem_usage\t$disk_usage")  # data display format, including the optional coloring
+        local current_user_usage=$($prnt_cmd "$user\t$cpu_usage\t$mem_usage\t$disk_usage")  # data display format, including the optional coloring
         usage_summary="$usage_summary\n$current_user_usage"
     done
 
     # get cpu stat directly from /proc/stat , without the rounding errors in "top" ; line from https://stackoverflow.com/questions/9229333/how-to-get-overall-cpu-usage-e-g-57-on-linux
-    total_cpu_usage=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) "%"; }' <(grep 'cpu ' /proc/stat) <(sleep 1;grep 'cpu ' /proc/stat))
+    local total_cpu_usage=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) "%"; }' <(grep 'cpu ' /proc/stat) <(sleep 1;grep 'cpu ' /proc/stat))
         # total_cpu_usage=$(cat <(grep 'cpu ' /proc/stat) <(sleep 1 && grep 'cpu ' /proc/stat) | awk -v RS="" '{print ($13-$2+$15-$4)*100/($13-$2+$15-$4+$16-$5)}')  # also works
-    total_ram_usage=$(free -h | awk '/^Mem:/ {print $3 "(+" $6 " buff/cache) / " $2}')
-    total_disk_usage=$(df -h / --output=used,size,iused,itotal | tail -n+2 | awk '{ print $1 " / " $2 " ("$3 " / " $4" inodes)"}')
+    local total_ram_usage=$(free -h | awk '/^Mem:/ {print $3 "(+" $6 " buff/cache) / " $2}')
+    local total_disk_usage=$(df -h / --output=used,size,iused,itotal | tail -n+2 | awk '{ print $1 " / " $2 " ("$3 " / " $4" inodes)"}')
 
     echo "Computing units count: $(becho $thread_count)"
     echo "If your overall CPU usage reaches $(becho $bottleneck_threshold%), your CPU is possibly bottlenecked on a single thread."
@@ -887,43 +934,42 @@ function resources_used () {
     echo "$(uecho 'Total RAM usage:') $total_ram_usage"
     echo "$(uecho 'Total Disk usage:') $total_disk_usage  *For '/' only. Run devs function to see more."  
     # TODO - check if there is a GPU at all, and support AMD (or Intel) drivers (need to detect)
-    [[ "$@" =~ ^"--gpu"$ ]] && ( uecho "GPU utilization info:" ; nvidia-smi -q -d MEMORY,COMPUTE,UTILIZATION ) # if flag --gpu is specified
-    
+    [ -n "$show_gpu" ] && ( uecho "GPU utilization info:" ; nvidia-smi -q -d MEMORY,COMPUTE,UTILIZATION ) # if flag --gpu is specified    
 }
 
 # Administration - services
 # =========================
 
-# TODO - optimize, maybe use list_human_users() ?
 # list crontabs of all users
 function all_crontabs () {
-    cat /etc/passwd | awk -F: '{ print $1; }' \
-    | while read user; do
-            crontab -u $user -l 2>/dev/null | grep "^[^#*/;]" | awk '{
-                    print "'$user': "$0;
-            }';
-    done
+    local user
+    while read user; do
+        crontab -u $user -l 2>/dev/null | grep "^[^#*/;]" | awk '{ print "'$user': "$0; }'
+    done <<< "$(list_human_users)"
     
-    sudo crontab -u root -l 2>/dev/null | grep "^[^#*/;]" | awk '{ print "root: "$0; }';
+    sudo crontab -u root -l 2>/dev/null | grep "^[^#*/;]" | awk '{ print "root: "$0; }'
 
 }
 
+# TODO - improve the code (refactor)
 # interactively create a new systemd service (using templates)
 # arg 1: (optional) service name
 function create_systemd_service () {
+    local service_name
     if [ -n "$1" ]; then
         service_name="$1"
     else
         read -p "Choose the name of your service: " service_name  # Read the user's input
     fi
     service_name=${service_name%.service}  # remove the '.service' if it's there
-    file_name="${service_name}.service"
-    service_file="/etc/systemd/system/${file_name}"
+    local file_name="${service_name}.service"
+    local service_file="/etc/systemd/system/${file_name}"
+    local is_empty
     [ -s "$service_file" ] && is_empty='NON-empty file - CONTENTS WILL BE DELETED' || is_empty='empty file'
     if _prompt_yn "You'll modify as sudoer: $service_file ($is_empty). Are you ready?"; then echo "Creating file..."; else echo "Come back when you have everything you need." && return ; fi
     
     # provide a template
-    initial_str=''
+    local initial_str
     _prompt_yn "Need a template?" && read -r -d '' initial_str << EOT
 [Unit]
 # rewrite this (don't worry about spaces)
@@ -987,6 +1033,24 @@ EOT
 
 }
 
+# removes a given service-name from systemd (including the .service file)
+function remove_systemd_service () {
+    local service_name="$1"
+    [ -z "$service_name" ] && errcho "You need to provide (as arg) the service-name to delete" && return 1
+
+    becho "Removing service from Systemd"
+    sudo systemctl stop "$service_name"
+    sudo systemctl disable "$service_name"
+    sudo systemctl daemon-reload  # rescan services
+
+    local systemd_services_folder='/etc/systemd/system'
+
+    becho "Removing .service file"
+    sudo rm "$systemd_services_folder/$service_name.service"
+    becho "Removing .service.save file"
+    sudo rm "$systemd_services_folder/$service_name.service.save"
+
+}
 
 
 # Administration - processes
@@ -998,13 +1062,13 @@ function kill_interactively () {
 
     [ $# -ge 1 ] || { errcho "You need to provide a substring to find (and later kill) processes with." ; return ; }
     
-    pids=$(pgrep -i "$1")  # get all PIDs
+    local pids=$(pgrep -i "$1")  # get all PIDs
     [ -z "$pids" ] && becho "no processes found" && return 0;
-    pids_commas=$(echo "$pids" | tr '\n' ',' | sed 's/,$//')  # save PIDs with comma-separation (for listing)
-    pids_spaces=$(echo "$pids_commas" | tr ',' ' ')  # save PIDs with space-separation (for killing)
-    proc_info=$(ps -p "$pids_commas" -o pid,ppid,user,%cpu,%mem,stat,start,time,cmd --sort=-%cpu)
+    local pids_commas=$(echo "$pids" | tr '\n' ',' | sed 's/,$//')  # save PIDs with comma-separation (for listing)
+    local pids_spaces=$(echo "$pids_commas" | tr ',' ' ')  # save PIDs with space-separation (for killing)
+    local proc_info=$(ps -p "$pids_commas" -o pid,ppid,user,%cpu,%mem,stat,start,time,cmd --sort=-%cpu)
 
-    prompt="$(echo "$proc_info" ; becho -p "The listed processes $(recho will be killed). Are you sure?")"
+    local prompt="$(echo "$proc_info" ; becho -p "The listed processes $(recho will be killed). Are you sure?")"
     if _prompt_yn "$prompt"; then _sudo_if_necessary kill ${pids_spaces} ; else echo "Quitting." && return ; fi
 
     _wait_n_seconds 2
@@ -1028,8 +1092,8 @@ function find_proc () {
 
 # install from given (deb file's) URL
 function install_deb_from_url () {
-    pkg_name=$(echo "$1" | awk -F/ '{print $NF}')  # get the string after last '/'
-    installation_msg="Installed debian (.deb) package: $pkg_name. If you want to remove it, run: 'sudo dpkg -r $pkg_name'"
+    local pkg_name=$(echo "$1" | awk -F/ '{print $NF}')  # get the string after last '/'
+    local installation_msg="Installed debian (.deb) package: $pkg_name. If you want to remove it, run: 'sudo dpkg -r $pkg_name'"
     wget "$1" && sudo gdebi -n "./$pkg_name" && echo "$installation_msg"  # download and install
     rm "$pkg_name"  # remove .deb file
 }
@@ -1064,21 +1128,22 @@ function add_to_path () {
 # Find iommu groups that deal with given word. Useful for passing devices onto VMs.
 # arg 1: device substring (example: "usb", or "nvidia", or "SATA") (optional; if not specified, you get all IOMMUs)
 function iommu_find () {
-    iommu_group_prefix='IOMMU Group '
+    local iommu_group_prefix='IOMMU Group '
 
     # arg 1: accepted files. Example: /sys/kernel/iommu_groups/*/devices/*
     function _stringify_iommu_files () {
+        local file
         for file in $1; do
-            iommu_group=$(echo "$file" | awk -F'/' '{print $(NF-2)}')
-            device_num=$(basename "$file")
-            device_string=$(lspci -nns "$device_num" | sed 's/^[[:alnum:]:.]* //')  # get the device description, but drop the initial number
+            local iommu_group=$(echo "$file" | awk -F'/' '{print $(NF-2)}')
+            local device_num=$(basename "$file")
+            local device_string=$(lspci -nns "$device_num" | sed 's/^[[:alnum:]:.]* //')  # get the device description, but drop the initial number
             echo "${iommu_group_prefix}$iommu_group: device $device_num : $device_string"
         done
     }
 
-    all_iommu_devices=$(_stringify_iommu_files '/sys/kernel/iommu_groups/*/devices/*' | sort -V)
+    local all_iommu_devices=$(_stringify_iommu_files '/sys/kernel/iommu_groups/*/devices/*' | sort -V)
 
-    lookup="$1"
+    local lookup="$1"
     if [ -z "$lookup" ]; then
         errcho "You didn't specify a device substring/word to look-up (Example: \"USB\"). So here are all IOMMUs/devices and connected USB peripherals:"
         echo "$all_iommu_devices"
@@ -1087,8 +1152,9 @@ function iommu_find () {
     fi
 
     # if you reach here, term search was specified
-    group_texts=()
-    iommu_groupnums=$(grep -i "$lookup" <<< "$all_iommu_devices" | sed "s/^${iommu_group_prefix}\([0-9]\+\):.*$/\1/" | sort -V | uniq)
+    local group_texts=()
+    local iommu_groupnums=$(grep -i "$lookup" <<< "$all_iommu_devices" | sed "s/^${iommu_group_prefix}\([0-9]\+\):.*$/\1/" | sort -V | uniq)
+    local num
     for num in $iommu_groupnums; do
         group_texts+=("$(_stringify_iommu_files "/sys/kernel/iommu_groups/$num/devices/*" | sort -V | color_word "$lookup")")
     done
@@ -1109,50 +1175,52 @@ function iommu_find () {
 # get comprehensive overview of devices/volumes
 function devs () {
     # df results (mounted volumes)
-    df_results=$(df -h -x tmpfs --output=source,fstype,itotal,ipcent,size,pcent,file,target)
-    df_title=$(echo "$df_results" | head -n1)
-    df_content=$(echo "$df_results" | tail -n+2 | sort -k1,1)
+    local df_results=$(df -h -x tmpfs --output=source,fstype,itotal,ipcent,size,pcent,file,target)
+    local df_title=$(echo "$df_results" | head -n1)
+    local df_content=$(echo "$df_results" | tail -n+2 | sort -k1,1)
     df_results=$(echo -e "${df_title}\n${df_content}" | _pad_end_w_spaces)  # reattaching (now the contents are sorted), and ending lines neatly
 
     # device names (used as identifiers)
-    df_devices=$(echo "$df_content" | awk 'NR>1 {print $1}')
-    lsblk_devices=$(lsblk -o PATH | tail -n+2 | sort)
+    local df_devices=$(echo "$df_content" | awk 'NR>1 {print $1}')
+    local lsblk_devices=$(lsblk -o PATH | tail -n+2 | sort)
 
     # lsblk minus df results
     # ----------------------
-    unmounted_devices=$(comm -23 <(echo "$lsblk_devices") <(echo "$df_devices"))  # devices in lsblk but not df
-    lsblk_unmounted=$(lsblk -d $(paste -sd ' ' <<< "$unmounted_devices") -o PATH,MODE,FSTYPE,SIZE,LABEL,TYPE,PTTYPE,MODEL,STATE --sort PATH) 
+    local unmounted_devices=$(comm -23 <(echo "$lsblk_devices") <(echo "$df_devices"))  # devices in lsblk but not df
+    local lsblk_unmounted=$(lsblk -d $(paste -sd ' ' <<< "$unmounted_devices") -o PATH,MODE,FSTYPE,SIZE,LABEL,TYPE,PTTYPE,MODEL,STATE --sort PATH) 
     
     # df results + extra data for same entries
     # ----------------------------------------
-    lsblk_complementary_to_df=$(lsblk -d $(paste -sd ' ' <<< "$df_devices") -o MODE,LABEL,TYPE,PTTYPE,MODEL,STATE,PATH --sort PATH)  # same devices as in df, different columns
+    local lsblk_complementary_to_df=$(lsblk -d $(paste -sd ' ' <<< "$df_devices") -o MODE,LABEL,TYPE,PTTYPE,MODEL,STATE,PATH --sort PATH)  # same devices as in df, different columns
     # map the extra data in lsblk to "PATH", which is the same as lsblk's "Filesystem"
     declare -A lsblk_hashmap
+    local line
     while read -r line; do
-        key="${line##* }"
-        value="${line% *}"
+        local key="${line##* }"
+        local value="${line% *}"
         lsblk_hashmap["$key"]="$value"
     done <<< "$lsblk_complementary_to_df"
     lsblk_hashmap['Filesystem']=${lsblk_hashmap['PATH']}
     
     # place the maps right after the df results
-    df_and_lsblk=()
+    local df_and_lsblk=()
     while IFS= read -r line || [[ -n "$line" ]]; do
-        dev_name=$(echo $line | awk '{print $1}')
-        modified_line="$line ${lsblk_hashmap[$dev_name]}"
+        local dev_name=$(echo $line | awk '{print $1}')
+        local modified_line="$line ${lsblk_hashmap[$dev_name]}"
         df_and_lsblk+=("$modified_line")
     done <<< "$df_results"
     
     
     # print results
     becho 'mounted volumes:'  # results from df with extra details on the same entries from lsblk
+    local i
     for i in "${df_and_lsblk[@]}"; do echo "$i" ; done
 
     becho 'non-mounted volumes:'
     echo "$lsblk_unmounted"
 
     becho 'identifiers and metadata:'
-    lsblk -a -o NAME,MOUNTPOINT,LABEL,UUID,PTUUID,PARTUUID,SERIAL | awk 'NR==1 || ($1 !~ "loop[0-9]")'
+    lsblk -a -o NAME,MOUNTPOINT,LABEL,UUID,PTUUID,PARTUUID,SERIAL,WWN | awk 'NR==1 || ($1 !~ "loop[0-9]")'
 }
 
 # TODO - unused, so remove?
@@ -1170,10 +1238,10 @@ function mount_media_by_uuid () {
 
 # write a live-usb interactively. Careful: DESTRUCTIVE!!!
 function write_iso_to_usb () {
-    valid=0
-    usb_dev_path=''
+    local found
+    local usb_dev_path
     # interactively get user's choice of usb-drive
-    while [ $valid -eq 0 ]; do
+    while [ -z "$found" ]; do
         becho "USB devices detected:"
         lsblk -o PATH,MODE,FSTYPE,SIZE,MOUNTPOINTS,LABEL,TYPE,PTTYPE,VENDOR,MODEL,STATE,TRAN | awk '{if(NR==1 || $NF=="usb") print}'
         becho "============================================"
@@ -1181,17 +1249,17 @@ function write_iso_to_usb () {
         read -p "Choose the USB device to write into by specifying PATH ('/dev/???') of the disk (not partition): " usb_dev_path  # Read the user's input
         # check that reply is not empty, and is in the list of found devices
         if [[ ! "$usb_dev_path" =~ ^[[:space:]]*$ ]] && lsblk -o PATH,TRAN | awk '$2=="usb" {print $1}' | grep -w -q "$usb_dev_path"; then  # match whole word (case sensitive), quietly
-            brand=$(lsblk -d "$usb_dev_path" -o VENDOR,MODEL | tail -n+2 | xargs)  # keep only vendor and model, no title, one space
-            capacity=$(lsblk -d "$usb_dev_path" -o SIZE | tail -n+2)  # keep only size, no title
+            local brand=$(lsblk -d "$usb_dev_path" -o VENDOR,MODEL | tail -n+2 | xargs)  # keep only vendor and model, no title, one space
+            local capacity=$(lsblk -d "$usb_dev_path" -o SIZE | tail -n+2)  # keep only size, no title
             # another check with the user, because this is serious
-            _prompt_yn "Are you sure? This will $(recho PERMANENTLY DELETE) the contents of your \"$capacity $brand\" drive." && valid=1
+            _prompt_yn "Are you sure? This will $(recho PERMANENTLY DELETE) the contents of your \"$capacity $brand\" drive." && found='true'
         else
             errcho "Invalid device: \"$usb_dev_path\""
         fi
     done
 
     # interactively get user's choice of usb-drive
-    iso_file_path=''
+    local iso_file_path
     while [ ! -e "$iso_file_path" ]; do
         read -p "Provide your image file (typically *.iso): " iso_file_path  # Read the user's input
         [ ! -e "$iso_file_path" ] && recho "invalid file: $iso_file_path"
@@ -1215,6 +1283,7 @@ function test_drive_volume () {
 function prepare_ntfs_for_writable_mount () {
     lsblk -o UUID,NAME,FSTYPE,LABEL | awk 'NR==1 || $3 == "ntfs"'
 
+    local uuid
     read -p "Choose a UUID to fix (with chkdsk) from the above device-list: " uuid  # Read the user's input
     
     lsblk -o UUID,NAME,FSTYPE,LABEL | awk -v uuid="$uuid" 'NR==1 || $1 == uuid'
@@ -1259,9 +1328,10 @@ function claim () {
 function supergrep () {
     [ $# -ge 1 ] || { echo "You must provide at least one argument, for the lookup-expression" ; return ; }
     # we have a text-length limit to skip gibbrish and text-dumps. It's allowed over 4k, since that's the minimum file-path length.
-    text_limit_default='5000'
-    first_free_arg_is_exp=''
-    dir='.' ; exp=''; text_limit="$text_limit_default"; verbose=''  # defaults, and clearing (in case they're set)
+    local text_limit_default='5000' 
+    local text_limit="$text_limit_default"
+    local dir='.'
+    local first_free_arg_is_exp exp verbose  # defaults, and clearing (in case they're set)
     while [[ $# -gt 0 ]]; do
     	case "$1" in
     		'-d'|'--directory')
@@ -1330,7 +1400,7 @@ args:
 
     [ -z "$exp" ] && echo "No expression specified. Use -e <expression> to set it." && return 1
     
-    [ -n "$verbose" ] && becho "running on directory: $dir  ;  expression: $exp  ;  including strings up to length: $text_limit"  # print found arguments (if verbose)
+    [ -n "$verbose" ] && becho "running on directory: \"$dir\"  ;  expression: \"$exp\"  ;  including strings up to length: \"$text_limit\""  # print found arguments (if verbose)
 
     becho "matching filenames:"
     becho "==================="
@@ -1338,7 +1408,7 @@ args:
 
     becho "matching file contents:"
     becho "======================="
-    all_results=$(_sudo_if_necessary "grep -e \"$exp\" -Inir \"$dir\" --color=never")  # No colors. Coloring is done at this stage because otherwise it'll add to the string's length
+    local all_results=$(_sudo_if_necessary grep -e "$exp" -Inir "$dir" --color=never)  # No colors. Coloring is done at this stage because otherwise it'll add to the string's length
     if [ $(expr "$text_limit" + 0) -gt 0 ]; then  # if there's a limit for result length
         [ -n "$verbose" ] && becho "filtering with maximum result length: $text_limit" 
         all_results=$(echo "$all_results" | awk "length(\$0) <= $text_limit")
@@ -1350,22 +1420,21 @@ args:
 # get local files size and inner-files count
 # arg1: dir to explore , -s (optional: sort by size)
 function explore () {
-    location=${1:-.}  # use given address, default to current location
+    local location=${1:-.}  # use given address, default to current location
     location=$(readlink -f "$location")  # use absolute path (and use no '/' at the end)
 
-    folders=""
-    files=""
-    total_files=0  # Files (recursive) counter. Can technically just recount current dir, but the results might not be cached
+    local total_files=0  # Files (recursive) counter. Can technically just recount current dir, but the results might not be cached
 
-    filenames=$(find "$location" -maxdepth 1 -type f,d,l)  # get files (files, dirs, links) in given dir
+    local filenames=$(find "$location" -maxdepth 1 -type f,d,l)  # get files (files, dirs, links) in given dir
     filenames=$(echo "$filenames" | grep -vw "^$location$")  # throw out the given location (exact match from line start to end)
 
     [ -z "${filenames}" ] && return 1  # nothing to iterate over
-
+    
+    local folders files filename
     while IFS= read -r filename; do
-        size=$(du -sh "$filename" | cut -f1)  # determine size (same command for files/folders)
-        inodes=$(du -s --inodes "$filename" | cut -f1)
-        count=$(find "$filename" -type f,l | wc -l)  # count files and links found. It's just '1' for a file, but the code's shorter this way
+        local size=$(du -sh "$filename" | cut -f1)  # determine size (same command for files/folders)
+        local inodes=$(du -s --inodes "$filename" | cut -f1)
+        local count=$(find "$filename" -type f,l | wc -l)  # count files and links found. It's just '1' for a file, but the code's shorter this way
         total_files=$(($total_files + $count))
 
         # handle as dir or file
@@ -1374,7 +1443,7 @@ function explore () {
         fi
     done <<< "$filenames"
 
-    data="${folders[@]}${files[@]}"    
+    local data="${folders[@]}${files[@]}"    
     [[ "$@" =~ ^"-s"$ ]] && data=$(echo -e "${data}" | sort -h)  # if flag -s specified, sort ; first datum is size, so that's what we sort by
     echo -e "${data}" | column -t -s $'\t' -N $(becho "total_size,file_count,inodes,name")  # separate nicely with tabs
     echo "current dir total files: $total_files"
@@ -1384,14 +1453,15 @@ function explore () {
 
 # finds files that shouldnt be executable and chmods them
 function revoke_exe_mod () {
-    location=${1:-.}  # use given address, default to current location
-    format=${2:-'txt'}  # use given format, default to txt
-    files=$(find "$location" -type f -name "*.$format")  # get txt (or specified) files recursively
+    local location=${1:-.}  # use given address, default to current location
+    local format=${2:-'txt'}  # use given format, default to txt
+    local files=$(find "$location" -type f -name "*.$format")  # get txt (or specified) files recursively
+    local file
     while read -r file; do
         # if file is executable
         if [ -x "$file" ]; then
             # revoke exe permission (run as sudo IF necessary)
-            _sudo_if_necessary "chmod -x \"$file\"" && echo "file no longer executable: $file"
+            _sudo_if_necessary chmod -x "$file" && echo "file no longer executable: $file"
         fi
     done <<< "$files"
 }
@@ -1400,7 +1470,7 @@ function revoke_exe_mod () {
 # -o/--overwrite (optional: replace old 7z archive instead of adding another one) ; -p/--password <pass> (optional: encrypt with password) ; all the rest are file-names
 function archive_tar7z () {
     # anything unspecified as option/flag is file to archive
-    filenames=() ; overwrite='' ; password=''
+    local filenames=() overwrite password
     while [[ $# -gt 0 ]]; do
     	case "$1" in
     		'-o'|'--overwrite')
@@ -1423,15 +1493,16 @@ function archive_tar7z () {
     [ -n "$filenames" ] || { errcho "You need to specify files (or folders) to archive" ; return 1; }
 
     # note: don't try running multiple in async; tar and 7z already run multi-threaded
+    local f
     for f in "${filenames[@]}"; do
         # archive without including whole directory leading to the file
-        full_path="$(realpath "$f")"  # get full path
-        folderpath="$(dirname "$full_path")"
-        filename="$(basename "$full_path")"
-        archive_name="${filename}.tar.7z"
+        local full_path="$(realpath "$f")"  # get full path
+        local folderpath="$(dirname "$full_path")"
+        local filename="$(basename "$full_path")"
+        local archive_name="${filename}.tar.7z"
 
         # determine if the archiving will be done with encryption (password-protected)
-        optional_encryption=''
+        local optional_encryption
         if [ -n "$password" ]; then  # entering an empty string as password doesn't (and shouldn't) count as password
             becho "writing $archive_name with password encryption"
             optional_encryption="-p$password"
@@ -1440,7 +1511,7 @@ function archive_tar7z () {
 
         # if similarly-named archive exists (involves overwrite-flag)
         if [ -e "$archive_name" ]; then
-            already_exists_msg=$(recho "archive \"$archive_name\" already exists")
+            local already_exists_msg=$(recho "archive \"$archive_name\" already exists")
             if [ -n "$overwrite" ]; then 
                 echo "$already_exists_msg. Removing it."
                 rm "$archive_name"
@@ -1463,13 +1534,13 @@ function archive_tar7z () {
 
 # arg 1: media_file
 function media_remove_audio () {
-    output="${1%.*}_noaudio.${1##*.}"  # add "_noaudio" before the file's .<format>
+    local output="${1%.*}_noaudio.${1##*.}"  # add "_noaudio" before the file's .<format>
     ffmpeg -i "$1" -c copy -an "$output"
 }
 
 # usage: -v/--video <video_file>  -a/--audio <audio_file>
 function media_merge_audio_video () {
-    video_file='' ; audio_file=''
+    local video_file audio_file
     while [[ $# -gt 0 ]]; do
     	case "$1" in
     		'-v'|'--video')
@@ -1492,7 +1563,7 @@ function media_merge_audio_video () {
     [ -z "$video_file" ] && errcho "no video file specified" && return 1
     [ -z "$audio_file" ] && errcho "no audio file specified" && return 1
 
-    output="${video_file%.*}_replaced_audio.${video_file##*.}"  # add "_replaced_audio" before the video file's .<format>
+    local output="${video_file%.*}_replaced_audio.${video_file##*.}"  # add "_replaced_audio" before the video file's .<format>
 
     ffmpeg -i "$video_file" -i "$audio_file" -c:v copy -c:a libvorbis "$output"
 }
@@ -1500,8 +1571,8 @@ function media_merge_audio_video () {
 # compare between media files
 # all args are media-file paths
 function media_compare () {
-    md_results=()
-    for i in "$@"; do md_results+=("$(media_metadata "$i")"); done
+    local md_results=() i
+    for i in "$@"; do local md_results+=("$(media_metadata "$i")"); done
     _side_by_side --lined "${md_results[@]}" 
 }
 
@@ -1515,30 +1586,30 @@ function media_compare () {
 # TODO - offer to add USB (and other?) devices by ID (from displayed list). Filter out devices already in XML.
 # interactively launch looking-glass session and VM (if not running). 
 function launch_vm_w_lookingglass() {
-    valid=0
-    while [ $valid -eq 0 ]
+    local is_vm_chosen vm_name
+    while [ -z "$is_vm_chosen" ]
     do
         becho "Choose the name of the VM you want to launch:"
         virsh list --all
-        becho "============================================"
+        becho "============================================="
 
         read -p "Enter the name of the VM: " vm_name  # Read the user's input
         if virsh list --all --name | grep -w -q "$vm_name"; then  # match whole word (case sensitive), quietly
-            valid=1
+            is_vm_chosen='true'
         else
             errcho "Invalid VM name"
         fi
     done
 
     # look up info within the vm's definitions file
-    xml_file="/etc/libvirt/qemu/${vm_name}.xml"
+    local xml_file="/etc/libvirt/qemu/${vm_name}.xml"
 
     # get the shmem name:
-    shmem_name=$(sudo awk -F 'name=' '/shmem/ {gsub("'\''", "", $2); print $2}' "$xml_file" | sed 's/^"\([^"]*\)".*/\1/' | sed 's/>$//')  # extract the string between the quotes, remove the quotes, remove the closing '>'
-    lg_file="/dev/shm/$shmem_name"
+    local shmem_name=$(sudo awk -F 'name=' '/shmem/ {gsub("'\''", "", $2); print $2}' "$xml_file" | sed 's/^"\([^"]*\)".*/\1/' | sed 's/>$//')  # extract the string between the quotes, remove the quotes, remove the closing '>'
+    local lg_file="/dev/shm/$shmem_name"
 
     # get the vnc port number from xml
-    portnum=$(sudo grep -oP "<graphics type=[\"']spice[\"'] port=[\"']\K\d+" "$xml_file")  # works for either single or double quotes
+    local portnum=$(sudo grep -oP "<graphics type=[\"']spice[\"'] port=[\"']\K\d+" "$xml_file")  # works for either single or double quotes
     portnum=${portnum:=5900}  # default if empty
 
     # Show user the parameters and ask for approval (quit if disapproved)
@@ -1558,7 +1629,7 @@ function launch_vm_w_lookingglass() {
     [ -f "$lg_file" ] && ls -alF "$lg_file"  # todo - print colored (green?)?
     
     # run the vm (if needed)
-    vm_state=$(virsh domstate "$vm_name")
+    local vm_state=$(virsh domstate "$vm_name")
     if [ "$vm_state" == "running" ]; then
         gecho "$vm_name is already running."
     elif [ "$vm_state" == "shut off" ]; then
@@ -1599,24 +1670,24 @@ function _pad_end_w_spaces () {
 # pastes text blocks (given as args) side by side
 # --lined (optional before texts: separate with line instead of space) , --glued (optional before texts: no delimiter) , --no_padding (optional before texts: no padding)
 function _side_by_side () {
-    separator=' ' ; no_padding=''
+    local separator=' ' no_padding
     [ "$1" = "--lined" ] && separator='|' && shift  # get rid of the flag, so it won't disturb us
     [ "$1" = "--glued" ] && separator='' && shift  # get rid of the flag, so it won't disturb us
     [ "$1" = "--no_padding" ] && no_padding='true' && shift  # get rid of the flag, so it won't disturb us
 
     
     # prepare to add more lines to texts that are too short
-    line_counts=()
+    local line_counts=() i
     for i in "$@"; do line_counts+=($(echo "$i" | wc -l)); done  # count the number of lines for each
-    max_lines=$(max "${line_counts[@]}")
+    local max_lines=$(max "${line_counts[@]}")
 
-    args=("$@")  # for iteration. can't iterate on the index of $@ - the items start from 1, but the index starts on 0 ("bash") unlike lists that start their index at 1
-    paste_texts=()  # the values that need to be pasted
-    items_to_interpret=()  # will be made into a string that refers to the values; interpreted into a command
+    local args=("$@")  # for iteration. can't iterate on the index of $@ - the items start from 1, but the index starts on 0 ("bash") unlike lists that start their index at 1
+    local paste_texts=()  # the values that need to be pasted
+    local items_to_interpret=()  # will be made into a string that refers to the values; interpreted into a command
     for i in "${!args[@]}"; do  
-        modified_txt_block="${args[i]}"  # actual item
+        local modified_txt_block="${args[i]}"  # actual item
         # add empty lines
-        line_diff=$(( max_lines - line_counts[i] ))  # how many lines are "missing"
+        local line_diff=$(( max_lines - line_counts[i] ))  # how many lines are "missing"
         [ $line_diff -gt 0 ] && modified_txt_block+=$(echo -e "\n$(yes " " | head -$line_diff)")  # if text is shorter than max, add newlines (add [diff] 1-line spaces below - need an additional newline before those)
         # pad to allow concatenating without messing up the lines
         [ -z "$no_padding" ] && modified_txt_block=$(_pad_end_w_spaces "$modified_txt_block")
@@ -1630,6 +1701,7 @@ function _side_by_side () {
 
 # get <arg 1> spaces
 function _repeat_space_n_times () {
+    local i
     for (( i = 0; i < "$1"; ++i )); do echo -n " "; done
 }
 
@@ -1639,7 +1711,8 @@ function _repeat_whitespace_rows () {
     (($1 <= 0)) && return
     (($2 <= 0)) && return
     
-    whitespace_line=$(_repeat_space_n_times "$2")
+    local whitespace_line=$(_repeat_space_n_times "$2")
+    local i
     for (( i=1; i<=$1; i++ )); do
         echo "$whitespace_line"
     done
@@ -1647,7 +1720,7 @@ function _repeat_whitespace_rows () {
 
 # removes whitespaces from line-starts
 function rm_leading_whitespaces () {
-    expression='s/^[[:space:]]*//'
+    local expression='s/^[[:space:]]*//'
     if ! [ -t 0 ]; then sed "$expression" ;  # modify the data from pipe
     else echo "$@" | sed "$expression";  # or modify the data from args
     fi
@@ -1659,31 +1732,31 @@ function rm_leading_whitespaces () {
 
 
 # echo in red
-function recho () { _colored_echo "<=bold=><=red=>$@" ; }
+function recho () { _colored_echo "<=bold=><=red=>" "$@"; }
 # echo in dark red
-function darecho () { recho "<=dark=>$@" ; }
+function darecho () { recho "<=dark=>" "$@" ; }
 # echo in green
-function gecho () { _colored_echo "<=bold=><=green=>$@" ; }
+function gecho () { _colored_echo "<=bold=><=green=>" "$@" ; }
 # echo in dark green
-function dagecho () { gecho "<=dark=>$@" ; }
+function dagecho () { gecho "<=dark=>" "$@" ; }
 # echo in blue
-function becho () { _colored_echo "<=bold=><=blue=>$@" ; }
+function becho () { _colored_echo "<=bold=><=blue=>" "$@" ; }
 # echo in cyan
-function cecho () { _colored_echo "<=bold=><=cyan=>$@" ; }
+function cecho () { _colored_echo "<=bold=><=cyan=>" "$@" ; }
 # echo in yellow
-function yecho () { _colored_echo "<=bold=><=yellow=>$@" ; }
+function yecho () { _colored_echo "<=bold=><=yellow=>" "$@" ; }
 
 
 # underlined echo
-function uecho () { _colored_echo "<=bold=><=uline=>$@" ; }
+function uecho () { _colored_echo "<=bold=><=uline=>" "$@" ; }
 # underlined echo in red
-function ruecho () { recho "<=uline=>$@" ; }
+function ruecho () { recho "<=uline=>" "$@" ; }
 # underlined echo in green
-function guecho () { gecho "<=uline=>$@" ; }
+function guecho () { gecho "<=uline=>" "$@" ; }
 # underlined echo in blue
-function buecho () { becho "<=uline=>$@" ; }
+function buecho () { becho "<=uline=>" "$@" ; }
 # underlined echo in yellow
-function yuecho () { yecho "<=uline=>$@" ; }
+function yuecho () { yecho "<=uline=>" "$@" ; }
 
 
 # echo into error output
@@ -1692,10 +1765,10 @@ function errcho () { recho "$@" >&2 ; }
 # print string with a similarly-lengthed line
 # arg 1: string , arg 2 (optional): line-char (default is '-')
 function _underline () {
-    char=${2:-'-'}  # determine which char to repeat in underline
-    input_string_length=${#1}
+    local char=${2:-'-'}  # determine which char to repeat in underline
+    local input_string_length=${#1}
     
-    line=$(printf "%${input_string_length}s" | tr ' ' "$char")  # Create a line of the specified character with the same length as the input string
+    local line=$(printf "%${input_string_length}s" | tr ' ' "$char")  # Create a line of the specified character with the same length as the input string
 
     echo "$1"
     echo "$line"
@@ -1704,7 +1777,7 @@ function _underline () {
 # colors a specified substring within given text, like grep without line filtering
 # -t/--text <text> (specify text to color, if it's not piped-in) ; -w/--word <word> (substring to color, no option needed if it's the only arg and text is piped-in) ; -c/--color <color-string> (see available colors in "_draw_formatted", default is red)
 function color_word () {
-    text='' ; word='' ; color='<=bold=><=red=>'
+    local text word color='<=bold=><=red=>'
     if [ $# -eq 1 ] && ! [ -t 0 ]; then  # only 1 arg + streamed input. Given arg is the word that needs to be colored.
         word="$1"
     else  # "regular" case
@@ -1755,7 +1828,7 @@ function _tag_persist () {
 # recolors all lines with specified color
 # any early arg: color (see available colors in "_draw_formatted") , any early arg: -p (optional - turn tag to persistant) , any early arg: -n (optional - no coloring, just tagging) , any early arg: -t (optional - just return the tag itself) , last arg: text to color
 function _colored_echo () {
-    no_drawing='' ; persist='' ; tag='' ; only_tag=''
+    local no_drawing persist tag only_tag
     while [[ $# -gt 0 ]]; do
         if [ "$1" == '-n' ]; then  # just put in the tags, don't draw
             no_drawing='true'
@@ -1766,19 +1839,21 @@ function _colored_echo () {
         elif [ "$1" == '-t' ]; then  # only return the tag, don't do any text/color-related work
             only_tag='true'
             shift
-        elif [ -z "$tag" ] && [[ "$1" =~ ^'<='.+'=>'$ ]]; then  # found the tag for the first time
-            tag="$1"
+        elif [[ "$1" =~ ^'<='.+'=>'$ ]]; then  # found color tag to apply
+            tag+="$1"
             shift
         else  # regular text - we're done scanning for options
             break
         fi
     done
 
+    [ -z "$tag" ] && errcho "Didn't get a tag to color with, and that's the whole purpose of this function" && return 1  # if no coloring tag picked
+
     [ -n "$persist" ] && tag=$(_tag_persist "$tag")  # if requested to "upgrade" to persistant tag
 
     [ -n "$only_tag" ] && echo "$tag" && return  # if requested to only return the tag
 
-    formatted=$( echo "$@" | while IFS= read -r line; do echo "${tag}${line}<=reset=>"; done )
+    local formatted=$( echo "$@" | while IFS= read -r line; do echo "${tag}${line}<=reset=>"; done )
     if [ -n "$no_drawing" ]; then
         echo "$formatted"
         return
@@ -1791,22 +1866,22 @@ function _colored_echo () {
 # comment-colorized echo
 # -l (optional: include legend)
 function commecho () {
-    bullet_point_color='<=green=>'
-    double_cat_line_color=$(_tag_persist '<=bold=><=blue=>')
-    single_cat_line_color=$(_tag_persist '<=blue=>')
-    plus_line_color=$(_tag_persist '<=bold=><=yellow=>')
-    sharp_comment_color=$(_tag_persist '<=yellow=>')
-    colon_comment_color=$(_tag_persist '<=yellow=>')
-    sharp_documentation_color=$(_tag_persist '<=green=>')
-    double_quotes_color='<=bold=><=red=>'
-    warning_color='<=flicker=><=uline=><=bold=><=red=>'
+    local bullet_point_color='<=green=>'
+    local double_cat_line_color=$(_tag_persist '<=bold=><=blue=>')
+    local single_cat_line_color=$(_tag_persist '<=blue=>')
+    local plus_line_color=$(_tag_persist '<=bold=><=yellow=>')
+    local sharp_comment_color=$(_tag_persist '<=yellow=>')
+    local colon_comment_color=$(_tag_persist '<=yellow=>')
+    local sharp_documentation_color=$(_tag_persist '<=green=>')
+    local double_quotes_color='<=bold=><=red=>'
+    local warning_color='<=flicker=><=uline=><=bold=><=red=>'
     # angled_brackets_color='<=italic=>'  # problematic when within a color that's already within persisting color  # TODO - fix (improve the coloring function)
-    reset='<=reset=>'
+    local reset='<=reset=>'
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
         	'-l'|'--legend')
-                legend_items=(
+                local legend_items=(
                 "$(_draw_formatted "${double_cat_line_color}topic")"
                 "$(_draw_formatted "${single_cat_line_color}sub-topic")"
                 "$(_draw_formatted "${plus_line_color}trick/tip")"
@@ -1828,7 +1903,7 @@ function commecho () {
         esac
     done
 
-    formatted="$@"  # get all of the input
+    local formatted="$@"  # get all of the input
     # formatted=$(echo "$formatted" | sed -E "s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-input). Needs to run first, to not modify the color tags
     formatted=$(echo "$formatted" | sed -E "s/(\"[^\"]+\")/$double_quotes_color\1$reset/g")  # recolor within " " (specifics)
     formatted=$(echo "$formatted" | sed "s/^* /${bullet_point_color}*${reset} /g")  # replace beginning '* ' with a colored asterisk and space  (bullet-points)
@@ -1863,22 +1938,23 @@ function _draw_formatted () {
     )
 
     # basic preparations
-    text_to_draw="$1"
-    reset_key='<=reset=>'
+    local text_to_draw="$1"
+    local reset_key='<=reset=>'
 
     # apply persistance by tags
     # -------------------------
     # persistence means that a specified color-tag needs to return by default (after other specified colors are reset) for the rest of the line
-    persist_tag_open='<=persist'
-    persist_tag_close='this=>'
+    local persist_tag_open='<=persist'
+    local persist_tag_close='this=>'
     # If there's use of persistence, handle it line-by-line. If not, skip it (save time)
     [[ "$text_to_draw" =~ ($persist_tag_open)(.*)($persist_tag_close) ]] && text_to_draw=$(
+        local line
         echo "$text_to_draw" | while IFS= read -r line; do  # read current text line by line (without losing the leading/trailing spaces)
             if [[ "$line" =~ (.*)($persist_tag_open)(.*)($persist_tag_close)(.*) ]]; then  # each line can have up to 1 persisting color-tag
-                part_to_leave_alone="${BASH_REMATCH[1]}"
-                tag_to_persist="${BASH_REMATCH[3]}"  # get the tag that's necessary to persist
-                part_to_modify="${BASH_REMATCH[5]}"
-                modified="$part_to_modify"
+                local part_to_leave_alone="${BASH_REMATCH[1]}"
+                local tag_to_persist="${BASH_REMATCH[3]}"  # get the tag that's necessary to persist
+                local part_to_modify="${BASH_REMATCH[5]}"
+                local modified="$part_to_modify"
                 modified="$(echo "$modified" | sed "s/$reset_key/${reset_key}${tag_to_persist}/g")"  # attach the persisting tag after each reset tag
                 modified="$(echo "$modified" | sed "s/\x1b\[0m/&$tag_to_persist/g")"  # attach the persisting tag after each previously-translated reset tag (escape)
                 echo "${part_to_leave_alone}${tag_to_persist}${modified}"  # we place back the cleaned tag and modified line, skipping the opening/closing tag, they're no longer needed.
@@ -1890,10 +1966,10 @@ function _draw_formatted () {
 
     # add resets
     # ----------
-    reset_value="${colors[$reset_key]}"
-    reset_value_escaped=$(printf "%q" "$reset_value")  # for sed. It needs pre-reset string.
-    regex_tag='<=[a-zA-Z_]+=>'
-    regex_ws_tag='<=([0-9]+)WS=>'
+    local reset_value="${colors[$reset_key]}"
+    local reset_value_escaped=$(printf "%q" "$reset_value")  # for sed. It needs pre-reset string.
+    local regex_tag='<=[a-zA-Z_]+=>'
+    local regex_ws_tag='<=([0-9]+)WS=>'
     text_to_draw="${text_to_draw//$reset_key/$reset_value}"  # replace reset on its own, because otherwise we'd replace it with 2 consecutive color resets later (still works, but isn't right)
     text_to_draw=$(echo "$text_to_draw" | sed -r "/^($regex_tag)+/!s/($regex_tag)+/$reset_value_escaped&/g")  # put reset before each group of color tags, but not if they're at the start
     text_to_draw=$(echo "$text_to_draw" | sed -r "s/($regex_ws_tag)/$reset_value_escaped\1/g")  # put reset before spaces-insert
@@ -1902,16 +1978,17 @@ function _draw_formatted () {
 
     # insert whitespaces
     # ------------------
-    repeated_char=' '
+    local repeated_char=' '
     while [[ "$text_to_draw" =~ '<='([0-9]+)'WS=>' ]]; do  # while there's still a whitespace-tag
-        num="${BASH_REMATCH[1]}"
-        numtag="<=${num}WS=>"
-        repeats=$(printf "%${num}s" | tr " " "$repeated_char")  # create a sequence of <num> spaces
+        local num="${BASH_REMATCH[1]}"
+        local numtag="<=${num}WS=>"
+        local repeats=$(printf "%${num}s" | tr " " "$repeated_char")  # create a sequence of <num> spaces
         text_to_draw="${text_to_draw//$numtag/$repeats}"
     done
 
     # swap-in all the colors (replace keys with values)
     # -------------------------------------------------
+    local str
     for str in "${!colors[@]}"; do
         text_to_draw="${text_to_draw//$str/${colors[$str]}}"
     done
@@ -1922,26 +1999,28 @@ function _draw_formatted () {
 
 # the best function in this entire collection
 function draw_hentai () {
-    HY='<=b_yellow=>'  # Hair Yellow
-    HYD='<=yellow=>'  # Hair Yellow Dark
-    S='<=reset=>'  # skin
-    SD='<=b_red=>'  # Skin Dark
-    EW='<=b_grey=>'  # Eyes white
-    W='<=grey=>'  # teeth White
-    WD=$S  # teeth White Dark
-    WS='<=dark=><=b_grey=>'  # White Shirt
-    WSD='<=b_black=>'  # White Shirt Dark
-    G='<=dark=><=red=>'  # Glove and eyebrows Brown
-    GD='<=b_black=>'  # Glove Brown Dark
-    D='<=dark=><=b_black=>'  # dark
+    local HY='<=b_yellow=>'  # Hair Yellow
+    local HYD='<=yellow=>'  # Hair Yellow Dark
+    local S='<=reset=>'  # skin
+    local SD='<=b_red=>'  # Skin Dark
+    local EW='<=b_grey=>'  # Eyes white
+    local W='<=grey=>'  # teeth White
+    local WD=$S  # teeth White Dark
+    local WS='<=dark=><=b_grey=>'  # White Shirt
+    local WSD='<=b_black=>'  # White Shirt Dark
+    local G='<=dark=><=red=>'  # Glove and eyebrows Brown
+    local GD='<=b_black=>'  # Glove Brown Dark
+    local D='<=dark=><=b_black=>'  # dark
     
     declare -A SPR # whitespaces that'll reset colors in drawing
+    local num
     for num in {1..25}; do SPR[$num]="<=${num}WS=>"; done
     declare -A SP # whitespaces. just spaces.
     for num in {1..25}; do SP[$num]="$(_repeat_space_n_times ${num})"; done
-    WS_unconventional='⠀'
+    local WS_unconventional='⠀'
 
     # don't try to peek at the drawing here, go run the command in terminal
+    local surprise
     read -r -d '' surprise << EOM
 ${SPR[17]}$HY⠰⡘⡸⢏$HYD⠼⠋$HY⡀⣱$HYD⢏⣾⣿⣿⣿⣿⣿⣿⣿⣧⠻⣿⣿⣷⣦$HY⡪⡳⠹⣷⣀⣀
 ${SPR[17]}$HY⢀⣽⣿⡶⣢⢸$HYD⡇⡏⣾⣿⠹⣿⣆⢻⣿⣇⢿⣿⣷⡙⠿⣿⣿⣿⣮$HY⠢⣽⡯⡑⠂
@@ -1985,6 +2064,7 @@ function _get_cursor_row () {
 # wait <arg 1> seconds, print a dot for each second passed.
 function _wait_n_seconds () {
     printf "Waiting $1 seconds"
+    local i
     for ((i=0; i<$1; i++))
     do
         printf "."  # Print a dot and flush the output to ensure that it is printed immediately
@@ -2014,14 +2094,14 @@ function _spinning_wait_for_task () {
 # short "LET'S GO" animation. -v : verbose (debugging)
 function animate_lets_go () {
     # Define the animation frames as an array of strings
-frame1="    
+    local frame1="
 ⠀⢀⣤⡤⣄⠀
 ⣴⢿⢿⢳⢛⠂
 ⠿⣘⢱⣦⡤⠃
 ⣦⣿⡏⠉⢢⠀
 ⠈⣷⣞⣟⡅⠀
 "
-frame2="
+    local frame2="
 ⠀⣠⣴⠖⣦⠀
 ⣾⢻⠻⠻⠩⡁
 ⠻⣮⣸⣿⠶⠁
@@ -2029,7 +2109,7 @@ frame2="
 ⠛⠁⠉⠁⠙⠁
 "
 
-banner=" 
+    local banner="
     ####      *########  ##########  ##  #######*      #########   ,####n###  
    ,###       ##r          a##     ##n ###/         ,####         ####    ###)
    ###       #######(     ###         /#####,      ,###/  o####  ####     ####
@@ -2046,41 +2126,42 @@ banner="
     # the invisible wall appears after the [full width of the banner + invisible window] , so that the window would keep pushing the runner past it 
 
     # ----------- Define sprites, and terminal limits -----------
-    is_verbose=''
+    local is_verbose
     [[ "$@" =~ ^"-v"$ ]] && is_verbose='true'
 
-    terminal_width=$(tput cols)
-    terminal_height=$(tput lines)
-    banner_width=$(sed -n '2p' <<< "$banner" | wc -c)  # width of banner, going by 2nd line
-    runner_width=$(sed -n '2p' <<< "$frame1" | wc -c)  # width of runner, going by 2nd line of the first frame
-    sprite_height=$(($(echo "$banner" | wc -l)-1))  # same for all sprites involved
+    local terminal_width=$(tput cols)
+    local terminal_height=$(tput lines)
+    local banner_width=$(sed -n '2p' <<< "$banner" | wc -c)  # width of banner, going by 2nd line
+    local runner_width=$(sed -n '2p' <<< "$frame1" | wc -c)  # width of runner, going by 2nd line of the first frame
+    local sprite_height=$(($(echo "$banner" | wc -l)-1))  # same for all sprites involved
 
-    runner_frames=("$frame1" "$frame2")
-    runner_frames_count="${#runner_frames[@]}"
+    local runner_frames=("$frame1" "$frame2")
+    local runner_frames_count="${#runner_frames[@]}"
 
     # check that the screen is wide enough
-    necessary_terminal_width=$((banner_width + runner_width))
+    local necessary_terminal_width=$((banner_width + runner_width))
     if ((necessary_terminal_width > terminal_width)); then errcho "Cancelled animation-playing; your terminal needs to be wider." ; return 1 ; fi
     # check that the screen is high enough
-    necessary_terminal_height=$sprite_height
+    local necessary_terminal_height=$sprite_height
     if ((necessary_terminal_height > terminal_height)); then errcho "Cancelled animation-playing; your terminal needs to be taller." ; return 1 ; fi
     # make sure that there's vertical space for the ascii animation
     if [ -n "$is_verbose" ]; then
         clear  # make more room for the extra prints
     else
         # make the necessary room needed for the animation
+        local el
         for ((el=1; el<=$necessary_terminal_height; el++)); do echo ; done  # put new lines below
         tput cuu $necessary_terminal_height  # go back up, to make future use of added lines
     fi
 
 
     # ----------- Define iteration variables -----------
-    progress_speed=3  # positions moved in each iteration (minimum 1)
-    total_run=$terminal_width  # $(( banner_width + window_width ))  # the total run distance (not drawing beyond that). Runner starts fading at $((total_run - runner_width))
-    iter_time=0.035  # iteration time in seconds
-    min_key_input_time=0.003  # minimum time to listen to user input
+    local progress_speed=3  # positions moved in each iteration (minimum 1)
+    local total_run=$terminal_width  # $(( banner_width + window_width ))  # the total run distance (not drawing beyond that). Runner starts fading at $((total_run - runner_width))
+    local iter_time=0.035  # iteration time in seconds
+    local min_key_input_time=0.003  # minimum time to listen to user input
 
-    exit_key=''  # save the pressed key that stopped the animation
+    local exit_key  # save the pressed key that stopped the animation
 
     # ----------- Animation iteration -----------
    
@@ -2089,7 +2170,7 @@ banner="
     # arg 1: n (width to reveal) , arg 2: text-block to partially reveal
     function _reveal_first_n_cols () {
         [ "$1" -le 0 ] && return  # negative or 0 width wanted. Return nothing.
-        max_width=$(sed -n '2p' <<< "$2" | wc -c)  # width of sprite, going by 2nd line
+        local max_width=$(sed -n '2p' <<< "$2" | wc -c)  # width of sprite, going by 2nd line
         
         if [ "$1" -lt "$max_width" ]; then echo "$2" | awk '{print substr($0, 1, n)}' n=$1;  # partially reveal the text
         else echo "$2";  # revealing-width is too big, just echo back everything
@@ -2097,23 +2178,24 @@ banner="
     }
 
     # d is total distance progressed
+    local d runner_i
     for ((d=1, runner_i=0; d<=$total_run; d+="$progress_speed" , runner_i++ , runner_i%=runner_frames_count)); do
-        time_start=$(date +%s.%N)
+        local time_start=$(date +%s.%N)
 
-        window_dist=$((d - banner_width))  # extra distance of runner past banner, minimum is 0 (starts counting up once banner is full)
-        runner_width_still_visible=$((total_run - d))  # how much of the runner gets drawn (drawn fully until reaching the wall).
+        local window_dist=$((d - banner_width))  # extra distance of runner past banner, minimum is 0 (starts counting up once banner is full)
+        local runner_width_still_visible=$((total_run - d))  # how much of the runner gets drawn (drawn fully until reaching the wall).
 
-        banner_sprite=$(_reveal_first_n_cols "$d" "$banner")
-        extra_dist_sprite=$(_repeat_whitespace_rows "$sprite_height" "$window_dist")
-        cut_back_runner_sprite=$(_reveal_first_n_cols "$runner_width_still_visible" "${runner_frames[$runner_i]}")  # runner disappears into an invisible wall, by drawing less of it as it runs further away
+        local banner_sprite=$(_reveal_first_n_cols "$d" "$banner")
+        local extra_dist_sprite=$(_repeat_whitespace_rows "$sprite_height" "$window_dist")
+        local cut_back_runner_sprite=$(_reveal_first_n_cols "$runner_width_still_visible" "${runner_frames[$runner_i]}")  # runner disappears into an invisible wall, by drawing less of it as it runs further away
         _side_by_side --glued --no_padding "$(gecho "$banner_sprite")" "$extra_dist_sprite" "$cut_back_runner_sprite"
         
         [ -n "$is_verbose" ] || echo -ne "\033[u"  # Restore cursor position (but not if you're debugging - you need to see each frame)
 
         # TODO - shorten iteration time (optimize)
         # wait for the rest of the iteration
-        time_remaining=$( echo "$time_start + $iter_time - $(date +%s.%N)" | bc )
-        key_press_wait=$(max "$time_remaining" "$min_key_input_time")
+        local time_remaining=$( echo "$time_start + $iter_time - $(date +%s.%N)" | bc )
+        local key_press_wait=$(max "$time_remaining" "$min_key_input_time")
         read -t "$key_press_wait" -N 1 exit_key && break
 
         [ -n "$is_verbose" ] && echo "banner_width: $banner_width , runner_width: $runner_width , total_run: $total_run"
@@ -2123,13 +2205,13 @@ banner="
 
     # dim the banner (and progress the cursor) by pasting over it at-once
     echo -ne "\033[u"  # Restore cursor position
-    banner_final=$(dagecho "$banner")  # recolored banner
-    space_window_final=$( _repeat_whitespace_rows "$sprite_height" $(($total_run - $banner_width)) )
+    local banner_final=$(dagecho "$banner")  # recolored banner
+    local space_window_final=$( _repeat_whitespace_rows "$sprite_height" $(($total_run - $banner_width)) )
     _side_by_side "$banner_final" "$space_window_final"
     if [ -z "$exit_key" ]; then  # if the user didn't terminate manually; there's time to do more animations
         # draw over again
         echo -ne "\033[u"  # Restore cursor position
-        erase_final=$( _repeat_whitespace_rows "$sprite_height" "$total_run" )  # TODO - replace with the ascii title of tmux window, if provided
+        local erase_final=$( _repeat_whitespace_rows "$sprite_height" "$total_run" )  # TODO - replace with the ascii title of tmux window, if provided
         echo -e "$erase_final" | pv -qL 200  # erase line by line
         echo -ne "\033[u"  # Restore cursor position  # TODO - make this conditional; only if used only whitespaces (deleted the banner), go back.
     fi
@@ -2142,6 +2224,7 @@ banner="
 #################################################################################
 
 if [ "$IS_FIRST_SOURCING" = true ]; then
+    # create CUSTOM_ALIASES_MAP and CUSTOM_FUNCTIONS_MAP
     CUSTOM_ALIASES="$(_unique_in_first "$(_alias_names)" "$CUSTOM_ALIASES_INITIAL")" # keep list of (only) aliases that were added between now and the start of the file
     eval $(_hashmap_this_var 'CUSTOM_ALIASES')  # create hashmap: CUSTOM_FUNCTIONS_MAP
     CUSTOM_FUNCTIONS="$(_unique_in_first "$(_function_names)" "$CUSTOM_FUNCTIONS_INITIAL")"  # keep list of (only) functions that were added between now and the start of the file
@@ -2152,7 +2235,7 @@ if [ "$IS_FIRST_SOURCING" = true ]; then
 fi
 
 if [[ $EUID -ne 0 ]]; then   # don't output messages if user is root (sudo running)
-    echo "$(gecho "Finished loading") \"$THIS_FILE\" for: \"`readlink -f $0`\". To view added commands, run: $(becho remindme)"  # announce done
+    echo "$(gecho "Finished loading") \"$CUSTOM_BASHRC_FILE\" for: \"`readlink -f $0`\". To view added commands, run: $(becho remindme)"  # announce done
     [ -e "$TESTS_FILE" ] && source "$TESTS_FILE"  # run the tests file if it exists and we're not in sudo mode
 fi
 

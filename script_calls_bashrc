@@ -1,13 +1,14 @@
 #!/bin/bash
 
-# Notice: changing this file would probably break it very easily. If you want to make changes, do them gradually.
 # This file calls script files in another location (relative to own location) in definitions that makes them accessible as terminal commands
 
 SCRIPTS_FOLDER='unlimited_script_works'  # name of the folder within this project. Change it if you want, just be aware this could break.
-SCRIPTS_PATH="$THIS_FOLDER/$SCRIPTS_FOLDER"  # uses argument from custom_bashrc.
+SCRIPTS_PATH="$CUSTOM_BASHRC_FOLDER/$SCRIPTS_FOLDER"  # uses argument from custom_bashrc.
 
 CONFIRMATION_CMD='py__confirm_loaded'  # a call to a script added in just to confirm that the rest of the scripts are reached right 
 
+SCRIPTS_ALIASES_INITIAL=$(_alias_names)
+SCRIPTS_FUNCTIONS_INITIAL=$(_function_names)
 
 # Reloads script-files into bash-calls. No need to manually call this, it's done automatically
 # --declare_commands (create aliases/functions to call scripts) , --output_commands (list found files and their appropriate calls)
@@ -35,9 +36,10 @@ function _reload_scriptfiles () {
 }
 _reload_scriptfiles --declare_commands
 
+# just like "remindme" - lists this file's introduced aliases and functions
 function list_script_calls () {
-    declare -A cmds_to_text
     local commands=$(_reload_scriptfiles --output_commands)
+    declare -A cmds_to_text
     local name file  # keep iteration vars from polluting your env
     while IFS=: read -r name file; do 
         local documentation=''
@@ -46,10 +48,10 @@ function list_script_calls () {
             documentation=$(echo "$documentation" | paste -s -d ' ')  # merge into one line
         fi
 
-        cmds_to_text["$name"]="$name  $(yecho "# ${documentation}")"
+        cmds_to_text["$name"]="$name  # $documentation"
     done <<< "$commands"
 
-    local cmd_list=$(for key in "${!cmds_to_text[@]}"; do echo "${cmds_to_text[$key]}"; done | sort )
+    local cmd_list=$(for key in "${!cmds_to_text[@]}"; do commecho "${cmds_to_text[$key]}"; done | sort )
     
     becho 'new script-aliases:'
     echo "$cmd_list"
@@ -57,13 +59,11 @@ function list_script_calls () {
     echo "$SCRIPTS_FILE_FUNCTIONS"
 }
 
-# SCRIPTS_FILE_ALIASES="$(_unique_in_first "$( eval "$_alias_names_query")" "$CUSTOM_ALIASES_INITIAL" "$CUSTOM_ALIASES")"  # get all current aliases
-SCRIPTS_FILE_FUNCTIONS="$(_unique_in_first "$(_function_names)" "$CUSTOM_FUNCTIONS_INITIAL" "$CUSTOM_FUNCTIONS")"  # get all current functions
+# SCRIPTS_FILE_ALIASES="$(_unique_in_first "$(_alias_names)" "$SCRIPTS_ALIASES_INITIAL")"  # get all current aliases
+SCRIPTS_FILE_FUNCTIONS="$(_unique_in_first "$(_function_names)" "$SCRIPTS_FUNCTIONS_INITIAL")"  # get all current functions
 
 # output message only if user isn't root
 if [[ $EUID -ne 0 ]]; then
-    eval "$CONFIRMATION_CMD"
-    loading_success=$( [ "$?" -eq 0 ] && gecho "Successfully loaded" || recho "Failed loading" )
-    echo "$loading_success scripts file \"$SCRIPTS_BASHRC_FILE\". To view added script-call commands, run: $(becho list_script_calls)"  # if user is root (sudo running), be quiet
-    unset loading_success
+    echo $( $(eval "$CONFIRMATION_CMD") && gecho "Successfully loaded" || recho "Failed loading" )\
+    "scripts file \"$SCRIPTS_BASHRC_FILE\". To view added script-call commands, run: $(becho list_script_calls)"
 fi
