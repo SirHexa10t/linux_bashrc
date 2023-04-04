@@ -224,6 +224,11 @@ alias i_forgor='remindme'
 alias psg='find_proc'
 # used to allow running this function on aliases
 alias _vars_added_by='_vars_added_by '
+# alias to a python script (auto-clicker hold-key)
+alias autoclick_hold_100cps='py_clicker --cps 100'
+# alias to a python script (auto-clicker toggled)
+alias autoclick_toggle_100cps='py_clicker --cps 100 --toggle'
+
 
 # Cheatsheets
 # =================

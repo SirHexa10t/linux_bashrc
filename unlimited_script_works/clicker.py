@@ -2,27 +2,29 @@
 
 """
 hold/toggle clicks per second
---toggle (optional: change to Toggle mode; Hold mode is default) , --cps <number> (optional: change clicks per second) , --verbose (optional: print actions to terminal)
+--toggle (optional: change to Toggle mode; Hold mode is default) , --cps <number> (optional: change clicks per second) , --verbose (optional: print actions to terminal) , --key_press <key> (optional: replace click with a keyboard key)
 """
 
 # import pyautogui  # pyautogui.click(pyautogui.position()) is too slow
 
-from pynput import keyboard  # listens to keyboard events
-from pynput.mouse import Button, Controller  # does clicks
+from pynput import keyboard, mouse  # listens to keyboard events
+from pynput.mouse import Button  # does clicks
 import time  # handles waiting
 import argparse  # handle arguments and help-message
 import sys  # used for flushing some cached (debug) strings to terminal
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--toggle', action='store_true', help='Use Toggle mode instead of Hold mode')
+parser.add_argument('--toggle', action='store_true', default=False, help='Use Toggle mode instead of Hold mode')
 parser.add_argument('--verbose', action='store_true', help='Print actions in terminal')
-parser.add_argument('--cps', action='store', default=20, type=int, help='How many clicks per second, default is 20')
+parser.add_argument('--cps', action='store', default=20, type=float, help='How many clicks per second, default is 20')
+parser.add_argument('--key_press', action='store', default='', type=str, help='Specify key repeat instead of click (example: \'f\')')
 args = parser.parse_args()
 
 
 activation_key = keyboard.Key.f9
-exit_key = keyboard.KeyCode(char='q')
+exit_key = keyboard.Key.f8
+# exit_key = keyboard.KeyCode(char='q')
 
 is_clicking = False
 is_running = True
@@ -31,10 +33,9 @@ is_running = True
 clicking_interval = 1 / args.cps
 keypress_sampling_interval = 0.05
 
-
 RED = '\033[91m'
 END = '\033[0m'
-print(f'{RED}{"toggle" if args.toggle else "hold"}{END} clicker: '
+print(f'{RED}{"TOGGLE" if args.toggle else "HOLD"}{END}-clicker: '
       f'press {RED}{activation_key}{END} to do {RED}{args.cps} clicks/s{END}. '
       f'Quit with key: {RED}{exit_key}{END}')
 
@@ -57,8 +58,9 @@ def on_release(key):
         else:  # release key in toggle mode = opposite of previous clicking state
             is_clicking = not is_clicking
 
-
-mouse = Controller()
+if args.key_press:
+    keyboard_controller = keyboard.Controller()
+mouse_controller = mouse.Controller()
 with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
     if args.verbose:
         clicks_done = 0
@@ -67,7 +69,12 @@ with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
         if is_clicking:
             start_time = time.time()
             # do the click
-            mouse.click(Button.left, 1)
+            if args.key_press:
+                keyboard_controller.press(args.key_press)
+                time.sleep(0.001)
+                keyboard_controller.release(args.key_press)
+            else:
+                mouse_controller.click(Button.left, 1)
 
             elapsed_time = time.time() - start_time
             remaining_time = clicking_interval - elapsed_time
