@@ -773,7 +773,7 @@ function mang () {
 # Administration - network
 # ========================
 
-# search network activity by port (specify number) or substring
+# search current device's network activity by port (specify number) or substring
 function network_search () {
     if [ -z "$1" ]; then echo "You didn't provide anything to filter by. Aborting." && return 1 ; fi
     
@@ -831,6 +831,13 @@ function multiping () {
 
     wait  # wait for threads to finish (otherwise the prompt won't show back automatically)
     )
+}
+
+# find where a shortened link leads to
+function link_investigate_shortened () {
+    # buffer the replies (for some reason piping doesn't cover all of them)
+    local replies="$(curl --head --location "$1")"
+    echo "$replies" | grep -iF location
 }
 
 
@@ -1300,6 +1307,8 @@ function prepare_ntfs_for_writable_mount () {
     # fix ntfs device
     sudo ntfsfix -b "/dev/disk/by-uuid/$uuid"
 }
+
+
 
 
 # Filesystem
