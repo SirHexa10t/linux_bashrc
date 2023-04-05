@@ -33,6 +33,10 @@ function _announce_pkg_installed () { [ -n "$(which "$1")" ] && return 0 || { ec
 # arg 1: potential filename
 function _filename_or_nothing () { [ -f "$1" ] && echo "$1" || echo '' ; }
 
+# if the file exists, print its contents, otherwise place an empty string
+# arg 1: potential filename
+function _file_content_or_nothing () { [ -f "$1" ] && cat "$1" || echo '' ; }
+
 
 ## Session data
 #################################################################################
@@ -52,8 +56,12 @@ fi
 HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
 # Files this script could utilize. Definitions self-erase in case they don't exist, to avoid writing them accidentally
-TESTS_FILE=$(_filename_or_nothing "$CUSTOM_BASHRC_FOLDER/run_tests.sh")  # Convenient debugging; if file exists, automatically runs when this bashrc file finishes loading. The contents (and address) are up to you.
-GARBAGE_OUTPUTS=$(_filename_or_nothing "$CUSTOM_BASHRC_FOLDER/outputs.txt")  # default location to dump data into (if exists)
+UTILITY_FILES_FOLDER="$CUSTOM_BASHRC_FOLDER/utility_files"
+TESTS_FILE=$(_filename_or_nothing "$UTILITY_FILES_FOLDER/run_tests.sh")  # Convenient debugging; if file exists, automatically runs when this bashrc file finishes loading. The contents (and address) are up to you.
+GARBAGE_OUTPUTS=$(_filename_or_nothing "$UTILITY_FILES_FOLDER/outputs.txt")  # default location to dump data into (if exists)
+
+CREDENTIALS_OPENAI=$(_file_content_or_nothing "$UTILITY_FILES_FOLDER/openai_api_key")  # API key for ChatGPT 3.5 (if file exists)
+
 
 # Constants for VM functions
 QEMU_VOLUME_UUID='A80899A4089971D4'  # the drive that contains VMs' disk data; must be mounted when running a VM
@@ -1591,6 +1599,19 @@ function media_compare () {
 }
 
 # TODO - create a function that uses youtube-dl and other website downloaders; have it accept any download-link. 
+
+
+# Artificial Idiocy (the "intelligence" part isn't done in this project. But it's still "A.I.")
+# =================
+
+function chatgpt_ask () {
+    [ -z "$CREDENTIALS_OPENAI" ] && errcho "no credentials found for ChatGPT"
+
+    curl --request POST 'https://api.openai.com/v1/chat/completions' \
+--header "Authorization: Bearer $CREDENTIALS_OPENAI" \
+--header 'Content-Type: application/json' \
+--data-raw "{\"model\": \"gpt-3.5-turbo\", \"messages\": [{\"role\": \"user\", \"content\": \"$@\"}]}"
+}
 
 
 # Virtual Machines
