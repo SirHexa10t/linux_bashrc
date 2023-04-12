@@ -957,6 +957,14 @@ function resources_used () {
     [ -n "$show_gpu" ] && ( uecho "GPU utilization info:" ; nvidia-smi -q -d MEMORY,COMPUTE,UTILIZATION ) # if flag --gpu is specified    
 }
 
+# run bash shell as given user (switching to user through sudo)
+function user_prompt () {
+    # TODO - check if given user exists
+    # TODO - insert users into shell's auto-completion
+    sudo su -l "$1" -s /bin/bash
+}
+
+
 # Administration - services
 # =========================
 
@@ -1532,7 +1540,7 @@ function archive_tar7z () {
         fi
 
         # if similarly-named archive exists (involves overwrite-flag)
-        if [ -e "$archive_name" ]; then
+        if [ -f "$archive_name" ]; then
             local already_exists_msg=$(recho "archive \"$archive_name\" already exists")
             if [ -n "$overwrite" ]; then 
                 echo "$already_exists_msg. Removing it."
@@ -1540,7 +1548,7 @@ function archive_tar7z () {
             else
                 echo "$already_exists_msg. Creating archive with current date."
                 archive_name=$(echo "$archive_name" | sed "s/.tar.7z$/_$(date +%Y-%m-%d).tar.7z/")  # add "_<today>" to file suffix name to avoid mixing with old archive
-                [ -e "$archive_name" ] && rm "$archive_name" && recho "deleted an existing archive with the same name-date"  # if even the dated archive exists, delete it
+                [ -f "$archive_name" ] && rm "$archive_name" && recho "deleted an existing archive with the same name-date"  # if even the dated archive exists, delete it
             fi
 
         fi
@@ -1611,6 +1619,8 @@ function chatgpt_ask () {
 --header "Authorization: Bearer $CREDENTIALS_OPENAI" \
 --header 'Content-Type: application/json' \
 --data-raw "{\"model\": \"gpt-3.5-turbo\", \"messages\": [{\"role\": \"user\", \"content\": \"$@\"}]}"
+
+    # TODO pretty-print the reply (if they'll allow sending a request without payment)
 }
 
 
@@ -2266,12 +2276,12 @@ if [ "$IS_FIRST_SOURCING" = true ]; then
     eval $(_hashmap_this_var 'CUSTOM_FUNCTIONS')  # create hashmap: CUSTOM_FUNCTIONS_MAP
 
     # source commands that call scripts in other languages
-    [ -e "$SCRIPTS_BASHRC_FILE" ] && source "$SCRIPTS_BASHRC_FILE"  # if the file for it exists, source bashrc functions that bring over to the terminal various external scripts
+    [ -f "$SCRIPTS_BASHRC_FILE" ] && source "$SCRIPTS_BASHRC_FILE"  # if the file for it exists, source bashrc functions that bring over to the terminal various external scripts
 fi
 
 if [[ $EUID -ne 0 ]]; then   # don't output messages if user is root (sudo running)
     echo "$(gecho "Finished loading") \"$CUSTOM_BASHRC_FILE\" for: \"`readlink -f $0`\". To view added commands, run: $(becho remindme)"  # announce done
-    [ -e "$TESTS_FILE" ] && source "$TESTS_FILE"  # run the tests file if it exists and we're not in sudo mode
+    [ -f "$TESTS_FILE" ] && source "$TESTS_FILE"  # run the tests file if it exists and we're not in sudo mode
 fi
 
 #  TODO - put as a top pane in tmux window. Needs to be in a different pane because I can't find a way to make it play without interrupting key input or disrupting it and keeping the first char in the input.

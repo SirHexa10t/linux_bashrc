@@ -52,7 +52,7 @@ Your personal bashrc should be "$HOME/.bashrc", but you can alternatively source
 CUSTOM_BASHRC_FILE="<path-to-project>/custom_bashrc"
 
 if [ -f "$CUSTOM_BASHRC_FILE" ]; then source "$CUSTOM_BASHRC_FILE" 
-else echo "couldn't find custom_bashrc file at $CUSTOM_BASHRC_FILE , fix it at $(readlink -f -- "$BASH_SOURCE")";  # print faulty file-dir, and this (current) file's location
+else echo "couldn't find custom_bashrc file at \"$CUSTOM_BASHRC_FILE\" , fix the file's permission-modifiers or fix the sourcing at \"$(readlink -f -- "$BASH_SOURCE")\"";  # print faulty file-dir, and this (current) file's location
 fi
 ```
 
