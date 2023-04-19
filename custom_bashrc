@@ -243,7 +243,7 @@ alias autoclick_toggle_100cps='py_clicker --cps 100 --toggle'
 
 # TODO - write down flatpak/appimage/snap/(other?) differences
 # Reminders for linux system tools and command options
-alias howdoi_linux='commecho -l "\
+alias howdoi_linux='commecho -l '\''
 >> Packages
 * dpkg -l  # show all installed packages in table format
 >> Messing around with the system itself
@@ -258,17 +258,17 @@ alias howdoi_linux='commecho -l "\
 * /etc/environment  :  OS environment variables
 *   printenv  # print (all) current environment variables 
 * sudo nvidia-xconfig  # create new xorg config, used by nvidia driver
->> logs (to tail a logfile in real-time run: \"tail -f <logfile>\", or to get last 100 lines: \"tail -100 <logfile>\" )
+>> logs (to tail a logfile in real-time run: "tail -f <logfile>", or to get last 100 lines: "tail -100 <logfile>" )
 * log-file: /var/log/boot.log  :  System boot log
 * log-file: /var/log/dmesg  :  log for kernel ring buffer
-*   dmesg -k | grep -E \"warn|error\"  # the command dmesg displays kernel logs buffer
+*   dmesg -k | grep -E "warn|error"  # the command dmesg displays kernel logs buffer
 * log-file: /var/log/kern.log  :  log for kernel ring buffer
-"'
+'\'
 
-alias howdoi_debian_cinnamon='commecho -l "\
+alias howdoi_debian_cinnamon='commecho -l '\''
 >> Packages (Debian)
 * sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
-* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for \"no prompt\")
+* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for "no prompt")
 * sudo dpkg -r <package>  # remove a package installed from a .deb file
 * sudo dpkg --purge <package>  # purge a package installed from a .deb file
 * dpkg-query --list <package>  # print info related to installed package (autocompletes the name), works for all installations including from .deb
@@ -280,21 +280,21 @@ alias howdoi_debian_cinnamon='commecho -l "\
 >> configurations (nemo)
 * ~/Templates/  :  anything you put in this folder will be a new-file template when you right-click in nemo
 * ~/.local/share/nemo/scripts/  :  anything you put in this folder will be an executable-script available when you right-click in nemo
-"'
+'\'
 
 # Reminders for user/groups management
-alias howdoi_users='commecho -l "\
+alias howdoi_users='commecho -l '\''
 * groups <username>  # display the groups of a user
 * usermod -aG <groupA,groupB,groupC> <username>  # add user to group(s). You can even add to group sudo (makes into superuser in Ubuntu).
 * getent group  # list all groups and their user-members
-* sudo adduser --disabled-password --gecos \"\" <username>  # adduser is a useradd wrapper (addused is generally better). The --disabled-password and --gecos options are required for no-prompt; gecos fills thumbnail info (cancels interactive). --no-create-home skips homedir creation. --disabled-password skips password creation and disables password login.
-*   sudo adduser <username> --gecos \"\" --disabled-password && echo \"<username>:<password>\" | sudo chpasswd  # Add user with password in one line. take care to specify the username twice, as needed here
+* sudo adduser --disabled-password --gecos "" <username>  # adduser is a useradd wrapper (addused is generally better). The --disabled-password and --gecos options are required for no-prompt; gecos fills thumbnail info (cancels interactive). --no-create-home skips homedir creation. --disabled-password skips password creation and disables password login.
+*   sudo adduser <username> --gecos "" --disabled-password && echo "<username>:<password>" | sudo chpasswd  # Add user with password in one line. take care to specify the username twice, as needed here
 * sudo deluser --remove-home <username>  # delete user and associate homedir
 * su - <username>  # Switch to user. Might require sudo.
-"'
+'\'
 
-# Reminders for the basic gimmicks of bash
-alias howdoi_bash_terminal='commecho -l "\
+# Reminders for the basic gimmicks of bash scripting and terminal usage
+alias howdoi_bash_terminal='commecho -l '\''
 >> terminal
 * apt search <term>  # look for substring in known packages. As usual, nala can also be used
 * man <command>  # read the manual of the command
@@ -308,24 +308,51 @@ alias howdoi_bash_terminal='commecho -l "\
 * diff <file1> <file2>  # get the text difference between 2 files
 * visudo  # edit the /etc/sudoers file (only if you know what you are doing)
 >> bash basic utility commands (can be used in terminal of-course)
-+ \"\$my_var\" is the value of variable my_var, \"\$1\" is the first argument in current scope (and so on), \"\$@\" is all arguments in current scope, \"\$#\" is the number of args, \"\$\$\" is current PID, \"\$?\" is the return code of last operation, \$(<cmd here>) is used to run commands within commands (can also use \`<cmd here>\`)
+* Use $ to reference variables
+*   "$my_var": value of variable my_var
+*   "$1": first arg in current scope (and so on for each num accordingly)
+*   "$@": all args in current scope as separate items ; "$*": all args in current scope concatenated into a unified string ; "$#": args count
+*   "$$": current PID
+*   "$?": the return code of last operation (can be used to check if it ran successfully)
+    "$(<cmd here>)": run commands within commands (can also be done like so: `<cmd here>`)
+* add "& disown" after a command to have it run in its own thread (thats the "&"), and "disown" it so that it wont be tied to current terminal-run process and thus stop when the terminal closes
+* Use "<" to redirect a file. Example; to use file-contents as input: "./my_script.sh < input.txt"
+* Use "<<" ("here-document") to specify on what word (alone, not as an internal part of line) to stop reading text.
+* Use "<<<" ("here-string") to input a string as if it came from a file. For example, when running via while-loop on lines stored in a variable
+* add "<0/1/2> > <filename>" after a command to write input(0)/output(1)/error(2) streams to a file. Specify "&" to write both 1 and 2. You can also use numbers 3 to 9, those are free descriptors for you to use as you like.
+*   add "2> /dev/null" after a command to throw away warning/error messages it might bring up
 * declare -p <variable>  # Note: no use of $. Print the variable to check data / data-type
-+ add \"& disown\" after a command to have it run in its own thread so that it wont stop when the terminal closes
-+ add \"<0/1/2> > <filename>\" after a command to write input(0)/output(1)/error(2) streams to a file. Specify \"&\" to write both 1 and 2. You can also use numbers 3 to 9, those are free descriptors for you to use as you like.
-+   add \"2> /dev/null\" after a command to throw away warning/error messages it might bring up
-* time <command>  # get time measurement for command runtime. No need for quotes or any encapsulation, just prepend \"time\". Example: time ls -l
-* extra_dist=\$(( (a > b) ? (a - b) : 0 ))  # example for ternary in bash (use the \"&&\",\"||\" ternary instead when you have a condition in \"[]\"). The double-parentheses mean you dont need \"$\" to reference variables and that the math operations get evaluated
-* espeak <text>  # read-out (audio) the given text. A bit of a gimmick, sounds very robotic
+* time <command>  # get time measurement for command runtime. No need for quotes or any encapsulation, just prepend "time". Example: time ls -l
+* extra_dist=$(( (a > b) ? (a - b) : 0 ))  # example for ternary in bash (use the "&&", "||" ternary instead when you have a condition in "[]"). The double-parentheses mean you dont need "$" to reference variables and that the math operations get evaluated
+>> conditions
+* The return value of a function (0 is successful, anything else is failure) can be used as a condition
+* You can use brackets (spaced) for simple file/string checks, like so: [ -n "$1" ]
+*   filesystem:
+*       "-d": does directory exist ; "-f": does file exist ; "-e": does exist (dir or file) in filesystem ; "-s": does exist in filesystem and with non-zero size
+*       "-r": is file readable by current user ; "-w": is file writable by current user ; "-x": is file executable by current user
+*   emptiness/presence check:
+*       "-n": is string non-empty (specifying a variable that doesnt exist returns empty string) 
+*       "-z": is string empty (opposite of -n)
+*       "-v": is var name set and isnt empty. Similar to -n but without the need to add $ to the var-name 
+*   comparison:
+*       "=": check if equal ; "==": check if equal (bash-specific). Example; is num of args 0: [ $# == 0 ]
+*       "-eq": check if equal ; "-ne": check if not equal
+*       "-gt": check if greater than ; "-lt": check if less than ; "-ge": greater or equal ; "-le": lesser or equal
+* You can use double-brackets (spaced) for complex checks
+*       "=~": pattern matching. Example: check if string starts with h: [[ "hello" =~ ^h.*$ ]]
+*       operators "&&" and "||": AND and OR within the brackets, no parentheses needed for the conditions
 >> tools (utilities for usage that isnt about managing the OS)
 * wget <url>  # download files
 * curl <url>  # communicate through HTTP(S)/(S)FTP/SCP - make any request (but if you just want to download something, you should probably use wget)
+* espeak <text>  # read-out (audio) the given text. A bit of a gimmick, sounds very robotic
 >> shortcuts
 * Terminal CTRL+L : clear screen
-* Terminal CTRL+Z : send to background (leave any interactive UI for a while). Resume by running: fg
-"'
+* Terminal CTRL+Z : send to background (leave any interactive UI for a while).
+*   fg  # return process to foreground (resume the UI of the process). If you have several stuff in the background stack, this pops the last one
+'\'
 
 # Reminders for some neat time-saving GUI keybind tricks
-alias howdoi_gui_shortcut='commecho -l "\
+alias howdoi_gui_shortcut='commecho -l '\''
 * Built-in Nemo [space] :  select (click) a file/folder, and press [space] to get a summary/preview; press again to close
 * Custom Gnome-Nemo CTRL+SHIT+T :  open Terminal at current Nemo location
 * Built-in Gnome CTRL+ALT+T :  open Terminal
@@ -333,56 +360,56 @@ alias howdoi_gui_shortcut='commecho -l "\
 * Built-in Debian(?) CTRL+ALT+F1 :  enter TTY mode (terminal without anything graphic to lock/interrupt you)
 * Built-in Debian(?) CTRL+ALT+F7 :  exit TTY mode
 * Evdev installation LCTRL+RCTRL  :  switch mouse and keyboard (and maybe other things) between guest/host. Wont work if you gave the VM your USB device directly.
-"'
+'\'
 
 # common media file operations
-alias howdoi_media_and_docs='commecho -l "\
+alias howdoi_media_and_docs='commecho -l '\''
 * pdftk <file1> <file2> <file3> cat output <merged_name.pdf>  # create a unified pdf file 
 * xournal <pdf_filepath>  # edit a pdf file with option to add signatures
 * ffmpeg  # general media (audio / video) handling package, you can find some usages in this bashrc file
-"'
+'\'
 
 # Reminders for microsoft-format handling tools
-alias howdoi_microsoft='commecho -l "\
+alias howdoi_microsoft='commecho -l '\''
 * lnkinfo <lnk-file>  # display link info
 * dos2unix <file>  # convert files from windows to unix encoding
 * sudo ntfsfix <device> -v  # run check-disk on NTFS device
-* ldmtool  #  Read dynamic disks by running \"sudo ldmtool create all\", and then mounting with \"mount -t ntfs /dev/mapper/<volume_name>\"
-"'
+* ldmtool  #  Read dynamic disks by running "sudo ldmtool create all", and then mounting with "mount -t ntfs /dev/mapper/<volume_name>"
+'\'
 
 # Snippets and tricks for Chromium-based browsers
-alias howdoi_chromium='commecho -l "\
+alias howdoi_chromium='commecho -l '\''
 * chrome://flags/#hardware-media-key-handling  # Advanced operation flags. Specifically media-key-handline - disable this to get rid of the banner that appears when you change volume
 * document.getElementsByTagName("video")[0].playbackRate = 4  # change youtube playback speed (example here: x4)
-"'
+'\'
 
 
 # Reminders for android-related tools
-alias howdoi_android='commecho -l "\
+alias howdoi_android='commecho -l '\''
 * scrcpy  # run daemon that casts the connected Android device screen onto a window, and shares the clicks within it back to the Android device
 * scrcpy -r <filename.mp4>  # save a video recording of your connected android device activity (needs USB-Debug and File-Transfer mode)
-"'
+'\'
 
 # Reminders for network management
-alias howdoi_network='commecho -l "\
+alias howdoi_network='commecho -l '\''
 >> Own network info
-* ip addr  # display own networking interfaces
+* ip addr  # display own networking interfaces. A modern safer alternative to: ifconfig
 * sudo netstat -tulpn  # display active network connections and filter by port number
 >> Seeking addresses
-* dig \"amazon.com\" +short  # resolve dns address (or addresses, in case content-distribution-networks are involved)
+* dig "amazon.com" +short  # resolve dns address (or addresses, in case content-distribution-networks are involved)
 * ping google.com  # ping address
 >> Firewall and incoming requests
-* UFW config-file: /etc/ufw/ufw.conf  :  to monitor incoming requests, set in it: LOGLEVEL=debug , then run \"sudo ufw reload\" (no-interruption reset; if it wont work run: \"sudo service ufw restart\"), and then \"sudo tail -f /var/log/ufw.log\" to monitor
+* UFW config-file: /etc/ufw/ufw.conf  :  to monitor incoming requests, set in it: LOGLEVEL=debug , then run "sudo ufw reload" (no-interruption reset; if it wont work run: "sudo service ufw restart"), and then "sudo tail -f /var/log/ufw.log" to monitor
 * ufw allow 21115:21119/tcp  # change firewall rules (by ports or src address) - in this case, allow ports 21115 to 21119 (including) on tcp
 * sudo tcpdump -i any -n  # capture traffic on all networks for all ports
-* sudo tcpdump -i [interface] -n \"src host [external_IP] and dst port [dst_port]\"  # detailed monitoring
-*   detailed monitoring example 1:  sudo tcpdump -i enp5s0 -n \"dst port 21118\"
-*   detailed monitoring example 2:  sudo tcpdump -i any -n \"tcp and (dst port 21115 or dst port 21116 or dst port 21117 or dst port 21118 or dst port 21119)\"
+* sudo tcpdump -i [interface] -n "src host [external_IP] and dst port [dst_port]"  # detailed monitoring
+*   detailed monitoring example 1:  sudo tcpdump -i enp5s0 -n "dst port 21118"
+*   detailed monitoring example 2:  sudo tcpdump -i any -n "tcp and (dst port 21115 or dst port 21116 or dst port 21117 or dst port 21118 or dst port 21119)"
 *   detailed monitoring example 3:  sudo tcpdump -i any src 46.120.97.16 -nn -c 20  # -nn shows ip addresses and port-num without resolving hostname, -c stops capturing after 20 packets
-"'
+'\'
 
 # Reminders for the basics of systemd
-alias howdoi_manage_services='commecho -l "\
+alias howdoi_manage_services='commecho -l '\''
 >> Crontab
 * crontab -e  # edit routine-scheduled tasks
 >> systemd
@@ -390,11 +417,11 @@ alias howdoi_manage_services='commecho -l "\
 * sudo systemctl daemon-reload  # rescan and reload service files
 * sudo systemctl <start/stop/restart/status> <myservice>.service  # manage the state of the service or check its running-status
 * sudo systemctl <enable/disable> example.service  # allow/disallow service to run after boot
-* journalctl -u <service_name.service>  # check the logs of a systemd service. Can also specify how to view them; example:   journalctl -u ssh --since \"1 hour ago\" --until now -f
-"'
+* journalctl -u <service_name.service>  # check the logs of a systemd service. Can also specify how to view them; example:   journalctl -u ssh --since "1 hour ago" --until now -f
+'\'
 
 # Reminders for docker
-alias howdoi_manage_docker='commecho -l "\
+alias howdoi_manage_docker='commecho -l '\''
 >> view (might need to run sudo to find all)
 * docker ps -a  # list ALL containers
 * docker images -a  # list all images
@@ -404,14 +431,14 @@ alias howdoi_manage_docker='commecho -l "\
 * docker-compose -f <yml_file> up  # Start a conteiner using a yaml/yml file. Use -d to make it run in the background
 >> removal
 * docker system prune -a  # remove all images/containers/volumes/networks. The flag -a also remove unused images
-* docker rmi <image(s)>  # remove images ; to remove all images:   docker rmi \$(docker images -a -q)
-* docker rm <container_id(s)_or_name(s)>  # remove container(s) ; to force-remofe, add -f ; to remove all stopped containers:   docker rm \$(docker ps -a -f status=exited -f status=created -q)
+* docker rmi <image(s)>  # remove images ; to remove all images:   docker rmi $(docker images -a -q)
+* docker rm <container_id(s)_or_name(s)>  # remove container(s) ; to force-remofe, add -f ; to remove all stopped containers:   docker rm $(docker ps -a -f status=exited -f status=created -q)
 * docker volume rm <volume_name(s)>  # remove volume(s)
 * docker run --rm <image_name>  # run an image and remove its container when it exits
-"'
+'\'
 
 # Reminders for vm tools and command options (mostly stuff you can't do through Virtual Machine Manager)
-alias howdoi_manage_vm='commecho -l "\
+alias howdoi_manage_vm='commecho -l '\''
 * systemctl restart libvirtd  # restart the libvirt daemon vm-manager
 * virsh start <name>  # start VM
 * virsh domrename <old_name> <new_name>  # rename vm
@@ -422,24 +449,33 @@ alias howdoi_manage_vm='commecho -l "\
 * virsh snapshot-list --domain <VM-NAME>  # list snapshots of vm
 * virsh snapshot-info/snapshot-revert/snapshot-delete --domain <VM-NAME> --snapshotname <SNAPSHOT-NAME>  # detail/go_back_to/delete snapshot
 * qemu-img create -f qcow2 -F qcow2 -b <path_to_src_disk.qcow2> <path_to_output_disk.qcow2>  # snapshot a single disk
-"'
+'\'
+
+# Reminders how to approach sketchy executables
+alias howdoi_reverse_engineer='commecho -l '\''
++ disassembly can be done through "IDA" (Interactive DisAssembler), or "Ghidra"
++ you can test-run an executable on: "https://any.run"
+* strings <my_executable.exe> | less  # list used strings. See if any URLs are being used.
+* objdump -d -Minterl <program_file>  # using Intel syntax, describe the program as a list of assembly instructions
+* checksec --file=<file_to_check> --output=json | jq  # check which security features (if any) are active for the specified file, for things like buffer overflow
+'\'
 
 # Reminders for the basic gimmicks of tmux terminal
-alias howdoi_use_tmux='commecho -l "\
+alias howdoi_use_tmux='commecho -l '\''
 tmux offers split-panes and sessions for terminals.
 >> Good for managing a server:
 + tmux terminals persist even after disconnection. They keep running until restart the server or send a closure command.
 + tmux windows can be named, listed and looked up.
-+ tmux can accomodate multiple users on the same terminal simultanously; good for assistance/collaboration and for doing jobs that need a \"lock\" (having a channel where certain jobs run, so people would know if someone elses job is underway and should be allowed to finish first)
->> Quick explanation: tmux has sessions. Each session can have various windows, each window (has a number and name) is a \"screen\" thats visible at the moment and has vertically/horizontally added panes 
++ tmux can accomodate multiple users on the same terminal simultanously; good for assistance/collaboration and for doing jobs that need a "lock" (having a channel where certain jobs run, so people would know if someone elses job is underway and should be allowed to finish first)
+>> Quick explanation: tmux has sessions. Each session can have various windows, each window (has a number and name) is a "screen" thats visible at the moment and has vertically/horizontally added panes 
 + For simplicity you can just have a SINGLE SESSION and manage all your windows there. Its easier to navigate windows, thanks to the green bar listing them at the bottom.
-+ If a window has only need for a SINGLE TERMINAL (lets say the window is called \"grub_config\"), you can keep it simple and avoid adding extra panes. Add panes to multi-faceted things, like a project which has code, git-management, assets, runtime area etc.
++ If a window has only need for a SINGLE TERMINAL (lets say the window is called "grub_config"), you can keep it simple and avoid adding extra panes. Add panes to multi-faceted things, like a project which has code, git-management, assets, runtime area etc.
 > Sessions:
 * tmux  # create a new tmux session
 * CTRL+B, D  : leave (detach) current session
 * tmux ls  # view all existing tmux sessions (+ info about creation date and number of windows)
-* tmux rename-session -t <0/1/2/3/.../past_name> <name>  # rename session (using number/name from \"tmux ls\")
-* tmux attach -t <0/1/2/3/.../name>  # connect (attach) to an existing tmux session (using number/name from \"tmux ls\")
+* tmux rename-session -t <0/1/2/3/.../past_name> <name>  # rename session (using number/name from "tmux ls")
+* tmux attach -t <0/1/2/3/.../name>  # connect (attach) to an existing tmux session (using number/name from "tmux ls")
 * tmux kill-session -t <0/1/2/3/.../name>  # kill specified session
 > Windows:
 * CTRL+B, <0/1/2/3/...>  : go to window number
@@ -447,17 +483,17 @@ tmux offers split-panes and sessions for terminals.
 * CTRL+B, ,  :  rename current window
 > Panes:
 * CTRL+B, %  :  create a new pane to the right
-* CTRL+B, \"  :  create a new pane to the bottom
+* CTRL+B, "  :  create a new pane to the bottom
 * CTRL+B, <left/right/up/down>  :  move focus to other pane
 * exit  # close pane. If last pane, close window.
-"'
+'\'
 # TODO - create a script thatll establish tmux workspaces when logging into your user (so youd have things ready for debugging or coding and such)
 # TODO - create functions that run these commands interactively (like listing, then letting the user pick a number, then go there...)
 
 # TODO - cargo (maven-like manager) cheatsheet. Reference: https://www.youtube.com/watch?v=zF34dRivLOw
 
 # Reminders for ascii-related commands and handling
-alias howdoi_ascii='commecho -l "\
+alias howdoi_ascii='commecho -l '\''
 + Create ASCII writings in this site: http://patorjk.com/software/taag/
 * figlet <text>  # write ASCII styled text, different fonts are also supported
 * banner <text>  # write ASCII styled text
@@ -466,7 +502,7 @@ alias howdoi_ascii='commecho -l "\
 * ascii-image-converter <input.png>  # convert image to ASCII
 * <text_output_command> | lolcat  # rainbow-color text
 * <text_output_command> | pv -qL 200  # write text progressively (like being typed, or (if fast) etched by a laser engraver). Try testing with neofetch. Try adding pipe to lolcat.
-"'
+'\'
 
 
 
@@ -521,26 +557,6 @@ function sudo () {
     fi
 }
 
-# debugger: prints vars that were added by following function call
-# arg 1: -s (optional: run the command silently)
-function _vars_added_by () {
-    local silent
-    [ "$1" == '-s' ] && { silent='true' ; shift ; }
-    # record vars before and after (but not in local variables, that'd complicate matters)
-    local before_file="/tmp/vars_before_running_$1" after_file="/tmp/vars_after_running_$1"  # defined as a constant prior to the "before" measurement, so it's fine
-    set -o posix ; set | sort | uniq > "$before_file"
-    if [ -n "$silent" ]; then "$@" &> /dev/null ;  # silent running
-    else "$@" ;  # regular running
-    fi
-    set -o posix ; set | sort | uniq > "$after_file"
-    
-    local found="$(diff "$before_file" "$after_file" | grep "^>")"
-    if [ -n "$found" ]; then becho "vars found after running \"$@\":" ; echo "$found" ;
-    else dagecho "No new vars found!" ; fi
-
-    rm "$before_file" "$after_file"
-}
-
 # TODO - do about the same for chmod and chown - print the directory/files with the changed data (maybe cancel that, getting the filenames in every case isn't simple)
 # add a print of local files after changing directory
 function cd () {
@@ -562,8 +578,8 @@ function date () {
 
 
 
-# Data structure handling
-# =======================
+# Common basic functionalities
+# ============================
 
 # print maximum number among given args
 function max () {
@@ -571,6 +587,30 @@ function max () {
     for n in "$@"; do (( $(echo "$n > $max" | bc -l) )) && max=$n ; done
     echo $max
 }
+
+# debugger: prints vars that were added by following function call
+# arg 1: -s (optional: run the command silently)
+function _vars_added_by () {
+    local silent
+    [ "$1" == '-s' ] && { silent='true' ; shift ; }
+    # record vars before and after (but not in local variables, that'd complicate matters)
+    local before_file="/tmp/vars_before_running_$1" after_file="/tmp/vars_after_running_$1"  # defined as a constant prior to the "before" measurement, so it's fine
+    set -o posix ; set | sort | uniq > "$before_file"
+    if [ -n "$silent" ]; then "$@" &> /dev/null ;  # silent running
+    else "$@" ;  # regular running
+    fi
+    set -o posix ; set | sort | uniq > "$after_file"
+    
+    local found="$(diff "$before_file" "$after_file" | grep "^>")"
+    if [ -n "$found" ]; then becho "vars found after running \"$@\":" ; echo "$found" ;
+    else dagecho "No new vars found!" ; fi
+
+    rm "$before_file" "$after_file"
+}
+
+
+# Data structure handling
+# =======================
 
 # turn a list into a hashmap; you need to evaluate the output (can't return a hashmap directly)
 # call like this: eval $(_hashmap_instructions --hm_name 'my_hashmap' --list "${my_list_var[@]}")
@@ -781,8 +821,11 @@ function mang () {
 # Administration - network
 # ========================
 
+#  TODO - function/alias that follows used files (and network) through: lsof -p <PID>
+
 # search current device's network activity by port (specify number) or substring
 function network_search () {
+    # TODO - compare with results from "lsof -i -P" and maybe use that instead
     if [ -z "$1" ]; then echo "You didn't provide anything to filter by. Aborting." && return 1 ; fi
     
     if [[ $1 =~ ^[0-9]+$ ]]; then  # numerical - filter as a port number
@@ -1938,7 +1981,7 @@ function commecho () {
                 )
                 # Alternatively use this (with the command substitution, so IFS change won't stay) if you want tab-separation: $(IFS=$'\t'; echo "${legend_items[*]}
                 # print list separated by comma+spaces into variable, and remove comma and any space after it
-                echo -e "Legend: $(printf '%s , ' "${legend_items[@]}" | sed 's/,\s*$//' )\n"  # with an extra line (that's what the -e is there for), to separate the legend from the data
+                echo -e "Legend: $(printf '%s , ' "${legend_items[@]}" | sed 's/,\s*$//' )"  # with an extra line (that's what the -e is there for), to separate the legend from the data
                 shift
         		continue
         	;;
@@ -1949,8 +1992,9 @@ function commecho () {
     done
 
     local formatted="$@"  # get all of the input
+    [ -z "$formatted" ] && formatted=$(cat)  # if text wasn't in args, get it from redirected input (or pipe)
     # formatted=$(echo "$formatted" | sed -E "s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-input). Needs to run first, to not modify the color tags
-    formatted=$(echo "$formatted" | sed -E "s/(\"[^\"]+\")/$double_quotes_color\1$reset/g")  # recolor within " " (specifics)
+    formatted=$(echo "$formatted" | sed -E "s/(\"[^\"]*\")/$double_quotes_color\1$reset/g")  # recolor within " " (specifics)
     formatted=$(echo "$formatted" | sed "s/^* /${bullet_point_color}*${reset} /g")  # replace beginning '* ' with a colored asterisk and space  (bullet-points)
     formatted=$(echo "$formatted" | sed "s/^>>.*$/${double_cat_line_color}&/g")  # recolor lines beginning '>>'  (topics)
     formatted=$(echo "$formatted" | sed "s/^>.*$/${single_cat_line_color}&/g")  # recolor lines beginning '>'  (sub-topics)
