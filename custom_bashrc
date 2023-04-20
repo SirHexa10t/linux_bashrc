@@ -29,14 +29,17 @@ function _function_names () { declare -F | awk '{print $3}' ; }  # not as comple
 # arg 1: package name
 function _announce_pkg_installed () { [ -n "$(which "$1")" ] && return 0 || { echo "Can't use package '$1', consider installing it." ; return 1 ; }  } 
 
-# if the file exists, print it (can be used), otherwise place an empty string
+# if the file (any kind, including dir) exists, print it, otherwise place an empty string
 # arg 1: potential filename
-function _filename_or_nothing () { [ -f "$1" ] && echo "$1" || echo '' ; }
+function _filename_or_nothing () { [ -e "$1" ] && echo "$1" || echo '' ; }
 
 # if the file exists, print its contents, otherwise place an empty string
 # arg 1: potential filename
 function _file_content_or_nothing () { [ -f "$1" ] && cat "$1" || echo '' ; }
 
+# If symlink exists and its target is valid, print the target. Otherwise place an empty string.
+# arg 1: symlink file
+function _is_valid_symlink () { [[ -L "$1" && -e $(readlink -f "$1") ]]; return $?; }
 
 ## Session data
 #################################################################################
@@ -53,26 +56,26 @@ fi
 
 ## My settings / constants (customize this to your needs/liking)
 #################################################################################
-HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
 # Files this script could utilize. Definitions self-erase in case they don't exist, to avoid writing them accidentally
 UTILITY_FILES_FOLDER="$CUSTOM_BASHRC_FOLDER/utility_files"
-TESTS_FILE=$(_filename_or_nothing "$UTILITY_FILES_FOLDER/run_tests.sh")  # Convenient debugging; if file exists, automatically runs when this bashrc file finishes loading. The contents (and address) are up to you.
-GARBAGE_OUTPUTS=$(_filename_or_nothing "$UTILITY_FILES_FOLDER/outputs.txt")  # default location to dump data into (if exists)
+TESTS_FILE="$(_filename_or_nothing "$UTILITY_FILES_FOLDER/run_tests.sh")"  # Convenient debugging; if file exists, automatically runs when this bashrc file finishes loading. The contents (and address) are up to you.
+GARBAGE_OUTPUTS="$(_filename_or_nothing "$UTILITY_FILES_FOLDER/outputs.txt")"  # default location to dump data into (if exists)
 
+SUBDIR_MOUNTS_FILE="$(_filename_or_nothing "$HOME/symlink_folder_mounts.sh")"  # if you have various media-drives and choose to have this file, insert mounting/symlinking instructions into it. Search the usage of this keyword to see how it's expected to work.
 CREDENTIALS_OPENAI=$(_file_content_or_nothing "$UTILITY_FILES_FOLDER/openai_api_key")  # API key for ChatGPT 3.5 (if file exists)
+
+
+# env variables that you're expected to customize
+CUSTOM_TMPDIR="$(_filename_or_nothing "/temp_cache")"
+_is_valid_symlink "$CUSTOM_TMPDIR" && export TMPDIR="$CUSTOM_TMPDIR"  # (possibly) redefines your temp-files directory (buffer for unarchiving, copying large files, etc.) instead of "/tmp"
+
+export HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
 
 # Constants for VM functions
 QEMU_VOLUME_UUID='A80899A4089971D4'  # the drive that contains VMs' disk data; must be mounted when running a VM
 LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"  # run VM in a window
-
-# CACHE_LOCATION='/cache_space'  # setup a caching disk in case you want tmp caching buffer to be someplace else than system's temporary directory
-# CACHE_BLK_UUID='/dev/disk/by-uuid/b25fb935-b252-466f-8e45-63c8e7f62acf'
-# udisksctl mount -b "$CACHE_BLK_UUID" && ln -s $(udisksctl info -b "$CACHE_BLK_UUID" | grep MountPoints | awk '{print $2}') "$CACHE_LOCATION"  # symlink at desired location
-# [ -e "$CACHE_LOCATION" ] && export TMPDIR="$CACHE_LOCATION"  # if dir exists, use it for caching instead of '/'
-SUBDIR_MOUNTS_FILE='folder_mounts'
-
 
 
 
@@ -295,17 +298,21 @@ alias howdoi_users='commecho -l '\''
 
 # Reminders for the basic gimmicks of bash scripting and terminal usage
 alias howdoi_bash_terminal='commecho -l '\''
->> terminal
+>> packages and built-in commands
 * apt search <term>  # look for substring in known packages. As usual, nala can also be used
 * man <command>  # read the manual of the command
 *   help  # list built-in Bash commands
+* sudo !!  # rerun last command with sudo permissions
+>> filesystem
+* ln -s <link_name> <target>  # define soft-link. There are 2 symlink types; soft (denoted with -s, which points to a file`s address) and hard (points directly to the data of a file. Editing the data in either "original" or hard-link is the same, and deleting either file alone wouldn`t delete the data since it`s still pointed to)
++   soft links don`t really utilize permissions - they allow everything and rely on the target to determine access. chmodding a symlink would forward the modification to the target. 
+*   ln -sr scripts/*.js target/  # create soft-links for all .js files in "scripts/", in "target/" (target/[filename.js] -> scripts/[filename.js]) 
 * cd  # write no directory to return to home-dir. Equivalent to cd ~
 *   cd -  # go back to previous directory
 * less <file>  # Read file with up/down controls. Newer and more convenient than "more".
-* sudo !!  # rerun last command with sudo permissions
+>> processes
 * htop  # show real-time processes/resource-usage
 * xkill  # after you run this, your mouse cursor would turn into an "x" sign, and the next window youll click would be killed. A bit lazy and silly.
-* diff <file1> <file2>  # get the text difference between 2 files
 * visudo  # edit the /etc/sudoers file (only if you know what you are doing)
 >> bash basic utility commands (can be used in terminal of-course)
 * Use $ to reference variables
@@ -323,12 +330,11 @@ alias howdoi_bash_terminal='commecho -l '\''
 *   add "2> /dev/null" after a command to throw away warning/error messages it might bring up
 * declare -p <variable>  # Note: no use of $. Print the variable to check data / data-type
 * time <command>  # get time measurement for command runtime. No need for quotes or any encapsulation, just prepend "time". Example: time ls -l
-* extra_dist=$(( (a > b) ? (a - b) : 0 ))  # example for ternary in bash (use the "&&", "||" ternary instead when you have a condition in "[]"). The double-parentheses mean you dont need "$" to reference variables and that the math operations get evaluated
 >> conditions
 * The return value of a function (0 is successful, anything else is failure) can be used as a condition
 * You can use brackets (spaced) for simple file/string checks, like so: [ -n "$1" ]
 *   filesystem:
-*       "-d": does directory exist ; "-f": does file exist ; "-e": does exist (dir or file) in filesystem ; "-s": does exist in filesystem and with non-zero size
+*       "-d": does directory exist ; "-f": does file exist ; "-L": does symlink exist ; "-e": does exist in filesystem ; "-s": does exist in filesystem and with non-zero size
 *       "-r": is file readable by current user ; "-w": is file writable by current user ; "-x": is file executable by current user
 *   emptiness/presence check:
 *       "-n": is string non-empty (specifying a variable that doesnt exist returns empty string) 
@@ -341,9 +347,11 @@ alias howdoi_bash_terminal='commecho -l '\''
 * You can use double-brackets (spaced) for complex checks
 *       "=~": pattern matching. Example: check if string starts with h: [[ "hello" =~ ^h.*$ ]]
 *       operators "&&" and "||": AND and OR within the brackets, no parentheses needed for the conditions
+* extra_dist=$(( (a > b) ? (a - b) : 0 ))  # example for ternary in bash (use the "&&", "||" ternary instead when you have a condition in "[]"). The double-parentheses mean you dont need "$" to reference variables and that the math operations get evaluated
 >> tools (utilities for usage that isnt about managing the OS)
 * wget <url>  # download files
 * curl <url>  # communicate through HTTP(S)/(S)FTP/SCP - make any request (but if you just want to download something, you should probably use wget)
+* diff <file1> <file2>  # get the text difference between 2 files
 * espeak <text>  # read-out (audio) the given text. A bit of a gimmick, sounds very robotic
 >> shortcuts
 * Terminal CTRL+L : clear screen
@@ -800,7 +808,7 @@ function spellcheck () {
         # print other definitions
         local other_defs="$(echo "$definition_page" | grep '<abbr title="partOfSpeech">' | sed -n 's|.*<abbr title="partOfSpeech">\(.*\)</li>|\1|p' | sed 's/<[^>]*>//g')"
         local marked_word
-        for marked_word in noun verb adjective adverb pronoun preposition conjunction interjection; do other_defs="$(color_word -t "$other_defs" -w "$marked_word" -c '<=italic=><=yellow=>')" ; done
+        for marked_word in adverb verb adjective pronoun noun preposition conjunction interjection; do other_defs="$(color_word -t "$other_defs" -w "$marked_word" -c '<=italic=><=yellow=>')" ; done
         echo "$other_defs"
     else
         recho -p "✖ $(ruecho $word)\tDid you mean:"  # can alternatively use fail: ✕
@@ -1253,7 +1261,7 @@ function devs () {
 
     # device names (used as identifiers)
     local df_devices=$(echo "$df_content" | awk 'NR>1 {print $1}')
-    local lsblk_devices=$(lsblk -o PATH | tail -n+2 | sort)
+    local lsblk_devices=$(lsblk -o PATH --noheadings | sort)
 
     # lsblk minus df results
     # ----------------------
@@ -1320,8 +1328,8 @@ function write_iso_to_usb () {
         read -p "Choose the USB device to write into by specifying PATH ('/dev/???') of the disk (not partition): " usb_dev_path  # Read the user's input
         # check that reply is not empty, and is in the list of found devices
         if [[ ! "$usb_dev_path" =~ ^[[:space:]]*$ ]] && lsblk -o PATH,TRAN | awk '$2=="usb" {print $1}' | grep -w -q "$usb_dev_path"; then  # match whole word (case sensitive), quietly
-            local brand=$(lsblk -d "$usb_dev_path" -o VENDOR,MODEL | tail -n+2 | xargs)  # keep only vendor and model, no title, one space
-            local capacity=$(lsblk -d "$usb_dev_path" -o SIZE | tail -n+2)  # keep only size, no title
+            local brand=$(lsblk -d "$usb_dev_path" -o VENDOR,MODEL --noheadings | xargs)  # keep only vendor and model, no title, one space
+            local capacity=$(lsblk -d "$usb_dev_path" -o SIZE --noheadings)  # keep only size, no title
             # another check with the user, because this is serious
             _prompt_yn "Are you sure? This will $(recho PERMANENTLY DELETE) the contents of your \"$capacity $brand\" drive." && found='true'
         else
@@ -1600,6 +1608,108 @@ function archive_tar7z () {
     done
     
 }
+
+# run file that binds mountdirs to folders
+# to delete the dirs added to root, 'sudo umount' them first (to solve the "resource busy" problem)
+function symlink_mountpoints () {
+    # # The sought file would typically include calls to _bindmount_folder, like so:
+    # _shortaccess_folder --uuid b25fb935-b252-466f-8e45-63c8e7f62acf \
+        # --subfolder "test/cache folder" --mountpoint "/temp_cache" \
+        # --subfolder "logfiles" --mountpoint "/logs" \
+        # --nomount
+    # if file exists, source (run) it
+    if [ -f "$SUBDIR_MOUNTS_FILE" ]; then
+        source "$SUBDIR_MOUNTS_FILE"
+
+        becho "Done creating shortened accesses (\"mountpoints\"). Now re-sourcing this bashrc file to update the session with them"
+        source "$CUSTOM_BASHRC_FILE"
+    else 
+        errcho "can't find file $SUBDIR_MOUNTS_FILE , exiting."
+        return 1
+    fi  
+}
+
+# link a subfolder within a device (by uuid) to a directory in root
+# --uuid <UUID> , --subfolder <dir_in_device> (directory withing the device) , --mountpoint <dir> (short-access path; each in accordance to specified folder) , --nomount (optional: don't mount device if it's unmounted, just exit)
+function _shortaccess_folder () {
+    local uuid nomount folders=() mountpoints=()
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+            '--uuid')
+    			uuid+="$2"
+    			shift 2
+                continue
+    		;;
+            '--subfolder')
+    			folders+=("$2")
+    			shift 2
+                continue
+    		;;
+            '--mountpoint')
+    			mountpoints+=("$2")
+    			shift 2
+                continue
+    		;;
+            '--nomount')
+        		nomount='true'
+        		shift
+                continue
+        	;;
+            *)
+                errcho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+    			shift
+    		;;
+        esac
+    done
+
+    
+    [ -z "$uuid" ] && { errcho 'You need to specify device-UUID' ; return 1 ; }  # Check that UUID was provided
+    [ -z "$folders" ] && { errcho 'You need to specify subfolder(s) within the device' ; return 1 ; }  # Check for provision of device subdir(s)
+    [ -z "$mountpoints" ] && { errcho 'You need to specify mountpoint(s)' ; return 1 ; }  # Check for provision of mountpoint(s)
+    [ ${#folders[@]} -ne ${#mountpoints[@]} ] && { errcho 'Number of dirs and number of mountpoints must match' ; return 1 ; }  # Check that every folder is mapped to a mountpoint, and vice-versa
+    
+    lsblk -a -o UUID | tail -n +2 | grep -Fxq "$uuid" || { errcho "UUID \"$uuid\" isn't connected or doesn't exist!" ; return 1 ; }  # Check that UUID is usable
+    
+    # if device is not mounted, and we're not told to avoid mounting it: mount it
+    ! findmnt -S UUID="$uuid" >/dev/null && [ -z "$nomount" ] && mount_media_by_uuid "$uuid" >/dev/null
+
+    local dev_mountpoint=$(udisksctl info -b "/dev/disk/by-uuid/$uuid" | grep MountPoints | awk '{print $2}')  # print mount location
+    if [ -z "$dev_mountpoint" ]; then
+        # if was supposed to mount
+        if [ -z "$nomount" ]; then errcho "Failed to mount device uuid: \"$uuid\"!!!";
+        else becho -p "Avoided mounting $(recho unmounted device uuid: "\"$uuid\""), as requested"
+        fi
+        return 1
+    fi
+
+    becho "Device (name label UUID) '$(lsblk -no NAME,LABEL,UUID "/dev/disk/by-uuid/$uuid")' is mounted."  # at this point the device is mounted.
+
+    # iterate on couples (inner-paths , mountpoint) 
+    local i
+    for i in "${!mountpoints[@]}"; do
+        local folder_fullpath="$(readlink -f "$dev_mountpoint/${folders[i]}")"  # get supposed full path based on provided subdir (in a way that prevents possible // instead of / after concatenation)
+        local mountpoint="${mountpoints[i]}"
+        
+        # check subdir validity
+        [ -d "$folder_fullpath" ] || { errcho "The subdir \"${folders[i]}\" (full path: \"$folder_fullpath\") doesn't exist as a dir"; continue; }
+
+        # check mountpoint validity
+        [[ "$mountpoint" =~ ^/[a-zA-Z0-9_]+$ ]] || { errcho "The mountpoint \"$mountpoint\" doesn't conform to the expected path format"; continue; }
+        [[ -e "$mountpoint" && ! -L "$mountpoint" ]] && { errcho "The mountpoint \"$mountpoint\" exists but not as a symlink. I'm not touching that. Skipping."; continue; }
+        
+        # whether the mountpoint exist or not, create it
+        # [ -L "$mountpoint" ] && sudo rm "$mountpoint"
+        sudo ln -sfn "$folder_fullpath" "$mountpoint"  # softlink (forced in case exists) with same properties as target. Has to be done as superuser since it's in root-dir
+        echo "$(dagecho "created link:") $(ls -alF "$mountpoint")"
+            # # create it as mount bind (makes more sense if it's on the same drive)
+            # sudo mkdir "$mountpoint"  # create the dir
+            # sudo mount --bind "$folder_fullpath" "$mountpoint"  # has to be done as superuser
+            # echo "$(dagecho "created bind: \"$mountpoint -> $folder_fullpath"\"). To remove it, run: \"sudo umount $mountpoint && sudo rmdir $mountpoint\""
+
+        # chown/chmod it accordingly - skipped, as we're using symlinks (which leave permissions up to target file)
+    done
+}
+
 
 
 # Media file manipulation
