@@ -247,8 +247,6 @@ alias autoclick_toggle_100cps='py_clicker --cps 100 --toggle'
 # TODO - write down flatpak/appimage/snap/(other?) differences
 # Reminders for linux system tools and command options
 alias howdoi_linux='commecho -l '\''
->> Packages
-* dpkg -l  # show all installed packages in table format
 >> Messing around with the system itself
 * reboot  # reboots the system (gracefully)
 * sudo systemctl start sshd  # start ssh service for external access
@@ -272,16 +270,17 @@ alias howdoi_debian_cinnamon='commecho -l '\''
 >> Packages (Debian)
 * sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
 * sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for "no prompt")
+* dpkg -l  # show all installed packages in table format
 * sudo dpkg -r <package>  # remove a package installed from a .deb file
 * sudo dpkg --purge <package>  # purge a package installed from a .deb file
 * dpkg-query --list <package>  # print info related to installed package (autocompletes the name), works for all installations including from .deb
 * apt list  # list all packages in followed repositories
 *   apt list --installed  # list installed packages
 *   dpkg -l  # show all installed packages in table format
->> configurations (Cinnamon?)
+>> configurations (GNOME)
 * ~/.config/autostart/  :  location of startup scripts that run for your own user after startup 
->> configurations (nemo)
 * ~/Templates/  :  anything you put in this folder will be a new-file template when you right-click in nemo
+>> configurations (Cinnamon (nemo file-manager))
 * ~/.local/share/nemo/scripts/  :  anything you put in this folder will be an executable-script available when you right-click in nemo
 '\'
 
@@ -363,10 +362,10 @@ alias howdoi_bash_terminal='commecho -l '\''
 alias howdoi_gui_shortcut='commecho -l '\''
 * Built-in Nemo [space] :  select (click) a file/folder, and press [space] to get a summary/preview; press again to close
 * Custom Gnome-Nemo CTRL+SHIT+T :  open Terminal at current Nemo location
-* Built-in Gnome CTRL+ALT+T :  open Terminal
-* Built-in Gnome(?) CTRL+ALT+[backspace] :  log out of current session (resets your GUI)
-* Built-in Debian(?) CTRL+ALT+F1 :  enter TTY mode (terminal without anything graphic to lock/interrupt you)
-* Built-in Debian(?) CTRL+ALT+F7 :  exit TTY mode
+* Built-in CTRL+ALT+T :  open Terminal
+* Built-in CTRL+ALT+[backspace] :  log out of current session (resets your GUI)
+* Built-in CTRL+ALT+F1 :  enter TTY mode (terminal without anything graphic to lock/interrupt you)
+* Built-in CTRL+ALT+F7 :  exit TTY mode
 * Evdev installation LCTRL+RCTRL  :  switch mouse and keyboard (and maybe other things) between guest/host. Wont work if you gave the VM your USB device directly.
 '\'
 
@@ -1621,7 +1620,7 @@ function symlink_mountpoints () {
     if [ -f "$SUBDIR_MOUNTS_FILE" ]; then
         source "$SUBDIR_MOUNTS_FILE"
 
-        becho "Done creating shortened accesses (\"mountpoints\"). Now re-sourcing this bashrc file to update the session with them"
+        becho "Done creating shortened accesses (\"mountpoints\"). Now re-sourcing this bashrc file to update some variables accordingly"
         source "$CUSTOM_BASHRC_FILE"
     else 
         errcho "can't find file $SUBDIR_MOUNTS_FILE , exiting."
@@ -1757,6 +1756,38 @@ function media_compare () {
     local md_results=() i
     for i in "$@"; do local md_results+=("$(media_metadata "$i")"); done
     _side_by_side --lined "${md_results[@]}" 
+}
+
+# TODO - add args that allow changing the music-lib's root (replace leading part of string)
+# perform various fixes to playlist file
+# arg 1: playlist-file (accepts m3u and m3u8 formats)
+function playlist_file_fix () {
+    [[ "$1" =~ \.m3u$|\.m3u8$ ]] || { errcho "$1 is not a playlist of a supported type!"; return 1; }
+    [ -f "$1" ] || { errcho "$1 isn't an existing file"; return 1; }
+
+    local file_text="$(cat "$1")"
+
+    # remove image (picture) files
+    local picture_formats=(png jpg jpeg)
+    local pformat
+    for pformat in "${picture_formats[@]}"; do
+        lc_pformat="${pformat,,}"  # lower case
+        uc_pformat="${pformat^^}"  # upper case
+        # delete lines that end with .$pformat
+        file_text="$(echo "$file_text" | sed "/.$lc_pformat$/d")"  
+        file_text="$(echo "$file_text" | sed "/.$uc_pformat$/d")"
+    done
+
+    
+    # remove duplications (while maintaining order - delete later appearances)
+    declare -A lines_seen  # Hash-map to keep track of seen lines
+    local line
+    while read line; do
+        if [[ ! "${lines_seen[$line]}" ]]; then  # if the line is new
+            echo "$line"  # print (keep the line)
+            lines_seen["$line"]=1  # make sure we won't accept the line in the future
+        fi
+    done <<< "$file_text" > "$1"
 }
 
 # TODO - create a function that uses youtube-dl and other website downloaders; have it accept any download-link. 
