@@ -13,6 +13,8 @@
 
 # TODO - add a function that backs up personal configurations and files from HOME
 
+# TODO - add this to cheatsheet: https://itsfoss.com/read-compressed-log-files-linux/
+
 
 #---------------------------------------------------------------------------------------------
 #----CUSTOM-----------------------------------------------------------------------------------
@@ -235,6 +237,8 @@ alias i_forgor='remindme'
 alias psg='find_proc'
 # used to allow running this function on aliases
 alias _vars_added_by='_vars_added_by '
+# Synonymous to "unencrypt". Both words make enough sense to include
+alias decrypt='unencrypt'
 # alias to a python script (auto-clicker hold-key)
 alias autoclick_hold_100cps='py_clicker --cps 100'
 # alias to a python script (auto-clicker toggled)
@@ -259,29 +263,16 @@ alias howdoi_linux='commecho -l '\''
 * /etc/environment  :  OS environment variables
 *   printenv  # print (all) current environment variables 
 * sudo nvidia-xconfig  # create new xorg config, used by nvidia driver
+>> configurations (GNOME)
+* ~/.config/autostart/  :  location of startup scripts that run for your own user after startup 
+* ~/Templates/  :  anything you put in this folder will be a new-file template when you right-click in nemo
+>> configurations (Nemo file-manager)
+* ~/.local/share/nemo/scripts/  :  anything you put in this folder will be an executable-script available when you right-click in nemo
 >> logs (to tail a logfile in real-time run: "tail -f <logfile>", or to get last 100 lines: "tail -100 <logfile>" )
 * log-file: /var/log/boot.log  :  System boot log
 * log-file: /var/log/dmesg  :  log for kernel ring buffer
 *   dmesg -k | grep -E "warn|error"  # the command dmesg displays kernel logs buffer
 * log-file: /var/log/kern.log  :  log for kernel ring buffer
-'\'
-
-alias howdoi_debian_cinnamon='commecho -l '\''
->> Packages (Debian)
-* sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
-* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for "no prompt")
-* dpkg -l  # show all installed packages in table format
-* sudo dpkg -r <package>  # remove a package installed from a .deb file
-* sudo dpkg --purge <package>  # purge a package installed from a .deb file
-* dpkg-query --list <package>  # print info related to installed package (autocompletes the name), works for all installations including from .deb
-* apt list  # list all packages in followed repositories
-*   apt list --installed  # list installed packages
-*   dpkg -l  # show all installed packages in table format
->> configurations (GNOME)
-* ~/.config/autostart/  :  location of startup scripts that run for your own user after startup 
-* ~/Templates/  :  anything you put in this folder will be a new-file template when you right-click in nemo
->> configurations (Cinnamon (nemo file-manager))
-* ~/.local/share/nemo/scripts/  :  anything you put in this folder will be an executable-script available when you right-click in nemo
 '\'
 
 # Reminders for user/groups management
@@ -302,6 +293,16 @@ alias howdoi_bash_terminal='commecho -l '\''
 * man <command>  # read the manual of the command
 *   help  # list built-in Bash commands
 * sudo !!  # rerun last command with sudo permissions
+>> Packages (Debian)
+* sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
+* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for "no prompt")
+* dpkg -l  # show all installed packages in table format
+* sudo dpkg -r <package>  # remove a package installed from a .deb file
+* sudo dpkg --purge <package>  # purge a package installed from a .deb file
+* dpkg-query --list <package>  # print info related to installed package (autocompletes the name), works for all installations including from .deb
+* apt list  # list all packages in followed repositories
+*   apt list --installed  # list installed packages
+*   dpkg -l  # show all installed packages in table format
 >> filesystem
 * ln -s <link_name> <target>  # define soft-link. There are 2 symlink types; soft (denoted with -s, which points to a file`s address) and hard (points directly to the data of a file. Editing the data in either "original" or hard-link is the same, and deleting either file alone wouldn`t delete the data since it`s still pointed to)
 +   soft links don`t really utilize permissions - they allow everything and rely on the target to determine access. chmodding a symlink would forward the modification to the target. 
@@ -494,10 +495,17 @@ tmux offers split-panes and sessions for terminals.
 * CTRL+B, <left/right/up/down>  :  move focus to other pane
 * exit  # close pane. If last pane, close window.
 '\'
+
 # TODO - create a script thatll establish tmux workspaces when logging into your user (so youd have things ready for debugging or coding and such)
 # TODO - create functions that run these commands interactively (like listing, then letting the user pick a number, then go there...)
 
 # TODO - cargo (maven-like manager) cheatsheet. Reference: https://www.youtube.com/watch?v=zF34dRivLOw
+
+alias howdoi_use_git='commecho -l '\''
++ You can delete files or lines from code retroactively using the tool from here: https://rtyley.github.io/bfg-repo-cleaner/
+*    java -jar bfg-1.14.0.jar --delete-files <file_to_delete.sh>  # after running this, you would be asked to run another command; do that too and push your modified branch to overwrite remote branch.
+* Theres a lot to say about managing git through CLI, but Im a proponent for using a graphical tool. Get GitKraken or GitFork or some other tool like that.
+'\'
 
 # Reminders for ascii-related commands and handling
 alias howdoi_ascii='commecho -l '\''
@@ -1546,6 +1554,197 @@ function revoke_exe_mod () {
     done <<< "$files"
 }
 
+# tar-archive files into current dir, one by one, with compression and possibly encryption
+# --comp <compression_format> ; -p/--password <password> (optional) ; --archive_name <name> (optional, but without .tar.<comp>) ; --no_overwrite (add alongside instead of overwriting existing archive) ; all the rest are files that'll get archived
+function _tarchive () {
+    local files_to_archive=() comp password predetermined_name no_overwrite
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+    		'--comp')
+    			comp="$2"
+    			shift 2
+    			continue
+    		;;
+    		'-p'|'--password')
+    			password="$2"
+    			shift 2
+    			continue
+            ;;
+    		'--archive_name')
+    			predetermined_name="$2"
+    			shift 2
+    			continue
+            ;;
+    		'--no_overwrite')
+    			no_overwrite='true'
+    			shift
+    			continue
+            ;;
+    		*)
+                files_to_archive+=("$1")
+                shift
+                continue
+    		;;
+    	esac
+    done
+
+    [ -n "$files_to_archive" ] || { errcho "You need to specify files (or folders) to archive" ; return 1; }
+    [ -n "$comp" ] || { errcho "You need to specify compression algorithm" ; return 1; }
+
+    local encryption_suffix="$( [ -n "$password" ] && echo "_encrypted" || echo '' )"
+    local suffix="${encryption_suffix}.tar.${comp}"
+
+    function _derive_archive_name () { [ -n "$predetermined_name" ] && echo "${predetermined_name}${suffix}" || echo "${filename}${suffix}"; }
+    # arg 1 is opts (determines compression), arg 2 is archive-name
+    function _tar_cmd () { tar -C "$folderpath" "$1" "$2" "$filename"; }  # go over to folderpath and use file's name so that the entire path leading to it won't be included in the archive
+    function _encrypt_symmetric () { openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$password" -out "$archive_name"; }
+
+    local f
+    for f in "${files_to_archive[@]}"; do
+        # archive without including whole directory leading to the file
+        local full_path="$(realpath "$f")"  # get full path
+        [ -e "$full_path" ] || { errcho "There's no \"$f\" (full: \"$full_path\") in filesystem. Skipping it." ; return 1; }
+
+        local folderpath="$(dirname "$full_path")"
+        local filename="$(basename "$full_path")"
+        local archive_name=$(_derive_archive_name)
+
+        # if archive already exists and we don't overwrite, save archive with timestamp
+        if [[ -f "$archive_name" && -n "$no_overwrite" ]]; then
+            local timestamp="_$(date +%Y_%m_%d_T%H%M%S)"
+            suffix="${timestamp}${suffix}"
+            archive_name=$(_derive_archive_name)
+        fi
+
+        # write the file
+        case "$comp" in
+            'gz'|'bz2'|'xz')
+                declare -A tar_opts=( ['gz']='-cvzf' ['bz2']='-cvjf' ['xz']='-cvJf' )
+                if [ -n "$password" ]; then _tar_cmd "${tar_opts[$comp]}" '-' | _encrypt_symmetric ;  # w/ encryption
+                else _tar_cmd "${tar_opts[$comp]}" "$archive_name"; fi  # no encryption
+    		;;
+            'lzo')
+                if [ -n "$password" ]; then _tar_cmd '-cvf' '-' | lzop -c | _encrypt_symmetric ;  # w/ encryption
+                else  _tar_cmd '-cvf' '-' | lzop > "$archive_name" ; fi  # no encryption
+            ;;
+            '7z')
+                local passwd_args
+                [ -n "$password" ] && passwd_args=("-p$password" '-mhe=on')  # args are nothing if there's no password (no encryption)
+                _tar_cmd '-cvf' '-' | 7z a -si ${passwd_args[@]} "-t7z" "$archive_name"
+            ;;
+            'zip')
+                local passwd_args
+                [ -n "$password" ] && passwd_args=('-eP' "$password")  # args are nothing if there's no password (no encryption)
+                _tar_cmd '-cvf' '-' | zip -@ -q -r ${passwd_args[@]} "$archive_name"
+            ;;
+            *)
+                errcho "I don't know how to compress using \"$comp\". So far only the following are supported: gz, bz2, xz, lzo, 7z, zip"
+            ;;
+        esac
+
+    done
+
+}
+
+# TODO - maybe add more supported encryptions
+# unencrypts encryption via openssl symmetric key or by specific compression algorithm
+# -p/--password (optional: specify password as arg instead of interactively)
+function unencrypt () {
+    local file_to_decrypt password
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+    		'-p'|'--password')
+    			password="$2"
+    			shift 2
+    			continue
+    		;;
+    		*)
+                file_to_decrypt="$1"
+                shift
+                continue
+    		;;
+    	esac
+    done
+
+    [ -f "$file_to_decrypt" ] || { errcho "you need to provide a file to unencrypt"; return 1; }
+    local optional_pass=$([ -n "$password" ] && echo "-pass pass:$password")
+    local file_unencrypted_output="decrypted_$file_to_decrypt"
+
+    local encryption_identified=$(file -b "$file_to_decrypt")
+    case "$encryption_identified" in
+    	"openssl enc'd data with salted password")
+    		becho -p "Identified OpenSSL, attempting to unencrypt (assuming it's -aes-256-cbc -pbkdf2). If it succeeds, it'll be saved as $(gecho "\"$file_unencrypted_output\""), $(buecho "take care of the naming yourself")."
+            openssl enc -d -aes-256-cbc -pbkdf2 $optional_pass -in "$file_to_decrypt" -out "$file_unencrypted_output"
+            if [ "$?" -ne 0 ]; then
+                becho "Seems like it failed. Trying again differently, with a deprecated encryption method (no \"-pbkdf2\")"
+                openssl enc -d -aes-256-cbc $optional_pass -in "$file_to_decrypt" -out "$file_unencrypted_output"
+            fi
+    	;;
+    	*)
+            errcho "Couldn't identify which encryption was used: \"$encryption_identified\""
+            return 1
+    	;;
+    esac
+}
+
+# archive a specified file/folder, and print the benchmarked results
+function benchmark_archiving () {
+    [ -e "$1" ] || { errcho "you didn't specify anything to archive; quitting"; return 1; }
+
+    local archive_me="$1"
+    local archive_me_full_path="$(realpath "$archive_me")"  # get full path
+    local folderpath="$(dirname "$archive_me_full_path")"
+    local filename="$(basename "$archive_me_full_path")"
+
+    local password="kldsjfbn1ilugdfblgibfdusaVCsdvsderghtnr"
+
+    # algorithms with tar-archiving flags
+    declare -A algorithms=(
+        ['gz']='-czf' ['bz2']='-cjf' ['xz']='-cJf'
+        # ['lzo']='-cf'
+        # ['7z']='' ['zip']=''
+    )
+
+    declare -A archive_times compression_ratios unarchive_times
+    local algo deletion_cmd="rm "
+    for algo in ${!algorithms[@]}; do
+        local output_archive_path="$(realpath "$folderpath/$filename.tar.$algo")"  # saving to the same location as the file itself
+        local output_encrypted_archive_path="$output_archive_path.crypt"
+        becho "archiving using \"$algo\" into files: $output_encrypted_archive_path, $output_archive_path"
+
+        # archive time
+        local start_time=$(date +%s.%3N)  # only keep 3 digits out of nanoseconds
+        tar -czf - "$archive_me_full_path" | openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$password" -out "$output_encrypted_archive_path"
+        archive_times["$algo"]=$(echo "$(date +%s.%3N) - $start_time" | bc)
+        # file size
+        compression_ratios["$algo"]=$(echo "scale=3; $(du -sb $archive_me_full_path | cut -f1) / $(stat -c %s $output_encrypted_archive_path)" | bc)  # calculate sizes ratio, with 3 trailing digits
+        # unarchive time
+        local start_time=$(date +%s.%3N)
+        openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:"$password" -in "$output_encrypted_archive_path" -out "$output_archive_path"
+        unarchive_times["$algo"]=$(echo "$(date +%s.%3N) - $start_time" | bc)
+
+        # cleanup (left up to the user)
+        deletion_cmd+="$output_archive_path $output_encrypted_archive_path "
+    done
+
+    for algo in ${!algorithms[@]}; do
+        becho -p "archiving with $(gecho "$algo") took: $(gecho "${archive_times[$algo]} s") , unarchiving took: $(gecho "${unarchive_times[$algo]} s") , compressed at ratio: $(gecho "x${compression_ratios[$algo]}")"
+    done
+
+    becho "We're done. I left the files for your review. You can remove them with this command:"
+    echo "$deletion_cmd"
+
+}
+
+
+# # archive files into current dir as .tar.<compression>
+# # --comp (compression used, default is gzip) ; -p/--password <pass> (optional: encrypt with symmetric key) ; all the rest are file-names to archive individually
+# function archive_tar_compressed () {
+
+# }
+
+# TODO - add a print that tells you how large the thing you're copying, so the user can go back and estimate how far the compression went
+# TODO - add function "archive_dir_contents_tar7z", which would create an archive for each folder, one by one, and then archive all the files together. Or maybe just add an arg for this function here
 # Archive files into .tar.7z format. You can specify any file / file-path, the archive would still be saved to current working directory.
 # -o/--overwrite (optional: replace old 7z archive instead of adding another one) ; -p/--password <pass> (optional: encrypt with password) ; all the rest are file-names
 function archive_tar7z () {
@@ -1586,7 +1785,7 @@ function archive_tar7z () {
         if [ -n "$password" ]; then  # entering an empty string as password doesn't (and shouldn't) count as password
             becho "writing $archive_name with password encryption"
             optional_encryption="-p$password"
-            archive_name=$(echo "$archive_name" | sed 's/.tar.7z$/_encrypted.tar.7z/')  # add "_encrypted" to file suffix name. You can't mix encrypted and unencrypted, so they shouldn't be named the same way
+            archive_name=$(echo "$archive_name" | sed 's/.tar.7z$/_encrypted.tar.7z/')  # add "_encrypted" to file suffix name. You can't mix encrypted and unencrypted in the same archive, so they shouldn't be named the same way
         fi
 
         # if similarly-named archive exists (involves overwrite-flag)
