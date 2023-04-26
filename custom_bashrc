@@ -15,6 +15,8 @@
 
 # TODO - add this to cheatsheet: https://itsfoss.com/read-compressed-log-files-linux/
 
+# TODO - use pipe files (RAM-residing files created through: mkfifo)
+
 
 #---------------------------------------------------------------------------------------------
 #----CUSTOM-----------------------------------------------------------------------------------
@@ -239,6 +241,8 @@ alias psg='find_proc'
 alias _vars_added_by='_vars_added_by '
 # Synonymous to "unencrypt". Both words make enough sense to include
 alias decrypt='unencrypt'
+# Synonymous to "multiping".
+alias benchmark_internet_connectivity='multiping'
 # alias to a python script (auto-clicker hold-key)
 alias autoclick_hold_100cps='py_clicker --cps 100'
 # alias to a python script (auto-clicker toggled)
@@ -881,7 +885,7 @@ function multiping () {
                 protocol_name="IPv$protocol"
                 failure=''
                 ping_results="$(ping "-$protocol" -c "$num_of_pings" "$address" 2> /dev/null)"
-                if ! [ $? -eq 0 ]; then
+                if [ $? -ne 0 ]; then
                     [[ "$protocol" == "4" ]] && recho "Failed pinging $address on $protocol_name"  # only print if failed at IPv4
                     failure='true'
                 fi 
@@ -1555,7 +1559,7 @@ function revoke_exe_mod () {
 }
 
 # tar-archive files into current dir, one by one, with compression and possibly encryption
-# --comp <compression_format> ; -p/--password <password> (optional) ; --archive_name <name> (optional, but without .tar.<comp>) ; --no_overwrite (add alongside instead of overwriting existing archive) ; all the rest are files that'll get archived
+# --comp <compression_format> ; -p/--password <password> (optional) ; --archive_name <name> (optional, no need for .tar.<comp>) ; --no_overwrite (add alongside instead of overwriting existing archive) ; all the rest are files that'll get archived
 function _tarchive () {
     local files_to_archive=() comp password predetermined_name no_overwrite
     while [[ $# -gt 0 ]]; do
@@ -1591,10 +1595,11 @@ function _tarchive () {
     [ -n "$files_to_archive" ] || { errcho "You need to specify files (or folders) to archive" ; return 1; }
     [ -n "$comp" ] || { errcho "You need to specify compression algorithm" ; return 1; }
 
+    [[ "$predetermined_name" == *.tar.$comp ]] && predetermined_name="${predetermined_name%.tar.$comp}"  # get rid of the suffix if it was provided anyway
     local encryption_suffix="$( [ -n "$password" ] && echo "_encrypted" || echo '' )"
     local suffix="${encryption_suffix}.tar.${comp}"
 
-    function _derive_archive_name () { [ -n "$predetermined_name" ] && echo "${predetermined_name}${suffix}" || echo "${filename}${suffix}"; }
+    function _derive_archive_name () { [ -n "$predetermined_name" ] && echo "${predetermined_name}.tar.${comp}" || echo "${filename}${suffix}"; }
     # arg 1 is opts (determines compression), arg 2 is archive-name
     function _tar_cmd () { tar -C "$folderpath" "$1" "$2" "$filename"; }  # go over to folderpath and use file's name so that the entire path leading to it won't be included in the archive
     function _encrypt_symmetric () { openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$password" -out "$archive_name"; }
@@ -1630,12 +1635,13 @@ function _tarchive () {
             '7z')
                 local passwd_args
                 [ -n "$password" ] && passwd_args=("-p$password" '-mhe=on')  # args are nothing if there's no password (no encryption)
-                _tar_cmd '-cvf' '-' | 7z a -si ${passwd_args[@]} "-t7z" "$archive_name"
+                _tar_cmd '-cvf' '-' | 7z a -si ${passwd_args[@]} "-t7z" "$archive_name"  # TODO - find optimal settings (more memory, maybe larger dictionary)
             ;;
             'zip')
-                local passwd_args
-                [ -n "$password" ] && passwd_args=('-eP' "$password")  # args are nothing if there's no password (no encryption)
-                _tar_cmd '-cvf' '-' | zip -@ -q -r ${passwd_args[@]} "$archive_name"
+                # It's possible to use 7z to zip files, but some features ( like -si (stream-in) and -mhe=on ) aren't supported. So codewise it'd be unclean and won't save much
+                local tar_only_name=$(mktemp)
+                local passwd_args; [ -n "$password" ] && passwd_args=('--password' "$password")  # for interactive encryption: || passwd_args=('--encrypt')
+                _tar_cmd '-cvf' "$tar_only_name" | zip ${passwd_args[@]} "$archive_name" -@ && rm "$tar_only_name"
             ;;
             *)
                 errcho "I don't know how to compress using \"$comp\". So far only the following are supported: gz, bz2, xz, lzo, 7z, zip"
@@ -1646,16 +1652,21 @@ function _tarchive () {
 
 }
 
-# TODO - maybe add more supported encryptions
+
 # unencrypts encryption via openssl symmetric key or by specific compression algorithm
-# -p/--password (optional: specify password as arg instead of interactively)
+# -p/--password (optional(sort-of): specify password as arg instead of interactively) ; --only_print_output_file (optional: do nothing but print the directory that'll be written into)
 function unencrypt () {
-    local file_to_decrypt password
+    local file_to_decrypt password only_print_output_file
     while [[ $# -gt 0 ]]; do
     	case "$1" in
     		'-p'|'--password')
     			password="$2"
     			shift 2
+    			continue
+    		;;
+    		'--only_print_output_file')
+    			only_print_output_file='true'
+    			shift
     			continue
     		;;
     		*)
@@ -1666,73 +1677,95 @@ function unencrypt () {
     	esac
     done
 
-    [ -f "$file_to_decrypt" ] || { errcho "you need to provide a file to unencrypt"; return 1; }
-    local optional_pass=$([ -n "$password" ] && echo "-pass pass:$password")
-    local file_unencrypted_output="decrypted_$file_to_decrypt"
+    [ -f "$file_to_decrypt" ] || { errcho "you need to provide a valid file to unencrypt"; return 1; }
+    
+    # arg 1: extension to remove (optional)
+    function _get_encrypted_name () {
+        local file_mod_ext=${file_to_decrypt%$1}
+        realpath "$(dirname "$file_mod_ext")/decrypted_$(basename "$file_mod_ext")"
+
+        [ -n "$only_print_output_file" ] && return 0  # requested just a check, don't run further
+    }
+
+    # arg 1: compression found
+    function _expected_output_msg () { becho -p "Identified $1, attempting to unencrypt and save as $(gecho "$file_unencrypted_output") . $(buecho "Sort out the naming on your own")."; }
+
+    function _clear_optional_pass_if_no_password () { [ -z "$password" ] && unset optional_pass; }
 
     local encryption_identified=$(file -b "$file_to_decrypt")
-    case "$encryption_identified" in
-    	"openssl enc'd data with salted password")
-    		becho -p "Identified OpenSSL, attempting to unencrypt (assuming it's -aes-256-cbc -pbkdf2). If it succeeds, it'll be saved as $(gecho "\"$file_unencrypted_output\""), $(buecho "take care of the naming yourself")."
-            openssl enc -d -aes-256-cbc -pbkdf2 $optional_pass -in "$file_to_decrypt" -out "$file_unencrypted_output"
-            if [ "$?" -ne 0 ]; then
-                becho "Seems like it failed. Trying again differently, with a deprecated encryption method (no \"-pbkdf2\")"
-                openssl enc -d -aes-256-cbc $optional_pass -in "$file_to_decrypt" -out "$file_unencrypted_output"
-            fi
-    	;;
-    	*)
-            errcho "Couldn't identify which encryption was used: \"$encryption_identified\""
-            return 1
-    	;;
-    esac
+    if [[ "$encryption_identified" =~ ^"openssl enc" ]]; then  # expecting: "openssl enc'd data with salted password"
+        local file_unencrypted_output="$(_get_encrypted_name)"
+        local optional_pass=("-pass" "pass:$password") && _clear_optional_pass_if_no_password
+        _expected_output_msg 'OpenSSL'
+        becho "Decryption attempt assuming it's -aes-256-cbc -pbkdf2"
+
+        openssl enc -d -aes-256-cbc -pbkdf2 ${optional_pass[@]} -in "$file_to_decrypt" -out "$file_unencrypted_output"
+        if [ "$?" -ne 0 ]; then
+            becho "Seems like it failed. Trying again differently, with a deprecated encryption method (no \"-pbkdf2\")"
+            openssl enc -d -aes-256-cbc $optional_pass -in "$file_to_decrypt" -out "$file_unencrypted_output"
+        fi
+    # expecting: "7-zip archive data, version 0.4" OR expecting: "Zip archive data, at least v1.0 to extract, compression method=store"
+    elif [[ "$encryption_identified" =~ ^"7-zip archive data" || "$encryption_identified" =~ ^"Zip archive data" ]]; then  # 7z can handle zip too, it's better than using 'uzip' command
+        # local ext="${file_to_decrypt##*.}"  # keep string after last '.' - not used because we don't want to deal with possible empty string. And it's better for verbosity towards user
+        if [[ "$encryption_identified" =~ ^"7-zip archive data" ]]; then local ext='7z'; else local ext='zip'; fi
+
+        local file_unencrypted_output="$(_get_encrypted_name ".$ext")"
+        local optional_pass=( "-p$password") && _clear_optional_pass_if_no_password
+        _expected_output_msg "$ext"
+
+        [ -z "${optional_pass[@]}" ] && echo "Type in password:"  # if no password was provided, the user needs to provide it. The prompt won't appear since we're streaming output to
+        7z x "${optional_pass[@]}" -aoa -t$ext "$file_to_decrypt" -so > "$file_unencrypted_output"
+    else
+        errcho "Couldn't identify which encryption was used: \"$encryption_identified\""
+        return 1
+    fi
 }
 
-# archive a specified file/folder, and print the benchmarked results
+# archive a specified file/folder with various compressions
 function benchmark_archiving () {
     [ -e "$1" ] || { errcho "you didn't specify anything to archive; quitting"; return 1; }
 
-    local archive_me="$1"
-    local archive_me_full_path="$(realpath "$archive_me")"  # get full path
-    local folderpath="$(dirname "$archive_me_full_path")"
-    local filename="$(basename "$archive_me_full_path")"
+    local archive_me_full_path="$(realpath "$1")"  # get full path
 
     local password="kldsjfbn1ilugdfblgibfdusaVCsdvsderghtnr"
 
     # algorithms with tar-archiving flags
-    declare -A algorithms=(
-        ['gz']='-czf' ['bz2']='-cjf' ['xz']='-cJf'
-        # ['lzo']='-cf'
-        # ['7z']='' ['zip']=''
-    )
+    local algorithms=( 'gz' 'bz2' 'xz' 'lzo' '7z' 'zip' )
 
-    declare -A archive_times compression_ratios unarchive_times
-    local algo deletion_cmd="rm "
-    for algo in ${!algorithms[@]}; do
-        local output_archive_path="$(realpath "$folderpath/$filename.tar.$algo")"  # saving to the same location as the file itself
-        local output_encrypted_archive_path="$output_archive_path.crypt"
-        becho "archiving using \"$algo\" into files: $output_encrypted_archive_path, $output_archive_path"
+    declare -A archive_times compression_ratios decrypt_times
+    local deletion_cmd=('rm' '-rf') algo
+    for algo in ${algorithms[@]}; do
+        local output_encrypted_archive_path="${archive_me_full_path}_encrypted_benchmark.tar.$algo"
 
         # archive time
         local start_time=$(date +%s.%3N)  # only keep 3 digits out of nanoseconds
-        tar -czf - "$archive_me_full_path" | openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$password" -out "$output_encrypted_archive_path"
+        _tarchive "$archive_me_full_path" --comp "$algo" -p "$password" --archive_name "$output_encrypted_archive_path"
         archive_times["$algo"]=$(echo "$(date +%s.%3N) - $start_time" | bc)
+        
         # file size
         compression_ratios["$algo"]=$(echo "scale=3; $(du -sb $archive_me_full_path | cut -f1) / $(stat -c %s $output_encrypted_archive_path)" | bc)  # calculate sizes ratio, with 3 trailing digits
-        # unarchive time
+        
+        # decrypt time
+        output_archive_path="$(unencrypt "$output_encrypted_archive_path" -p "$password" '--only_print_output_file')"  # get the unarchived file's name (and do nothing more)
         local start_time=$(date +%s.%3N)
-        openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:"$password" -in "$output_encrypted_archive_path" -out "$output_archive_path"
-        unarchive_times["$algo"]=$(echo "$(date +%s.%3N) - $start_time" | bc)
+        unencrypt "$output_encrypted_archive_path" -p "$password"
+        decrypt_times["$algo"]=$(echo "$(date +%s.%3N) - $start_time" | bc)
+
+        # if filename still ends with algo, it's not extracted, just decrypted
 
         # cleanup (left up to the user)
-        deletion_cmd+="$output_archive_path $output_encrypted_archive_path "
+        deletion_cmd+=("$output_archive_path") 
+        deletion_cmd+=("$output_encrypted_archive_path")
     done
 
-    for algo in ${!algorithms[@]}; do
-        becho -p "archiving with $(gecho "$algo") took: $(gecho "${archive_times[$algo]} s") , unarchiving took: $(gecho "${unarchive_times[$algo]} s") , compressed at ratio: $(gecho "x${compression_ratios[$algo]}")"
+    for algo in ${algorithms[@]}; do
+        becho "Here are the results, remember that some algorithms' default encryption isn't good; relying on them for their speed is like relying on walking for fuel efficiency"
+        becho -p "archiving with $(gecho "$algo") took: $(gecho "${archive_times[$algo]} s") , decryption took: $(gecho "${decrypt_times[$algo]} s") , compressed at ratio: $(gecho "x${compression_ratios[$algo]}")"
     done
 
     becho "We're done. I left the files for your review. You can remove them with this command:"
-    echo "$deletion_cmd"
+    printf '%s\n' "${deletion_cmd[@]}" | color_word 'benchmark'
+    if _prompt_yn "$(becho "would you like me to run it now for you?")"; then "${deletion_cmd[@]}"; fi
 
 }
 
@@ -2006,6 +2039,10 @@ function chatgpt_ask () {
     # TODO pretty-print the reply (if they'll allow sending a request without payment)
 }
 
+# TODO - query Bing and print the AI portion of the result. Make sure to pass through a VPN while doing so.
+# Make it interactive (let user know if the VPN option isn't working, and ask for an input to send to Bing)
+# Might need to convert the queried string (i.e. things like %20 instead of space) 
+
 
 # Virtual Machines
 # ================
@@ -2034,6 +2071,7 @@ function launch_vm_w_lookingglass() {
 
     # get the shmem name:
     local shmem_name=$(sudo awk -F 'name=' '/shmem/ {gsub("'\''", "", $2); print $2}' "$xml_file" | sed 's/^"\([^"]*\)".*/\1/' | sed 's/>$//')  # extract the string between the quotes, remove the quotes, remove the closing '>'
+    [ -z "$shmem_name" ] && { errcho "Couldn't find shmem name (shared-memory for looking glass). If there's no GPU sharing its memory, Looking-Glass can't be used. Exiting."; return 1; }
     local lg_file="/dev/shm/$shmem_name"
 
     # get the vnc port number from xml
