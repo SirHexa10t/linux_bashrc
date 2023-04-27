@@ -48,7 +48,7 @@ function _is_valid_symlink () { [[ -L "$1" && -e $(readlink -f "$1") ]]; return 
 ## Session data
 #################################################################################
 SUDO_FILE="$(which sudo)"
-CUSTOM_BASHRC_FILE="$(readlink -f -- "$BASH_SOURCE")"  # this file
+CUSTOM_BASHRC_FILE="$(readlink -f -- "$BASH_SOURCE")"  # this file  TODO - check how it's different from using "realpath"
 CUSTOM_BASHRC_FOLDER="$(dirname "$CUSTOM_BASHRC_FILE")"  # this file's filder
 SCRIPTS_BASHRC_FILE="$CUSTOM_BASHRC_FOLDER/script_calls_bashrc"  # optional extention file
 IS_FIRST_SOURCING=$([ ! -v CUSTOM_ALIASES_INITIAL ] && echo 'true' || echo 'false')
@@ -241,6 +241,10 @@ alias psg='find_proc'
 alias _vars_added_by='_vars_added_by '
 # Synonymous to "unencrypt". Both words make enough sense to include
 alias decrypt='unencrypt'
+# Synonymous to "tarchive". A more standard name; less verbose, hopefully won't clash with user's other aliases
+alias archive='tarchive'
+# Synonymous to "untarchive". A more standard name; less verbose, hopefully won't clash with user's other aliases
+alias unarchive='untarchive'
 # Synonymous to "multiping".
 alias benchmark_internet_connectivity='multiping'
 # alias to a python script (auto-clicker hold-key)
@@ -699,7 +703,7 @@ function _unique_in_first () {
 
 # adds y/n prompt. Call like this:  if prompt_yn "<prompt q>?"; then echo "<starting-process msg>"; else echo "<cancellation msg>" && return ; fi
 function _prompt_yn () {   
-    local response=""
+    local response
     # keep prompting the user until they provide a valid response
     while [ "$response" != "y" ] && [ "$response" != "n" ]; do
         # prompt the user for a yes/no response
@@ -1395,8 +1399,12 @@ function prepare_ntfs_for_writable_mount () {
 # TODO - if you ever find out how to put this in a table without messing up filenames with spaces, fix this 
 # Custom ls, like "ll". Add -S to sort by (non-recursive) size
 function lll () {
-    becho "Blocks Permissions Hard-Links Owner Group Size Date_Modified Filename"  # headers, not aligned, but still helpful
-    ls -tarlushFN --color=always --time-style="+%Y-%m-%d_%T" --group-directories-first "$@"
+    # need condition to check return code so we'll only print headers if this is successful
+    local cmd_result
+    if cmd_result=$(ls -tarlushFN --color=always --time-style="+%Y-%m-%d_%T" --group-directories-first "$@") && [ $? -eq 0 ]; then
+        becho "Blocks Permissions Hard-Links Owner Group Size Date_Modified Filename"  # headers, not aligned, but still helpful
+        echo "$cmd_result"
+    fi
 }
 
 # take ownership of file (add file-name after this command) 
@@ -1558,10 +1566,10 @@ function revoke_exe_mod () {
     done <<< "$files"
 }
 
-# tar-archive files into current dir, one by one, with compression and possibly encryption
-# --comp <compression_format> ; -p/--password <password> (optional) ; --archive_name <name> (optional, no need for .tar.<comp>) ; --no_overwrite (add alongside instead of overwriting existing archive) ; all the rest are files that'll get archived
-function _tarchive () {
-    local files_to_archive=() comp password predetermined_name no_overwrite
+# archive files into current dir as .tar.<compression>
+# --comp <compression_format> (optional, default is gz) ; -p/--password <password> (if not provided, there's no encryption) ; --archive_name <name> (optional forced output, no need for .tar.<comp>) ; --no_overwrite (add alongside instead of overwriting existing archive) ; all the rest are files that'll get archived
+function tarchive () {
+    local files_to_archive=() comp='gz' password predetermined_name no_overwrite
     while [[ $# -gt 0 ]]; do
     	case "$1" in
     		'--comp')
@@ -1600,8 +1608,12 @@ function _tarchive () {
     local suffix="${encryption_suffix}.tar.${comp}"
 
     function _derive_archive_name () { [ -n "$predetermined_name" ] && echo "${predetermined_name}.tar.${comp}" || echo "${filename}${suffix}"; }
-    # arg 1 is opts (determines compression), arg 2 is archive-name
-    function _tar_cmd () { tar -C "$folderpath" "$1" "$2" "$filename"; }  # go over to folderpath and use file's name so that the entire path leading to it won't be included in the archive
+    # arg 1 is archive-name ; arg 2 is compression-type ()
+    function _tar_compress () {
+        output_file="${1:--}"  # set arg 1, or '-'
+        compression_arg="${2:-}"  # set whatever arg 2 is, or nothing.
+        tar -C "$folderpath" -cvf "$output_file" "$compression_arg" "$filename"  # go over to folderpath and use file's name. Prevents storing the archived file's entire dir-path
+    }  
     function _encrypt_symmetric () { openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$password" -out "$archive_name"; }
 
     local f
@@ -1612,36 +1624,37 @@ function _tarchive () {
 
         local folderpath="$(dirname "$full_path")"
         local filename="$(basename "$full_path")"
+        
+        # if archive already exists and we don't overwrite, save archive with timestamp (unless the name is predetermined)
         local archive_name=$(_derive_archive_name)
-
-        # if archive already exists and we don't overwrite, save archive with timestamp
         if [[ -f "$archive_name" && -n "$no_overwrite" ]]; then
             local timestamp="_$(date +%Y_%m_%d_T%H%M%S)"
             suffix="${timestamp}${suffix}"
             archive_name=$(_derive_archive_name)
         fi
 
+        becho -p "Archiving: $(wecho "$(du -sh $full_path)") into: $(wecho "$archive_name")"
         # write the file
         case "$comp" in
             'gz'|'bz2'|'xz')
-                declare -A tar_opts=( ['gz']='-cvzf' ['bz2']='-cvjf' ['xz']='-cvJf' )
-                if [ -n "$password" ]; then _tar_cmd "${tar_opts[$comp]}" '-' | _encrypt_symmetric ;  # w/ encryption
-                else _tar_cmd "${tar_opts[$comp]}" "$archive_name"; fi  # no encryption
+                declare -A tar_opts=( ['gz']='-z' ['bz2']='-j' ['xz']='-J' )
+                if [ -n "$password" ]; then _tar_compress '-' "${tar_opts[$comp]}" | _encrypt_symmetric ;  # w/ encryption
+                else _tar_compress "$archive_name" "${tar_opts[$comp]}"; fi  # no encryption
     		;;
             'lzo')
-                if [ -n "$password" ]; then _tar_cmd '-cvf' '-' | lzop -c | _encrypt_symmetric ;  # w/ encryption
-                else  _tar_cmd '-cvf' '-' | lzop > "$archive_name" ; fi  # no encryption
+                if [ -n "$password" ]; then _tar_compress | lzop -c | _encrypt_symmetric ;  # w/ encryption
+                else  _tar_compress | lzop > "$archive_name" ; fi  # no encryption
             ;;
             '7z')
                 local passwd_args
                 [ -n "$password" ] && passwd_args=("-p$password" '-mhe=on')  # args are nothing if there's no password (no encryption)
-                _tar_cmd '-cvf' '-' | 7z a -si ${passwd_args[@]} "-t7z" "$archive_name"  # TODO - find optimal settings (more memory, maybe larger dictionary)
+                _tar_compress | 7z a -si ${passwd_args[@]} "-t7z" "$archive_name"  # TODO - find optimal settings (more memory, maybe larger dictionary)
             ;;
             'zip')
                 # It's possible to use 7z to zip files, but some features ( like -si (stream-in) and -mhe=on ) aren't supported. So codewise it'd be unclean and won't save much
                 local tar_only_name=$(mktemp)
                 local passwd_args; [ -n "$password" ] && passwd_args=('--password' "$password")  # for interactive encryption: || passwd_args=('--encrypt')
-                _tar_cmd '-cvf' "$tar_only_name" | zip ${passwd_args[@]} "$archive_name" -@ && rm "$tar_only_name"
+                _tar_compress "$tar_only_name" | zip ${passwd_args[@]} "$archive_name" -@ && rm "$tar_only_name"
             ;;
             *)
                 errcho "I don't know how to compress using \"$comp\". So far only the following are supported: gz, bz2, xz, lzo, 7z, zip"
@@ -1652,11 +1665,91 @@ function _tarchive () {
 
 }
 
+# interactively (unless given args) extracts archive contents, with unencryption if necessary
+# optional for skipping interactivity: --file <chosen_file> ; -p/--password <password> (will be used if necessary)
+function untarchive () {
+    local chosen_file password
+
+    if [ $# -eq 1 ]; then chosen_file="$1";  # only 1 arg means it's the file
+    else 
+        while [[ $# -gt 0 ]]; do
+        	case "$1" in
+        		'--file')
+        			chosen_file="$2"
+        			shift 2
+        			continue
+        		;;
+        		'-p'|'--password')
+        			password="$2"
+        			shift 2
+        			continue
+        		;;
+        		*)
+                    errcho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+                    return 1
+        		;;
+        	esac
+        done
+    fi
+    
+    while [ ! -f "$chosen_file" ]; do
+        read -p "Which archive should be unpacked? " chosen_file
+        [ ! -f "$chosen_file" ] && errcho "No such file."
+    done
+
+    chosen_file=$(realpath "$chosen_file")  # using full path; it feels safer.
+
+    # check if there's enough room (on same disk) for another file with a similar size
+    local minimal_factor='1.3'  # we need "at least" this many times the archive's size (maybe even that's not enough)
+    local filesize="$(du -sh "$chosen_file" | cut -f1)"
+    local space_available="$(df -h "$chosen_file" --output=size | tail -n+2)"
+    local filesize_absolute=$(echo "$filesize" | numfmt --from=iec)
+    local space_available_absolute=$(echo "$space_available" | numfmt --from=iec)
+    becho -p "The extraction requires some buffer space. Compressed archive-file size: $(recho "$filesize"), file's disk remaining: $(recho "$space_available")"
+    (( $(echo "$filesize_absolute < $minimal_factor * $space_available_absolute" | bc -l) )) || { errcho "There's not enough space to attempt extracting \""$chosen_file"\". This is where I stop."; return 1; }
+
+    # could potentiall surpass max file-path, but it's too small a detail to care about
+    local output_folder="$(dirname "$chosen_file")/unpacked_$(date +%Y_%m_%d_T%H%M%S)" && mkdir "$output_folder"  # we'll put the output in a specified folder, it'll help track what's going on
+    function _tar_extract () { 
+        tar -C "$output_folder" -xvf "$chosen_file" "$@";
+    }
+
+    local file_type=$(file -b "$chosen_file")
+    if [[ "$file_type" =~ ^"openssl enc" || \
+        "$file_type" =~ ^"7-zip archive data" || \
+        "$file_type" =~ ^"Zip archive data" ]]; then  # encrypted or potentially-encrypted (format that have built-in encryption) file
+        unencrypt "$chosen_file" -p "$password" -o "$output_folder"
+        [ "$?" -ne 0 ] && { errcho "Unencryption/unpacking of file \"$chosen_file\" failed. Maybe you need a different password."; return 1; }
+    elif [[ "$file_type" =~ ^"gzip compressed data" ]]; then  # expecting: "gzip compressed data, from Unix, original size modulo 2^32 <number>"
+        _tar_extract -z
+    elif [[ "$file_type" =~ ^"lzop compressed data" ]]; then  # expecting: "lzop compressed data - version 1.040, LZO1X-1, os: Unix"
+        _tar_extract --lzop
+    elif [[ "$file_type" =~ ^"XZ compressed data" ]]; then  # expecting: "XZ compressed data, checksum CRC64"
+        _tar_extract -J
+    elif [[ "$file_type" =~ ^"bzip2 compressed data" ]]; then  # expecting: "bzip2 compressed data, block size = <number>"
+        _tar_extract -j
+    elif [[ "$file_type" =~ ^"POSIX tar archive (GNU)" ]]; then  # expecting: "POSIX tar archive (GNU)"
+        _tar_extract
+    else
+        recho "The file \"$chosen_file\" is not an archive, or at least not a type I recognize. I'm done."
+        return 0
+    fi
+
+    becho -p "Extracted to folder: \"$(wecho "$output_folder")\"."  
+
+    # recursively continue unpacking if there's only 1 more archive within
+    local extracted_files="$(find "$output_folder" -maxdepth 1 -type f)"
+    if [ $(echo "$extracted_files" | grep -v '^$' | wc -l) -eq 1 ]; then  # if there's exactly 1 file within, not counting empty lines in result
+        local one_file="${extracted_files[*]}"
+        becho -p "Only one file was extracted: \"$(gecho "$one_file")\"; checking if it can be unpacked further"
+        untarchive --file "$one_file" $([ -n "$password" ] && echo "-p $password" | xargs )
+    fi 
+}
 
 # unencrypts encryption via openssl symmetric key or by specific compression algorithm
-# -p/--password (optional(sort-of): specify password as arg instead of interactively) ; --only_print_output_file (optional: do nothing but print the directory that'll be written into)
+# -p/--password (optional(sort-of): specify password as arg instead of interactively) ; -o/--output <folder> (optional: extract to this folder) ; an additional arg anywhere is the file to work on
 function unencrypt () {
-    local file_to_decrypt password only_print_output_file
+    local file_to_decrypt password output_folder
     while [[ $# -gt 0 ]]; do
     	case "$1" in
     		'-p'|'--password')
@@ -1664,9 +1757,9 @@ function unencrypt () {
     			shift 2
     			continue
     		;;
-    		'--only_print_output_file')
-    			only_print_output_file='true'
-    			shift
+    		'-o'|'--output')
+    			output_folder="$2"
+    			shift 2
     			continue
     		;;
     		*)
@@ -1678,45 +1771,42 @@ function unencrypt () {
     done
 
     [ -f "$file_to_decrypt" ] || { errcho "you need to provide a valid file to unencrypt"; return 1; }
-    
-    # arg 1: extension to remove (optional)
-    function _get_encrypted_name () {
-        local file_mod_ext=${file_to_decrypt%$1}
-        realpath "$(dirname "$file_mod_ext")/decrypted_$(basename "$file_mod_ext")"
 
-        [ -n "$only_print_output_file" ] && return 0  # requested just a check, don't run further
-    }
-
-    # arg 1: compression found
-    function _expected_output_msg () { becho -p "Identified $1, attempting to unencrypt and save as $(gecho "$file_unencrypted_output") . $(buecho "Sort out the naming on your own")."; }
-
-    function _clear_optional_pass_if_no_password () { [ -z "$password" ] && unset optional_pass; }
-
+    local encryption_name
     local encryption_identified=$(file -b "$file_to_decrypt")
     if [[ "$encryption_identified" =~ ^"openssl enc" ]]; then  # expecting: "openssl enc'd data with salted password"
-        local file_unencrypted_output="$(_get_encrypted_name)"
-        local optional_pass=("-pass" "pass:$password") && _clear_optional_pass_if_no_password
-        _expected_output_msg 'OpenSSL'
-        becho "Decryption attempt assuming it's -aes-256-cbc -pbkdf2"
+        encryption_name='OpenSSL'
+        local optional_pass=("-pass" "pass:$password")  # might be used (or unset)
+    # expecting: "7-zip archive data, version 0.4" OR expecting: "Zip archive data, at least v1.0 to extract, compression method=store"
+    elif [[ "$encryption_identified" =~ ^"7-zip archive data" || "$encryption_identified" =~ ^"Zip archive data" ]]; then  # 7z can handle zip too, it's better than using 'uzip' command
+        if [[ "$encryption_identified" =~ ^"7-zip archive data" ]]; then local ext='7z'; else local ext='zip'; fi
+        encryption_name='zip-based'
+        local optional_pass=( "-p$password")  # might be used (or unset)
+    else
+        errcho "Couldn't identify which encryption was used: \"$encryption_identified\""
+        return 1
+    fi
 
+
+    local remove_ext=$([ -n "$ext" ] && echo ".$ext" )  # make sure we don't try to remove a dot in case ext is empty
+    local file_mod_ext=${file_to_decrypt%$remove_ext}
+    local folder_of_extraction=$([ -n "$output_folder" ] && realpath "$output_folder" || echo $(dirname "$file_mod_ext") )
+    local file_unencrypted_output="$( realpath "$folder_of_extraction/decrypted_$(basename "$file_mod_ext")" )"
+
+    becho -p "Identified $encryption_name encryption, attempting to unencrypt and save as $(gecho "$file_unencrypted_output") . $(buecho "Sort out the naming on your own")."  # let user know what's going on
+    [ -z "$password" ] && unset optional_pass;  # password wasn't provided, so this won't be used; we'll prompt the user.
+
+    if [ "$encryption_name" = 'OpenSSL' ]; then
+        becho "Decryption attempt assuming it's -aes-256-cbc -pbkdf2"
         openssl enc -d -aes-256-cbc -pbkdf2 ${optional_pass[@]} -in "$file_to_decrypt" -out "$file_unencrypted_output"
         if [ "$?" -ne 0 ]; then
             becho "Seems like it failed. Trying again differently, with a deprecated encryption method (no \"-pbkdf2\")"
             openssl enc -d -aes-256-cbc $optional_pass -in "$file_to_decrypt" -out "$file_unencrypted_output"
         fi
-    # expecting: "7-zip archive data, version 0.4" OR expecting: "Zip archive data, at least v1.0 to extract, compression method=store"
-    elif [[ "$encryption_identified" =~ ^"7-zip archive data" || "$encryption_identified" =~ ^"Zip archive data" ]]; then  # 7z can handle zip too, it's better than using 'uzip' command
-        # local ext="${file_to_decrypt##*.}"  # keep string after last '.' - not used because we don't want to deal with possible empty string. And it's better for verbosity towards user
-        if [[ "$encryption_identified" =~ ^"7-zip archive data" ]]; then local ext='7z'; else local ext='zip'; fi
-
-        local file_unencrypted_output="$(_get_encrypted_name ".$ext")"
-        local optional_pass=( "-p$password") && _clear_optional_pass_if_no_password
-        _expected_output_msg "$ext"
-
-        [ -z "${optional_pass[@]}" ] && echo "Type in password:"  # if no password was provided, the user needs to provide it. The prompt won't appear since we're streaming output to
-        7z x "${optional_pass[@]}" -aoa -t$ext "$file_to_decrypt" -so > "$file_unencrypted_output"
+    elif [ "$encryption_name" = 'zip-based' ]; then
+        7z x ${optional_pass[@]} -aoa -t$ext "$file_to_decrypt" $(dirname "$file_unencrypted_output" )
     else
-        errcho "Couldn't identify which encryption was used: \"$encryption_identified\""
+        errcho "I'm not sure what encryption format I identified... sorry."
         return 1
     fi
 }
@@ -1726,119 +1816,50 @@ function benchmark_archiving () {
     [ -e "$1" ] || { errcho "you didn't specify anything to archive; quitting"; return 1; }
 
     local archive_me_full_path="$(realpath "$1")"  # get full path
+    local targer_tar="$(dirname "$archive_me_full_path")/benchmark_$(date +%Y_%m_%d_T%H%M%S)/$(basename "$archive_me_full_path").tar"
+    local target_folder="$(realpath "$(dirname "$targer_tar")")"
+    mkdir "$target_folder"  # make sure that the folder exists
 
     local password="kldsjfbn1ilugdfblgibfdusaVCsdvsderghtnr"
 
     # algorithms with tar-archiving flags
     local algorithms=( 'gz' 'bz2' 'xz' 'lzo' '7z' 'zip' )
 
-    declare -A archive_times compression_ratios decrypt_times
-    local deletion_cmd=('rm' '-rf') algo
+    declare -A archive_times compression_ratios unarchive_times
+    local algo
     for algo in ${algorithms[@]}; do
-        local output_encrypted_archive_path="${archive_me_full_path}_encrypted_benchmark.tar.$algo"
+        local output_encrypted_archive_path="$targer_tar.$algo"
 
+        wecho "===========================================================ARCHIVING-COMPRESSING ($algo)==========================================================="
         # archive time
         local start_time=$(date +%s.%3N)  # only keep 3 digits out of nanoseconds
-        _tarchive "$archive_me_full_path" --comp "$algo" -p "$password" --archive_name "$output_encrypted_archive_path"
+        tarchive "$archive_me_full_path" --comp "$algo" -p "$password" --archive_name "$output_encrypted_archive_path"
         archive_times["$algo"]=$(echo "$(date +%s.%3N) - $start_time" | bc)
         
         # file size
         compression_ratios["$algo"]=$(echo "scale=3; $(du -sb $archive_me_full_path | cut -f1) / $(stat -c %s $output_encrypted_archive_path)" | bc)  # calculate sizes ratio, with 3 trailing digits
         
+        wecho "===========================================================DECRYPTING-UNARCHIVING ($algo)==========================================================="
         # decrypt time
-        output_archive_path="$(unencrypt "$output_encrypted_archive_path" -p "$password" '--only_print_output_file')"  # get the unarchived file's name (and do nothing more)
         local start_time=$(date +%s.%3N)
-        unencrypt "$output_encrypted_archive_path" -p "$password"
-        decrypt_times["$algo"]=$(echo "$(date +%s.%3N) - $start_time" | bc)
-
-        # if filename still ends with algo, it's not extracted, just decrypted
-
-        # cleanup (left up to the user)
-        deletion_cmd+=("$output_archive_path") 
-        deletion_cmd+=("$output_encrypted_archive_path")
+        untarchive --file "$output_encrypted_archive_path" -p "$password"
+        unarchive_times["$algo"]=$(echo "$(date +%s.%3N) - $start_time" | bc)
+        
+        wecho "============================================================FINISHED BENCHMARKING: $algo============================================================"
     done
 
+    becho "Here are the results, remember that some algorithms' default encryption isn't good; relying on them for their speed is like relying on walking for fuel efficiency"
     for algo in ${algorithms[@]}; do
-        becho "Here are the results, remember that some algorithms' default encryption isn't good; relying on them for their speed is like relying on walking for fuel efficiency"
-        becho -p "archiving with $(gecho "$algo") took: $(gecho "${archive_times[$algo]} s") , decryption took: $(gecho "${decrypt_times[$algo]} s") , compressed at ratio: $(gecho "x${compression_ratios[$algo]}")"
+        becho -p "archiving with $(gecho "$algo") took: $(gecho "${archive_times[$algo]} s") , unarchiving took: $(gecho "${unarchive_times[$algo]} s") , compressed at ratio: $(gecho "x${compression_ratios[$algo]}")"
     done
 
+    local deletion_cmd=('rm' '-rf' "$target_folder") 
     becho "We're done. I left the files for your review. You can remove them with this command:"
-    printf '%s\n' "${deletion_cmd[@]}" | color_word 'benchmark'
+    echo "${deletion_cmd[@]}" | color_word 'benchmark'
     if _prompt_yn "$(becho "would you like me to run it now for you?")"; then "${deletion_cmd[@]}"; fi
 
 }
 
-
-# # archive files into current dir as .tar.<compression>
-# # --comp (compression used, default is gzip) ; -p/--password <pass> (optional: encrypt with symmetric key) ; all the rest are file-names to archive individually
-# function archive_tar_compressed () {
-
-# }
-
-# TODO - add a print that tells you how large the thing you're copying, so the user can go back and estimate how far the compression went
-# TODO - add function "archive_dir_contents_tar7z", which would create an archive for each folder, one by one, and then archive all the files together. Or maybe just add an arg for this function here
-# Archive files into .tar.7z format. You can specify any file / file-path, the archive would still be saved to current working directory.
-# -o/--overwrite (optional: replace old 7z archive instead of adding another one) ; -p/--password <pass> (optional: encrypt with password) ; all the rest are file-names
-function archive_tar7z () {
-    # anything unspecified as option/flag is file to archive
-    local filenames=() overwrite password
-    while [[ $# -gt 0 ]]; do
-    	case "$1" in
-    		'-o'|'--overwrite')
-    			overwrite='true'
-    			shift
-    			continue
-    		;;
-    		'-p'|'--password')
-    			password="$2"
-    			shift 2
-    			continue
-            ;;
-    		*)
-                filenames+=("$1")
-                shift
-    		;;
-    	esac
-    done
-
-    [ -n "$filenames" ] || { errcho "You need to specify files (or folders) to archive" ; return 1; }
-
-    # note: don't try running multiple in async; tar and 7z already run multi-threaded
-    local f
-    for f in "${filenames[@]}"; do
-        # archive without including whole directory leading to the file
-        local full_path="$(realpath "$f")"  # get full path
-        local folderpath="$(dirname "$full_path")"
-        local filename="$(basename "$full_path")"
-        local archive_name="${filename}.tar.7z"
-
-        # determine if the archiving will be done with encryption (password-protected)
-        local optional_encryption
-        if [ -n "$password" ]; then  # entering an empty string as password doesn't (and shouldn't) count as password
-            becho "writing $archive_name with password encryption"
-            optional_encryption="-p$password"
-            archive_name=$(echo "$archive_name" | sed 's/.tar.7z$/_encrypted.tar.7z/')  # add "_encrypted" to file suffix name. You can't mix encrypted and unencrypted in the same archive, so they shouldn't be named the same way
-        fi
-
-        # if similarly-named archive exists (involves overwrite-flag)
-        if [ -f "$archive_name" ]; then
-            local already_exists_msg=$(recho "archive \"$archive_name\" already exists")
-            if [ -n "$overwrite" ]; then 
-                echo "$already_exists_msg. Removing it."
-                rm "$archive_name"
-            else
-                echo "$already_exists_msg. Creating archive with current date."
-                archive_name=$(echo "$archive_name" | sed "s/.tar.7z$/_$(date +%Y-%m-%d).tar.7z/")  # add "_<today>" to file suffix name to avoid mixing with old archive
-                [ -f "$archive_name" ] && rm "$archive_name" && recho "deleted an existing archive with the same name-date"  # if even the dated archive exists, delete it
-            fi
-
-        fi
-        
-        tar -C "$folderpath" -cvzf - "$filename" | 7za a -si "$archive_name" "$optional_encryption"
-    done
-    
-}
 
 # run file that binds mountdirs to folders
 # to delete the dirs added to root, 'sudo umount' them first (to solve the "resource busy" problem)
@@ -2211,6 +2232,8 @@ function becho () { _colored_echo "<=bold=><=blue=>" "$@" ; }
 function cecho () { _colored_echo "<=bold=><=cyan=>" "$@" ; }
 # echo in yellow
 function yecho () { _colored_echo "<=bold=><=yellow=>" "$@" ; }
+# echo in white, bold
+function wecho () { _colored_echo "<=bold=><=grey=>" "$@" ; }
 
 
 # underlined echo
@@ -2223,6 +2246,8 @@ function guecho () { gecho "<=uline=>" "$@" ; }
 function buecho () { becho "<=uline=>" "$@" ; }
 # underlined echo in yellow
 function yuecho () { yecho "<=uline=>" "$@" ; }
+# underlined echo in white
+function wuecho () { wecho "<=uline=>" "$@" ; }
 
 
 # echo into error output
