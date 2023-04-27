@@ -1566,6 +1566,8 @@ function revoke_exe_mod () {
     done <<< "$files"
 }
 
+# TODO - archive multiple (support archiving multiple files at once, and a whole folder's contents indivisually)
+
 # archive files into current dir as .tar.<compression>
 # --comp <compression_format> (optional, default is gz) ; -p/--password <password> (if not provided, there's no encryption) ; --archive_name <name> (optional forced output, no need for .tar.<comp>) ; --no_overwrite (add alongside instead of overwriting existing archive) ; all the rest are files that'll get archived
 function tarchive () {
@@ -1804,7 +1806,8 @@ function unencrypt () {
             openssl enc -d -aes-256-cbc $optional_pass -in "$file_to_decrypt" -out "$file_unencrypted_output"
         fi
     elif [ "$encryption_name" = 'zip-based' ]; then
-        7z x ${optional_pass[@]} -aoa -t$ext "$file_to_decrypt" $(dirname "$file_unencrypted_output" )
+        # e drops everything within the dir, while x does it within a folder named after the archive (which is better, to retain data; what came from where).
+        7z x ${optional_pass[@]} -aoa -t$ext "$file_to_decrypt" -o$(dirname "$file_unencrypted_output" )
     else
         errcho "I'm not sure what encryption format I identified... sorry."
         return 1
