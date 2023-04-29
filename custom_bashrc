@@ -204,9 +204,6 @@ alias sysinfo_full='inxi -FxxzJy90'
 # Get metadata of a specified audio/video/image file
 alias media_metadata='ffprobe -v error -show_entries stream=width,height,r_frame_rate,nb_frames,codec_name,channels,bit_rate,duration -show_entries format=filename,size -hide_banner -pretty -print_format json'
 
-# open window at current terminal directory
-alias gui='xdg-open "$(pwd)"'
-
 
 # Network management
 # ==================
@@ -237,6 +234,8 @@ alias what_commands='remindme'
 alias i_forgor='remindme'
 # Synonymous to "find_proc". psg is short for "ps grep"
 alias psg='find_proc'
+# Synonymous to "kill_interactively". Easy to associate with kill, and doesn't share the same leading chars
+alias murder='kill_interactively'
 # used to allow running this function on aliases
 alias _vars_added_by='_vars_added_by '
 # Synonymous to "unencrypt". Both words make enough sense to include
@@ -1152,9 +1151,21 @@ function remove_systemd_service () {
 
 # kill processes by substring, with a confirmation prompt that specifies what's being killed
 function kill_interactively () {
-    # TODO - add display of top-cpu processes to kill - "you didn't specify what to kill, here are the top-10 CPU intensive processes, if you want to kill any of them, input a number or their name"
+    if [ $# -eq 0 ]; then 
+        local num_of_processes=12
+        local query_num=$((num_of_processes+1))
+        local display_by=('cpu' 'mem')
 
-    [ $# -ge 1 ] || { errcho "You need to provide a substring to find (and later kill) processes with." ; return ; }
+        recho "You didn't specify what to kill. You might want to consider any of the following;"
+        wecho 'tip/reminder: run `pstree -p <pid>` to investigate tree of a problematic process)'
+        local d
+        for d in ${display_by[@]}; do
+            becho "Top $num_of_processes processes by $d:"
+            ps -eo pid,ppid,user,start_time,%cpu,%mem,cmd "--sort=-%$d" | head -n $query_num
+        done 
+        return 0
+    fi
+    #  || { errcho "You need to provide a substring to find (and later kill) processes with." ; return ; }
     
     local pids=$(pgrep -i "$1")  # get all PIDs
     [ -z "$pids" ] && becho "no processes found" && return 0;
@@ -1163,7 +1174,7 @@ function kill_interactively () {
     local proc_info=$(ps -p "$pids_commas" -o pid,ppid,user,%cpu,%mem,stat,start,time,cmd --sort=-%cpu)
 
     local prompt="$(echo "$proc_info" ; becho -p "The listed processes $(recho will be killed). Are you sure?")"
-    if _prompt_yn "$prompt"; then _sudo_if_necessary kill ${pids_spaces} ; else echo "Quitting." && return ; fi
+    if _prompt_yn "$prompt"; then _sudo_if_necessary kill ${pids_spaces} ; else echo "Quitting." && return ; fi  # refular kill, not -9 (forced immediate)
 
     _wait_n_seconds 2
 
@@ -1396,6 +1407,13 @@ function prepare_ntfs_for_writable_mount () {
 # Filesystem
 # ==========
 
+# open window at specified or current directory
+# arg 1: dir to open a window at (optional)
+function gui () {
+    local open_at=${1:-"$(pwd)"}
+    xdg-open "$open_at"
+}
+
 # TODO - if you ever find out how to put this in a table without messing up filenames with spaces, fix this 
 # Custom ls, like "ll". Add -S to sort by (non-recursive) size
 function lll () {
@@ -1606,17 +1624,13 @@ function tarchive () {
     [ -n "$comp" ] || { errcho "You need to specify compression algorithm" ; return 1; }
 
     [[ "$predetermined_name" == *.tar.$comp ]] && predetermined_name="${predetermined_name%.tar.$comp}"  # get rid of the suffix if it was provided anyway
-    local encryption_suffix="$( [ -n "$password" ] && echo "_encrypted" || echo '' )"
-    local suffix="${encryption_suffix}.tar.${comp}"
 
-    function _derive_archive_name () { [ -n "$predetermined_name" ] && echo "${predetermined_name}.tar.${comp}" || echo "${filename}${suffix}"; }
     # arg 1 is archive-name ; arg 2 is compression-type ()
     function _tar_compress () {
         output_file="${1:--}"  # set arg 1, or '-'
         compression_arg="${2:-}"  # set whatever arg 2 is, or nothing.
         tar -C "$folderpath" -cvf "$output_file" "$compression_arg" "$filename"  # go over to folderpath and use file's name. Prevents storing the archived file's entire dir-path
     }  
-    function _encrypt_symmetric () { openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$password" -out "$archive_name"; }
 
     local f
     for f in "${files_to_archive[@]}"; do
@@ -1625,14 +1639,12 @@ function tarchive () {
         [ -e "$full_path" ] || { errcho "There's no \"$f\" (full: \"$full_path\") in filesystem. Skipping it." ; return 1; }
 
         local folderpath="$(dirname "$full_path")"
-        local filename="$(basename "$full_path")"
+        local filename="${predetermined_name:-"$(basename "$full_path")"}"
         
         # if archive already exists and we don't overwrite, save archive with timestamp (unless the name is predetermined)
-        local archive_name=$(_derive_archive_name)
-        if [[ -f "$archive_name" && -n "$no_overwrite" ]]; then
-            local timestamp="_$(date +%Y_%m_%d_T%H%M%S)"
-            suffix="${timestamp}${suffix}"
-            archive_name=$(_derive_archive_name)
+        local archive_name="$(_add_str_before_filetype "$filename.tar.$comp" "$([ -n "$password" ] && echo "_encrypted" || echo '')")"
+        if [[ -f "$archive_name" && -n "$no_overwrite" && -z "$predetermined_name" ]]; then
+            archive_name="$(_add_str_before_filetype "$archive_name" "_$(date +%Y_%m_%d_T%H%M%S)")"
         fi
 
         becho -p "Archiving: $(wecho "$(du -sh $full_path)") into: $(wecho "$archive_name")"
@@ -1640,11 +1652,11 @@ function tarchive () {
         case "$comp" in
             'gz'|'bz2'|'xz')
                 declare -A tar_opts=( ['gz']='-z' ['bz2']='-j' ['xz']='-J' )
-                if [ -n "$password" ]; then _tar_compress '-' "${tar_opts[$comp]}" | _encrypt_symmetric ;  # w/ encryption
+                if [ -n "$password" ]; then _tar_compress '-' "${tar_opts[$comp]}" | encrypt -p "$password" -o "$archive_name"  ;  # w/ encryption
                 else _tar_compress "$archive_name" "${tar_opts[$comp]}"; fi  # no encryption
     		;;
             'lzo')
-                if [ -n "$password" ]; then _tar_compress | lzop -c | _encrypt_symmetric ;  # w/ encryption
+                if [ -n "$password" ]; then _tar_compress | lzop -c | encrypt -p "$password" -o "$archive_name" ;  # w/ encryption
                 else  _tar_compress | lzop > "$archive_name" ; fi  # no encryption
             ;;
             '7z')
@@ -1748,6 +1760,41 @@ function untarchive () {
     fi 
 }
 
+# encrypt a file, symmetrically (same password for encryption/decryption)
+# -p/--password <password>  (specify symmetric password) ; --o/-output <filename> (optional; default is <filename>_encrypted.<whatever>) ; any other arg can be the file-to-encrypt (can also pipe it in instead)
+function encrypt () {
+    local file_to_encrypt password output_file
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+    		'-p'|'--password')
+    			password="$2"
+    			shift 2
+    			continue
+    		;;
+    		'-o'|'--output')
+    			output_file="$2"
+    			shift 2
+    			continue
+    		;;
+    		*)
+                file_to_encrypt="$1"
+                shift
+                continue
+    		;;
+    	esac
+    done
+    
+    [ -z "$password" ] && { errcho "You need to specify password for encryption"; return 1; }
+
+    if [ -z "$file_to_encrypt" ]; then  # try to get data from pipe (/dev/stdin) if not given as arg
+        [ -z "$output_file" ] && { errcho "You need to specify output file when encrypting piped data!"; return 1; }
+        openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$password" -out "$output_file"  # should take the data from pipe on its own
+    else
+        [ -z "$output_file" ] && output_file="$(_add_str_before_filetype "$file_to_encrypt" "_encrypted")"  # if not provided, default output to this
+        openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$password" -in "$file_to_encrypt" -out "$output_file"
+    fi
+}
+
 # unencrypts encryption via openssl symmetric key or by specific compression algorithm
 # -p/--password (optional(sort-of): specify password as arg instead of interactively) ; -o/--output <folder> (optional: extract to this folder) ; an additional arg anywhere is the file to work on
 function unencrypt () {
@@ -1814,7 +1861,9 @@ function unencrypt () {
     fi
 }
 
+# TODO - collect error messages into an output file
 # archive a specified file/folder with various compressions
+# arg 1: file/folder to test with ; arg 2: --no-enc (optional)
 function benchmark_archiving () {
     [ -e "$1" ] || { errcho "you didn't specify anything to archive; quitting"; return 1; }
 
@@ -1824,6 +1873,7 @@ function benchmark_archiving () {
     mkdir "$target_folder"  # make sure that the folder exists
 
     local password="kldsjfbn1ilugdfblgibfdusaVCsdvsderghtnr"
+    [[ $* == *--no-enc* ]] || local password_opts=("-p" "$password")  # password input exists if not told to skip
 
     # algorithms with tar-archiving flags
     local algorithms=( 'gz' 'bz2' 'xz' 'lzo' '7z' 'zip' )
@@ -1836,16 +1886,16 @@ function benchmark_archiving () {
         wecho "===========================================================ARCHIVING-COMPRESSING ($algo)==========================================================="
         # archive time
         local start_time=$(date +%s.%3N)  # only keep 3 digits out of nanoseconds
-        tarchive "$archive_me_full_path" --comp "$algo" -p "$password" --archive_name "$output_encrypted_archive_path"
+        tarchive "$archive_me_full_path" --comp "$algo" ${password_opts[@]} --archive_name "$output_encrypted_archive_path"
         archive_times["$algo"]=$(echo "$(date +%s.%3N) - $start_time" | bc)
         
         # file size
-        compression_ratios["$algo"]=$(echo "scale=3; $(du -sb $archive_me_full_path | cut -f1) / $(stat -c %s $output_encrypted_archive_path)" | bc)  # calculate sizes ratio, with 3 trailing digits
+        compression_ratios["$algo"]=$(echo "scale=3; $(du -sb "$archive_me_full_path" | cut -f1) / $(stat -c %s "$output_encrypted_archive_path")" | bc)  # calculate sizes ratio, with 3 trailing digits
         
         wecho "===========================================================DECRYPTING-UNARCHIVING ($algo)==========================================================="
         # decrypt time
         local start_time=$(date +%s.%3N)
-        untarchive --file "$output_encrypted_archive_path" -p "$password"
+        untarchive --file "$output_encrypted_archive_path" ${password_opts[@]}
         unarchive_times["$algo"]=$(echo "$(date +%s.%3N) - $start_time" | bc)
         
         wecho "============================================================FINISHED BENCHMARKING: $algo============================================================"
@@ -1972,7 +2022,7 @@ function _shortaccess_folder () {
 
 # arg 1: media_file
 function media_remove_audio () {
-    local output="${1%.*}_noaudio.${1##*.}"  # add "_noaudio" before the file's .<format>
+    local output="$(_add_str_before_filetype "$1" '_noaudio')"  # add "_noaudio" before the file's .<format>
     ffmpeg -i "$1" -c copy -an "$output"
 }
 
@@ -2001,7 +2051,7 @@ function media_merge_audio_video () {
     [ -z "$video_file" ] && errcho "no video file specified" && return 1
     [ -z "$audio_file" ] && errcho "no audio file specified" && return 1
 
-    local output="${video_file%.*}_replaced_audio.${video_file##*.}"  # add "_replaced_audio" before the video file's .<format>
+    local output="$(_add_str_before_filetype "$video_file" '_replaced_audio')"  # add "_replaced_audio" before the video file's .<format>
 
     ffmpeg -i "$video_file" -i "$audio_file" -c:v copy -c:a libvorbis "$output"
 }
@@ -2155,6 +2205,17 @@ function _pad_end_w_spaces () {
     text="$1"  # assume that text is provided as an argument
     if [ -z "$text" ] && ! [ -t 0 ]; then text=$(cat); fi  # if no arg given and there's a stream from a pipe, get the stream contents as text
     awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "$text"
+}
+
+# adds string before first dot, or just before first dot
+# arg 1: filename , arg 2: string to add
+function _add_str_before_filetype () {
+    # though it might not seem like it, none of the following commands necessarily require an existing file to run; you can use this command to determine future filenames 
+    local directory="$(dirname "$1")"
+    [[ "$directory" == */ ]] || directory="$directory/"  # only add '/' if the dir doesn't end with it already (and it would if the dir is just '/', it's a legitimate folder)
+    local filename="$(basename "$1")"
+    local inserted_str="$2"
+    echo "${directory}${filename%%.*}$inserted_str$([[ "$filename" == *.* ]] && echo ".${filename#*.}")"
 }
 
 # pastes text blocks (given as args) side by side
