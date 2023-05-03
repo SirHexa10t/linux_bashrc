@@ -17,6 +17,8 @@
 
 # TODO - use pipe files (RAM-residing files created through: mkfifo)
 
+# TODO - download function; provide link (youtube/twitter/reddit...) and it'll download stuff.
+
 
 #---------------------------------------------------------------------------------------------
 #----CUSTOM-----------------------------------------------------------------------------------
@@ -78,7 +80,7 @@ export HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the tim
 
 
 # Constants for VM functions
-QEMU_VOLUME_UUID='A80899A4089971D4'  # the drive that contains VMs' disk data; must be mounted when running a VM
+QEMU_PARTITION_UUID='A80899A4089971D4'  # the drive that contains VMs' disk data; must be mounted when running a VM
 LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"  # run VM in a window
 
 
@@ -201,6 +203,16 @@ alias sysinfo_full='inxi -FxxzJy90'
 # File/filesystem management
 # ==========================
 
+# get a list of all devices
+alias list_devnames='lsblk -no PATH'
+
+# get a list of all block devices excluding partitions
+alias list_drivenames='lsblk --nodeps -no PATH'
+
+
+# File/filesystem management
+# ==========================
+
 # Get metadata of a specified audio/video/image file
 alias media_metadata='ffprobe -v error -show_entries stream=width,height,r_frame_rate,nb_frames,codec_name,channels,bit_rate,duration -show_entries format=filename,size -hide_banner -pretty -print_format json'
 
@@ -238,6 +250,8 @@ alias psg='find_proc'
 alias murder='kill_interactively'
 # used to allow running this function on aliases
 alias _vars_added_by='_vars_added_by '
+# Synonymous to "_dev_basic_info" with a common extra flag
+alias _dev_inline_info='_dev_basic_info -n'
 # Synonymous to "unencrypt". Both words make enough sense to include
 alias decrypt='unencrypt'
 # Synonymous to "tarchive". A more standard name; less verbose, hopefully won't clash with user's other aliases
@@ -394,7 +408,7 @@ alias howdoi_microsoft='commecho -l '\''
 
 # Snippets and tricks for Chromium-based browsers
 alias howdoi_chromium='commecho -l '\''
-* chrome://flags/#hardware-media-key-handling  # Advanced operation flags. Specifically media-key-handline - disable this to get rid of the banner that appears when you change volume
+* chrome://flags/#hardware-media-key-handling  # Advanced operation flags. Specifically media-key-handline - disable this to get rid of the banner that appears when you change audio-volume
 * document.getElementsByTagName("video")[0].playbackRate = 4  # change youtube playback speed (example here: x4)
 '\'
 
@@ -603,11 +617,26 @@ function date () {
 # Common basic functionalities
 # ============================
 
+# TODO - integrate this into some functions that check if an arg exists?
+# check if arg 1 (string) exactly matches any within the rest of the args (list)
+function is_str_in_list () {
+    local list="${@:2}" line
+    for line in $list; do [[ "$1" == "$line" ]] && return 0; done  # also separates by newlines even if the lines are part of the same string
+    return 1
+}
+
 # print maximum number among given args
 function max () {
     local max=$1 n
     for n in "$@"; do (( $(echo "$n > $max" | bc -l) )) && max=$n ; done
     echo $max
+}
+
+# print minimum number among given args
+function min () {
+    local min=$1 n
+    for n in "$@"; do (( $(echo "$n < $min" | bc -l) )) && min=$n ; done
+    echo $min
 }
 
 # debugger: prints vars that were added by following function call
@@ -1277,9 +1306,9 @@ function iommu_find () {
 # Disk/device handling
 # ====================
 
-# get comprehensive overview of devices/volumes
+# get comprehensive overview of devices
 function devs () {
-    # df results (mounted volumes)
+    # df results (mounted devices)
     local df_results=$(df -h -x tmpfs --output=source,fstype,itotal,ipcent,size,pcent,file,target)
     local df_title=$(echo "$df_results" | head -n1)
     local df_content=$(echo "$df_results" | tail -n+2 | sort -k1,1)
@@ -1287,7 +1316,7 @@ function devs () {
 
     # device names (used as identifiers)
     local df_devices=$(echo "$df_content" | awk 'NR>1 {print $1}')
-    local lsblk_devices=$(lsblk -o PATH --noheadings | sort)
+    local lsblk_devices=$(list_devnames | sort)
 
     # lsblk minus df results
     # ----------------------
@@ -1317,11 +1346,11 @@ function devs () {
     
     
     # print results
-    becho 'mounted volumes:'  # results from df with extra details on the same entries from lsblk
+    becho 'mounted devices:'  # results from df with extra details on the same entries from lsblk
     local i
     for i in "${df_and_lsblk[@]}"; do echo "$i" ; done
 
-    becho 'non-mounted volumes:'
+    becho 'non-mounted devices:'
     echo "$lsblk_unmounted"
 
     becho 'identifiers and metadata:'
@@ -1331,8 +1360,41 @@ function devs () {
 # TODO - unused, so remove?
 # get device name such as "/dev/sda2". You must provide one argument: the UUID of the device.
 function _get_dev_name_from_uuid () {
-    [ $# -ge 1 ] || { echo "You need to provide UUID as an argument" ; return 1; }
+    [ $# -ge 1 ] || { errcho "You need to provide UUID as an argument" ; return 1; }
     blkid | grep "UUID=\"$1\"" | awk -F: '{print $1}'
+}
+
+# checks if given arg is a block-device
+function _is_dev () {
+    if [[ "$1" = /* ]]; then is_str_in_list "$1" $(list_devnames);  # arg is devname (/dev/<something>)
+    else is_str_in_list "$1" $(lsblk -no UUID | grep -v ^$);  # arg is uuid
+    fi
+}
+
+# checks if given arg is a block-device but not a partition
+function _is_drive () {
+    if [[ "$1" = /* ]]; then is_str_in_list "$1" $(list_drivenames);  # arg is devname (/dev/<something>)
+    else is_str_in_list "$1" $(lsblk --nodeps -no UUID | grep -v ^$);  # arg is uuid
+    fi
+}
+
+# Get the basic info for device name
+# any arg: device name (like: /dev/<something>) ; -n/--noheadings (optional: no headers)
+function _dev_basic_info () {
+    local devname noheadings
+    while [[ $# -gt 0 ]]; do
+    	case "$1" in
+            '-n'|'--noheadings') noheadings='true' ; shift ; continue ;;
+            *)              devname="$1" ;      shift ; continue ;;
+        esac
+    done
+
+    [ -n "$devname" ] || { errcho "You need to provide dev name as an argument" ; return 1; }
+
+    local basic_cmd="lsblk -d $devname -o PATH,VENDOR,MODEL,SIZE,FSTYPE,LABEL,MOUNTPOINT,UUID"
+    if [ -n "$noheadings" ]; then $basic_cmd '--noheadings' | xargs ;
+    else $basic_cmd ;
+    fi
 }
 
 # Mounts, and handles mount-dir. Safe to run when unnecessary, it'll just throw an error.
@@ -1354,10 +1416,7 @@ function write_iso_to_usb () {
         read -p "Choose the USB device to write into by specifying PATH ('/dev/???') of the disk (not partition): " usb_dev_path  # Read the user's input
         # check that reply is not empty, and is in the list of found devices
         if [[ ! "$usb_dev_path" =~ ^[[:space:]]*$ ]] && lsblk -o PATH,TRAN | awk '$2=="usb" {print $1}' | grep -w -q "$usb_dev_path"; then  # match whole word (case sensitive), quietly
-            local brand=$(lsblk -d "$usb_dev_path" -o VENDOR,MODEL --noheadings | xargs)  # keep only vendor and model, no title, one space
-            local capacity=$(lsblk -d "$usb_dev_path" -o SIZE --noheadings)  # keep only size, no title
-            # another check with the user, because this is serious
-            _prompt_yn "Are you sure? This will $(recho PERMANENTLY DELETE) the contents of your \"$capacity $brand\" drive." && found='true'
+            _prompt_yn "Are you sure? This will $(recho PERMANENTLY DELETE) the contents of: $(yecho $(_dev_inline_info "$usb_dev_path"))" && found='true' || recho "then choose again (or sigterm this process)"
         else
             errcho "Invalid device: \"$usb_dev_path\""
         fi
@@ -1367,7 +1426,7 @@ function write_iso_to_usb () {
     local iso_file_path
     while [ ! -e "$iso_file_path" ]; do
         read -p "Provide your image file (typically *.iso): " iso_file_path  # Read the user's input
-        [ ! -e "$iso_file_path" ] && recho "invalid file: $iso_file_path"
+        [ ! -e "$iso_file_path" ] && errecho "invalid file: $iso_file_path"
     done
 
     _prompt_yn "Last time I'll ask. Write live media using \"$iso_file_path\" into drive \"$usb_dev_path\"?" || { recho "Aborting" ; return ; }
@@ -1375,12 +1434,51 @@ function write_iso_to_usb () {
     sudo dd bs=4M if="$iso_file_path" of="$usb_dev_path" status=progress oflag=sync
 }
 
-# Writes data to volume, to check its capacity. Careful: DESTRUCTIVE!!!
-function test_drive_volume () {
-    if [ -z "$1" ]; then echo "You didn't provide a drive-name (run lsblk if you're not sure. Should be like '/dev/sdg' ). Aborting." && return 1 ; fi
+# Writes data to a drive, to check its max storage-volume (capacity). Careful: DESTRUCTIVE!!!
+# --no_prompt (optional: skip confirmation promot)
+function test_drive_capacity () {
+    _is_drive "$1" || { errcho "arg isn't a disk$(_is_dev "$1" && echo ' (though it is a partition)'). Aborting."; return 1; }
     
-    if _prompt_yn "Your data on $1 is about to be destroyed. Are you sure?"; then echo "Running. Don't remove the device."; else echo "Aborting." && return 1 ; fi
+    # ask user if he's sure, but only if the no-prompt arg isn't present
+    is_str_in_list --no_prompt "$@" || if _prompt_yn "Your data on $1 is about to be destroyed. Are you sure?"; then echo "Running. Don't remove the device."; else echo "Aborting." && return 1 ; fi
     sudo f3probe --destructive --time-ops "$1"
+}
+
+# Writes data to volume, to check its read/write speeds.
+function test_drive_read_write () {
+    _is_drive "$1" || { errcho "arg isn't a disk$(_is_dev "$1" && echo ' (though it is a partition)'). Aborting."; return 1; }
+
+    local dev_mountpoint=$(lsblk -no MOUNTPOINT "$1" | grep -v ^$)
+    [ -n "$dev_mountpoint" ] || { errcho "Device \"$1\" isn't mounted; can't test read/write speeds on it."; return 1; }
+
+    local testfile="$dev_mountpoint/testfile_$(date +%Y_%m_%dT%H%M%S)"
+    # local remaining_space=$(df -h --output=avail "$1" | sed 1d)
+    # local testfile_size=$(min 10G "$remaining_space")
+    local testfile_size='1G'
+
+    becho "Writing $testfile_size into file: \"$testfile\""
+    dd if=/dev/urandom of="$testfile" bs="$testfile_size" count=1 oflag=direct
+
+    becho "Reading file: \"$testfile\""
+    dd if="$testfile" of=/dev/null bs="$testfile_size" count=1 iflag=direct
+
+    dagecho -p "Compare your results with the USB transfer speed specifications:
+    USB 1.0: $(yuecho '187 kB/s') , USB 1.1: $(yuecho '1.5 MB/s')
+    USB 2.0: $(yuecho '60 MB/s')
+    USB 3.0 (a.k.a USB 3.1 Gen 1): $(yuecho '625 MB/s') , USB 3.1 Gen 2: $(yuecho '1.25 GB/s') , USB 3.2 Gen 2 x 2: $(yuecho '2.5 GB/s') , 
+    USB 4: $(yuecho '5 GB/s') , USB 4 2.0: $(yuecho '15 GB/s')
+    "
+
+    becho "removing test-file"
+    sudo rm "$testfile"  # test-file is no longer needed
+}
+
+# test the volume and throughput of a storage device
+function benchmark_drive () {
+    _is_drive "$1" || { errcho "arg isn't a disk$(_is_dev "$1" && echo ' (though it is a partition)'). Aborting."; return 1; }
+
+    test_drive_capacity "$1" --no_prompt
+    test_drive_read_write "$1"
 }
 
 
@@ -1587,7 +1685,7 @@ function revoke_exe_mod () {
 # TODO - archive multiple (support archiving multiple files at once, and a whole folder's contents indivisually)
 
 # archive files into current dir as .tar.<compression>
-# --comp <compression_format> (optional, default is gz) ; -p/--password <password> (if not provided, there's no encryption) ; --archive_name <name> (optional forced output, no need for .tar.<comp>) ; --no_overwrite (add alongside instead of overwriting existing archive) ; all the rest are files that'll get archived
+# any unflagged args: files that'll get archived ; --comp <compression_format> (optional, default is gz) ; -p/--password <password> (if not provided, there's no encryption) ; --archive_name <name> (optional forced output, no need for .tar.<comp>) ; --no_overwrite (add alongside instead of overwriting existing archive)
 function tarchive () {
     local files_to_archive=() comp='gz' password predetermined_name no_overwrite
     while [[ $# -gt 0 ]]; do
@@ -1761,7 +1859,7 @@ function untarchive () {
 }
 
 # encrypt a file, symmetrically (same password for encryption/decryption)
-# -p/--password <password>  (specify symmetric password) ; --o/-output <filename> (optional; default is <filename>_encrypted.<whatever>) ; any other arg can be the file-to-encrypt (can also pipe it in instead)
+# any arg: file-to-encrypt (optional: can also be piped instead) ; -p/--password <password>  (specify symmetric password) ; --o/-output <filename> (optional; default is <filename>_encrypted.<whatever>)
 function encrypt () {
     local file_to_encrypt password output_file
     while [[ $# -gt 0 ]]; do
@@ -1796,7 +1894,7 @@ function encrypt () {
 }
 
 # unencrypts encryption via openssl symmetric key or by specific compression algorithm
-# -p/--password (optional(sort-of): specify password as arg instead of interactively) ; -o/--output <folder> (optional: extract to this folder) ; an additional arg anywhere is the file to work on
+# any arg: file-to-unencrypt ; -p/--password (optional(sort-of): specify password as arg instead of interactively) ; -o/--output <folder> (optional: extract to this folder)
 function unencrypt () {
     local file_to_decrypt password output_folder
     while [[ $# -gt 0 ]]; do
@@ -2161,8 +2259,10 @@ function launch_vm_w_lookingglass() {
         return
     fi
 
-    becho "Making sure os-virtual-drive file's volume is mounted"
-    mount_media_by_uuid "$QEMU_VOLUME_UUID"
+    if _is_dev "$QEMU_PARTITION_UUID" ; then  # if is a legitimate device, try mounting it
+        becho "Making sure os-virtual-drive file's volume is mounted"
+        mount_media_by_uuid "$QEMU_PARTITION_UUID"
+    fi
 
     becho "Creating looking-glass session file: $lg_file"
     sudo touch "$lg_file" && sudo chown $(whoami):kvm "$lg_file" && sudo chmod 660 "$lg_file"
@@ -2173,9 +2273,11 @@ function launch_vm_w_lookingglass() {
     if [ "$vm_state" == "running" ]; then
         gecho "$vm_name is already running."
     elif [ "$vm_state" == "shut off" ]; then
-        virsh start "$vm_name" && gecho "starting $vm_name"
+        virsh start "$vm_name" || return 1
+        gecho "starting $vm_name"
     elif [ "$vm_state" == "paused" ]; then
-        virsh resume "$vm_name" && gecho "resuming $vm_name"
+        virsh resume "$vm_name" || return 1
+        gecho "resuming $vm_name"
     else
         errcho "Can't handle VM state: $vm_state"
         if [ "$vm_state" == "blocked" ]; then errcho "the VM '$vm_name' is blocked on resource";
