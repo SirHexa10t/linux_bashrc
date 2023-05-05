@@ -5,7 +5,7 @@
 SCRIPTS_FOLDER='unlimited_script_works'  # name of the folder within this project. Change it if you want, just be aware this could break.
 SCRIPTS_PATH="$CUSTOM_BASHRC_FOLDER/$SCRIPTS_FOLDER"  # uses argument from custom_bashrc.
 
-CONFIRMATION_CMD='py__confirm_loaded'  # a call to a script added in just to confirm that the rest of the scripts are reached right 
+CONFIRMATION_CMD='_py_confirm_loaded'  # a call to a script added in just to confirm that the rest of the scripts are reached right 
 
 SCRIPTS_ALIASES_INITIAL=$(_alias_names)
 SCRIPTS_FUNCTIONS_INITIAL=$(_function_names)
@@ -23,7 +23,7 @@ function _reload_scriptfiles () {
         local function_name=${filename%.*}  # keep the file name but not the ending suffix
         local extension=${filename##*.}  # gets file-type or entire filename if there's no file-type
         [[ "$extension" == "$function_name" ]] && extension='generic'  # to avoid having functions for no-extention files named "fooname_fooname", we'll write "generic" as the file-type
-        local cmd_name="${extension}_${function_name}"
+        local cmd_name=$([[ "$function_name" = _* ]] && echo "_${extension}${function_name}" || echo "${extension}_${function_name}" )
         local script_file="${SCRIPTS_PATH}/${filename}"
         if [ -n "$declare_commands" ]; then
             local alias_content="${cmd_name}='${script_file}'"  &&  alias "$alias_content"  # Define through alias instead of function. Though it's less dynamic that way

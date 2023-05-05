@@ -71,6 +71,8 @@ GARBAGE_OUTPUTS="$(_filename_or_nothing "$UTILITY_FILES_FOLDER/outputs.txt")"  #
 SUBDIR_MOUNTS_FILE="$(_filename_or_nothing "$HOME/symlink_folder_mounts.sh")"  # if you have various media-drives and choose to have this file, insert mounting/symlinking instructions into it. Search the usage of this keyword to see how it's expected to work.
 CREDENTIALS_OPENAI=$(_file_content_or_nothing "$UTILITY_FILES_FOLDER/openai_api_key")  # API key for ChatGPT 3.5 (if file exists)
 
+CRYPTO_PROGRAMS_DIR="$CUSTOM_BASHRC_FOLDER/external_programs/crypto"  # your crypto miners dir, if you want to do mining
+
 
 # env variables that you're expected to customize
 CUSTOM_TMPDIR="$(_filename_or_nothing "/temp_cache")"
@@ -128,6 +130,17 @@ fi
 
 # aliases work as "command (re)placements", i.e. they'll replace words that are commands but not args
 # Be aware that including several commands in an alias won't allow you to run all of it under "sudo"
+
+
+## Custom files
+# =============
+
+if [ -n "$GARBAGE_OUTPUTS" ]; then
+    # tail (follow/real-time) the garbage-outputs file
+    alias garbage_tail='tail -f "$GARBAGE_OUTPUTS"'
+    # truncate/clear the garbage-outputs file
+    alias garbage_clear='truncate -s 0 "$GARBAGE_OUTPUTS"'
+fi
 
 
 ## Basic functionalitiy override !
@@ -200,7 +213,7 @@ alias sysinfo_short='echo "For simpler neat hardware specs, run \"neofetch\" or 
 alias sysinfo_full='inxi -FxxzJy90'
 
 
-# File/filesystem management
+# Disk/device management
 # ==========================
 
 # get a list of all devices
@@ -1463,10 +1476,10 @@ function test_drive_read_write () {
     dd if="$testfile" of=/dev/null bs="$testfile_size" count=1 iflag=direct
 
     dagecho -p "Compare your results with the USB transfer speed specifications:
-    USB 1.0: $(yuecho '187 kB/s') , USB 1.1: $(yuecho '1.5 MB/s')
-    USB 2.0: $(yuecho '60 MB/s')
-    USB 3.0 (a.k.a USB 3.1 Gen 1): $(yuecho '625 MB/s') , USB 3.1 Gen 2: $(yuecho '1.25 GB/s') , USB 3.2 Gen 2 x 2: $(yuecho '2.5 GB/s') , 
-    USB 4: $(yuecho '5 GB/s') , USB 4 2.0: $(yuecho '15 GB/s')
+    USB 1.0: $(yecho '187 kB/s') , USB 1.1: $(yecho '1.5 MB/s')
+    USB 2.0: $(yecho '60 MB/s')
+    USB 3.0 (a.k.a USB 3.1 Gen 1): $(yecho '625 MB/s') , USB 3.1 Gen 2: $(yecho '1.25 GB/s') , USB 3.2 Gen 2 x 2: $(yecho '2.5 GB/s') , 
+    USB 4: $(yecho '5 GB/s') , USB 4 2.0: $(yecho '15 GB/s')
     "
 
     becho "removing test-file"
@@ -2216,6 +2229,46 @@ function chatgpt_ask () {
 # Might need to convert the queried string (i.e. things like %20 instead of space) 
 
 
+# TODO - setup local GPT4-x-Alpaca ( https://huggingface.co/anon8231489123/gpt4-x-alpaca-13b-native-4bit-128g )
+# use the web-ui, it's the easiest https://github.com/oobabooga/text-generation-webui
+# reference: https://www.youtube.com/watch?v=nVC9D9fRyNU
+
+
+# Crypto
+# ======
+
+# function mine_monero () {
+#     local miner_proj="$CRYPTO_PROGRAMS_DIR/monero_miner"
+#     if [ ! -d "$miner_proj" ]; then
+#         if _prompt_yn "$(recho "Miner not found.") Would you like me to download it?"; then
+#             mkdir "$miner_proj"  # making sure
+#         else
+#             echo "TODO"
+#         fi 
+
+#         # https://xmrig.com/download
+#     fi
+
+#     # you need a recipient address - if you don't plan on doing mining as a donation, you'd need a wallet:
+#         # https://www.getmonero.org/downloads/#cli
+#         # or https://web.getmonero.org/downloads/#gui
+
+#     # pools: https://miningpoolstats.stream/monero
+#         # recommended: p2pool.io  (but it requires extra setup)
+#         # you can just pick nanopool.org / hashvault.pro / support.xmr.com
+#     # ports:
+#         # 3333 - low starting diff
+#         # 5555 - medium starting diff
+#         # 7777 - high starting diff
+#         # 9000 - SSL/TLS
+#         # 8080 / 80 / 443 - might help bypass firewall
+
+#     # donate-level / donate-over-proxy can be set to 0 instead of 1 (it's in percentages)
+
+
+# }
+
+
 # Virtual Machines
 # ================
 
@@ -2508,7 +2561,7 @@ function _colored_echo () {
 
     [ -n "$persist" ] && tag=$(_tag_persist "$tag")  # if requested to "upgrade" to persistant tag
 
-    [ -n "$only_tag" ] && echo "$tag" && return  # if requested to only return the tag
+    [ -n "$only_tag" ] && { echo "$tag" ; return ; }  # if requested to only return the tag
 
     local formatted=$( echo "$@" | while IFS= read -r line; do echo "${tag}${line}<=reset=>"; done )
     if [ -n "$no_drawing" ]; then
@@ -2571,89 +2624,18 @@ function commecho () {
     formatted=$(echo "$formatted" | sed "s/  #.*$/${sharp_comment_color}&/g")  # recolor after '  #'  (code-comments)
     formatted=$(echo "$formatted" | sed "s/^# /${sharp_documentation_color}&/g")  # recolor after '# '  (page's documentation)
     formatted=$(echo "$formatted" | sed "s/  :.*$/${colon_comment_color}&/g")  # recolor after '  :'  (item-comments)
-    formatted=$(echo "$formatted" | sed "s/[A-Z]\+![!]\+/${warning_color}&/g")  # recolor capitalized words with at least two '!' exclamation marks
+    formatted=$(echo "$formatted" | sed "s/[A-Z]\+![!]\+/${warning_color}&$reset/g")  # recolor capitalized words with at least two '!' exclamation marks
     _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
 }
 
-# recolors text by replacing color tags with their appropriate color-codes
-# arg 1: text
+
+# alias _draw_formatted='_py_draw_formatted' (recolors text by replacing color tags with their appropriate color-codes)
+# this function got too complicated to easily maintain and add features in bash
 function _draw_formatted () {
-    declare -A colors=(
-    # less standard colors
-    [<=orange=>]='\033[38;5;208m'
-    # colors
-    [<=black=>]='\033[30m' [<=red=>]='\033[31m' [<=green=>]='\033[32m' [<=yellow=>]='\033[33m' [<=blue=>]='\033[34m' [<=purple=>]='\033[35m' [<=cyan=>]='\033[36m' [<=grey=>]='\033[37m'
-    # bright colors (work like regulat when stylized bold)
-    [<=b_black=>]='\033[90m' [<=b_red=>]='\033[91m' [<=b_green=>]='\033[92m' [<=b_yellow=>]='\033[93m' [<=b_blue=>]='\033[94m' [<=b_purple=>]='\033[95m' [<=b_cyan=>]='\033[96m' [<=b_grey=>]='\033[97m'
-    # highlights / markers (can be switched with text color using 7m). If you want to "hide" text as a solid block of color run the same colors for both (i.e. \033[43m\033[33m)
-    [<=h_black=>]='\033[40m' [<=h_red=>]='\033[41m' [<=h_green=>]='\033[42m' [<=h_yellow=>]='\033[43m' [<=h_blue=>]='\033[44m' [<=h_purple=>]='\033[45m' [<=h_cyan=>]='\033[46m' [<=h_grey=>]='\033[47m'
-    # bright backgrounds (highlights)
-    [<=bh_black=>]='\033[100m' [<=bh_red=>]='\033[101m' [<=bh_green=>]='\033[102m' [<=bh_yellow=>]='\033[103m' [<=bh_blue=>]='\033[104m' [<=bh_purple=>]='\033[105m' [<=bh_cyan=>]='\033[106m' [<=bh_grey=>]='\033[107m'
-    # stylizing
-    [<=bold=>]='\033[1m' [<=dark=>]='\033[2m' [<=italic=>]='\033[3m' [<=uline=>]='\033[4m' [<=flicker=>]='\033[5m' [<=fast_flicker=>]='\033[6m' [<=switch_fg_bg=>]='\033[7m' [<=hidden=>]='\033[8m' [<=crossed=>]='\033[9m'
-    # reset
-    [<=bold_reset=>]='\033[22m' [<=italics_reset=>]='\033[23m' [<=reset=>]='\033[0m'
-    )
-
-    # basic preparations
-    local text_to_draw="$1"
-    local reset_key='<=reset=>'
-
-    # apply persistance by tags
-    # -------------------------
-    # persistence means that a specified color-tag needs to return by default (after other specified colors are reset) for the rest of the line
-    local persist_tag_open='<=persist'
-    local persist_tag_close='this=>'
-    # If there's use of persistence, handle it line-by-line. If not, skip it (save time)
-    [[ "$text_to_draw" =~ ($persist_tag_open)(.*)($persist_tag_close) ]] && text_to_draw=$(
-        local line
-        echo "$text_to_draw" | while IFS= read -r line; do  # read current text line by line (without losing the leading/trailing spaces)
-            if [[ "$line" =~ (.*)($persist_tag_open)(.*)($persist_tag_close)(.*) ]]; then  # each line can have up to 1 persisting color-tag
-                local part_to_leave_alone="${BASH_REMATCH[1]}"
-                local tag_to_persist="${BASH_REMATCH[3]}"  # get the tag that's necessary to persist
-                local part_to_modify="${BASH_REMATCH[5]}"
-                local modified="$part_to_modify"
-                modified="$(echo "$modified" | sed "s/$reset_key/${reset_key}${tag_to_persist}/g")"  # attach the persisting tag after each reset tag
-                modified="$(echo "$modified" | sed "s/\x1b\[0m/&$tag_to_persist/g")"  # attach the persisting tag after each previously-translated reset tag (escape)
-                echo "${part_to_leave_alone}${tag_to_persist}${modified}"  # we place back the cleaned tag and modified line, skipping the opening/closing tag, they're no longer needed.
-            else
-                echo "$line"
-            fi
-        done
-    )
-
-    # add resets
-    # ----------
-    local reset_value="${colors[$reset_key]}"
-    local reset_value_escaped=$(printf "%q" "$reset_value")  # for sed. It needs pre-reset string.
-    local regex_tag='<=[a-zA-Z_]+=>'
-    local regex_ws_tag='<=([0-9]+)WS=>'
-    text_to_draw="${text_to_draw//$reset_key/$reset_value}"  # replace reset on its own, because otherwise we'd replace it with 2 consecutive color resets later (still works, but isn't right)
-    text_to_draw=$(echo "$text_to_draw" | sed -r "/^($regex_tag)+/!s/($regex_tag)+/$reset_value_escaped&/g")  # put reset before each group of color tags, but not if they're at the start
-    text_to_draw=$(echo "$text_to_draw" | sed -r "s/($regex_ws_tag)/$reset_value_escaped\1/g")  # put reset before spaces-insert
-    text_to_draw=$(echo "$text_to_draw" | sed -r "/$reset_value_escaped$/!s/$/&$reset_value_escaped/g")  # add resets at the ends of lines, but only if they're missing
-    
-
-    # insert whitespaces
-    # ------------------
-    local repeated_char=' '
-    while [[ "$text_to_draw" =~ '<='([0-9]+)'WS=>' ]]; do  # while there's still a whitespace-tag
-        local num="${BASH_REMATCH[1]}"
-        local numtag="<=${num}WS=>"
-        local repeats=$(printf "%${num}s" | tr " " "$repeated_char")  # create a sequence of <num> spaces
-        text_to_draw="${text_to_draw//$numtag/$repeats}"
-    done
-
-    # swap-in all the colors (replace keys with values)
-    # -------------------------------------------------
-    local str
-    for str in "${!colors[@]}"; do
-        text_to_draw="${text_to_draw//$str/${colors[$str]}}"
-    done
-
-    echo -e "$text_to_draw"
-
+    echo -e "$(_py_draw_formatted "$@")"
+    # [ -n "$GARBAGE_OUTPUTS" ] && echo -e "$(_py_draw_formatted "$@")" | sed 's/\x1b/\\033/g' >> "$GARBAGE_OUTPUTS"  # debug (tail -f this file)
 }
+
 
 # the best function in this entire collection
 function draw_hentai () {
@@ -2696,7 +2678,7 @@ ${SPR[8]}$G⣠⠠⠴⠦$S⣻⣿⠌$SD⣴${SP[1]}⣐⣺⣿⠷${SPR[7]}$S⠛⠿⠟
 ${SPR[6]}$G⣀⡌⢦⡙$S⠰⠿⠟$SD⢁⢡$GD⣾$SD⠸⣿⠏${SPR[8]}$WS⢤⣶⣆$SD⠇⣼⠟⠁${SP[1]}$SD⢀⣀⣀⡤⠤⣤$WSD⣶⣶⠆${SP[2]}$HY⠸⠇
 ${SPR[5]}$G⣼⢻⡟⣪$S⡘⠿$SD⠉⣸$GD⡿⠘⠋${SPR[9]}$WS⡄⠦⠠⡀$WSD⠹⡄${SP[2]}⠴⣾⠿⠙⠉⠁${SP[1]}⢹⣿⡇
 ${SPR[3]}$G⣠⣰⣿⠄$SD⠘⣿⠍$GD⢰⢣⡿⠃${SPR[11]}$WS⢇⢠⢀$WSD${SP[2]}⠁⣄${SP[1]}⢀⣰⡀⢀⠤⡆⠠${SP[1]}⠃${SP[2]}⢀⣴⣶⣿⢿⣿⣿⣿⡶⠖⠒⠢
-$G⣀⣿⠟$GD⣴⣿⣿⣦⡣⠡${SP[1]}⠛${SPR[9]}$WS⣀⣠⣭⣭⣵⣮⡙⢾⣷⡆$WSD⠐⣿⣷⣾⣿⣿⣗⡤⡴⠐${SP[1]}⣠⣴⣿⣿⣿⣿⡿⠟⠋
+${SPR[1]}$G⣀⣿⠟$GD⣴⣿⣿⣦⡣⠡${SP[1]}⠛${SPR[9]}$WS⣀⣠⣭⣭⣵⣮⡙⢾⣷⡆$WSD⠐⣿⣷⣾⣿⣿⣗⡤⡴⠐${SP[1]}⣠⣴⣿⣿⣿⣿⡿⠟⠋
 $G⣼⡟$GD⣸⣿⣿⠋⠁${SPR[8]}$WS⣀⣬⣶⣾⣿⣿⣿⣿⣿⣿⣿⡿⡊⢋⣉⣬⣬$WSD⡰⣿⣿⡟⠋⢁⣠⣶⣿⣿⣿⣿⣿⣿⠫⠃${SPR[8]}$WSD⣀⣤⣾⣿
 ${SPR[2]}$GD⠈⠉${SPR[8]}$WS⢀⣴⢇⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⢠⣾⣿⣿⣿⣿⣿⣎$WSD⠻⣿⣿⣿⣿⣿⣿⣿⣿⡿⠿⠇${SPR[7]}$WSD⢀⣤⣾⣿⣿⣿⢿
 \x59\x4f\x55\x20\x57\x45\x52\x45\x20\x45\x58\x50\x45\x43\x54\x49\x4e\x47\x20\x4c\x45\x57\x44\x53\x2c\x20\x42\x55\x54\x20\x49\x54\x20\x57\x41\x53\x20\x4d\x45\x2c\x20\x44\x49\x4f\x21
