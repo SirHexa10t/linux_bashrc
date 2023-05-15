@@ -43,9 +43,9 @@ function _filename_or_nothing () { [ -e "$1" ] && echo "$1" || echo '' ; }
 # arg 1: potential filename
 function _file_content_or_nothing () { [ -f "$1" ] && cat "$1" || echo '' ; }
 
-# If symlink exists and its target is valid, print the target. Otherwise place an empty string.
+# If symlink exists and its target is valid, print symlink. Otherwise place an empty string.
 # arg 1: symlink file
-function _is_valid_symlink () { [[ -L "$1" && -e $(readlink -f "$1") ]]; return $?; }
+function _symlink_or_nothing () { [[ -L "$1" && -e $(readlink -f "$1") ]] && echo "$1" || echo '' ; }
 
 ## Session data
 #################################################################################
@@ -75,14 +75,13 @@ CRYPTO_PROGRAMS_DIR="$CUSTOM_BASHRC_FOLDER/external_programs/crypto"  # your cry
 
 
 # env variables that you're expected to customize
-CUSTOM_TMPDIR="$(_filename_or_nothing "/temp_cache")"
-_is_valid_symlink "$CUSTOM_TMPDIR" && export TMPDIR="$CUSTOM_TMPDIR"  # (possibly) redefines your temp-files directory (buffer for unarchiving, copying large files, etc.) instead of "/tmp"
+CUSTOM_TMPDIR="$(_symlink_or_nothing "/temp_cache")"
+export TMPDIR=${CUSTOM_TMPDIR:-"$TMPDIR"}
 
 export HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
-
 # Constants for VM functions
-QEMU_PARTITION_UUID='A80899A4089971D4'  # the drive that contains VMs' disk data; must be mounted when running a VM
+QEMU_PARTITION_UUID='A80899A4089971D4'  # the drive that contains VMs' disk data; must be mounted when running a VM  # TODO - place in a file, like a credential
 LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"  # run VM in a window
 
 
@@ -132,7 +131,7 @@ fi
 # Be aware that including several commands in an alias won't allow you to run all of it under "sudo"
 
 
-## Custom files
+# Custom files
 # =============
 
 if [ -n "$GARBAGE_OUTPUTS" ]; then
@@ -338,7 +337,7 @@ alias howdoi_bash_terminal='commecho -l '\''
 *   apt list --installed  # list installed packages
 *   dpkg -l  # show all installed packages in table format
 >> filesystem
-* ln -s <link_name> <target>  # define soft-link. There are 2 symlink types; soft (denoted with -s, which points to a file`s address) and hard (points directly to the data of a file. Editing the data in either "original" or hard-link is the same, and deleting either file alone wouldn`t delete the data since it`s still pointed to)
+* ln -s <existing_file_to_link> <link_name>  # define soft-link. There are 2 symlink types; soft (denoted with -s, which points to a file`s address) and hard (points directly to the data of a file. Editing the data in either "original" or hard-link is the same, and deleting either file alone wouldn`t delete the data since it`s still pointed to)
 +   soft links don`t really utilize permissions - they allow everything and rely on the target to determine access. chmodding a symlink would forward the modification to the target. 
 *   ln -sr scripts/*.js target/  # create soft-links for all .js files in "scripts/", in "target/" (target/[filename.js] -> scripts/[filename.js]) 
 * cd  # write no directory to return to home-dir. Equivalent to cd ~
@@ -355,7 +354,7 @@ alias howdoi_bash_terminal='commecho -l '\''
 *   "$@": all args in current scope as separate items ; "$*": all args in current scope concatenated into a unified string ; "$#": args count
 *   "$$": current PID
 *   "$?": the return code of last operation (can be used to check if it ran successfully)
-    "$(<cmd here>)": run commands within commands (can also be done like so: `<cmd here>`)
+*    "$(<cmd here>)": run commands within commands (can also be done like so: `<cmd here>`)
 * add "& disown" after a command to have it run in its own thread (thats the "&"), and "disown" it so that it wont be tied to current terminal-run process and thus stop when the terminal closes
 * Use "<" to redirect a file. Example; to use file-contents as input: "./my_script.sh < input.txt"
 * Use "<<" ("here-document") to specify on what word (alone, not as an internal part of line) to stop reading text.
@@ -534,6 +533,10 @@ tmux offers split-panes and sessions for terminals.
 # TODO - create functions that run these commands interactively (like listing, then letting the user pick a number, then go there...)
 
 # TODO - cargo (maven-like manager) cheatsheet. Reference: https://www.youtube.com/watch?v=zF34dRivLOw
+
+# TODO - howdoi_program_python/java/rust/c/bash(?)...
+#   in python: `python3 -m mypy --strict <python_file.py>`  # requires `pip install mypy` ; checks typing in your python file
+
 
 alias howdoi_use_git='commecho -l '\''
 + You can delete files or lines from code retroactively using the tool from here: https://rtyley.github.io/bfg-repo-cleaner/
@@ -797,7 +800,6 @@ function remindme () {
 
     # TODO - list key binds too
     # TODO - once tags are added, (color-)mark some commands as "useful"; specifically those you can use often
-    # TODO - try running in parallel (async)
 
     local this_file_text="$(cat "$CUSTOM_BASHRC_FILE")"  # faster than reading the file from disk several times
 
@@ -808,20 +810,33 @@ function remindme () {
 
         [ -z "$cmd_names" ] && errcho 'No commands given to search!' && return
 
-        local name  # iteration variables
-        while read -r name; do
-            if [ -z "$show_hidden" ] && [[ "${name:0:1}" == '_' ]]; then continue; fi  # if not showing hidden functions and current function starts with '_', skip it
-            if [ -n "${unoriginal_map[$name]}" ]; then continue; fi  # if it's an override of a known command (user already knows what it does), don't mention it - skip
+        local delimiter='->->->'  # separator between 2 different strings; it needs to be unlikely to be there "naturally"
+        local match_results="$(
+            local name  # iteration variables
+            while read -r name; do
+                
+                if [ -z "$show_hidden" ] && [[ "${name:0:1}" == '_' ]]; then continue; fi  # if not showing hidden functions and current function starts with '_', skip it
+                if [ -n "${unoriginal_map[$name]}" ]; then continue; fi  # if it's an override of a known command (user already knows what it does), don't mention it - skip
+            {
+                # we already have the names, we need the documentation. And maybe also line number.
+                local expression=$(echo "$expression_template" | sed "s/<name>/$name/")
+                local line_num=$( echo "$this_file_text" | grep -nE "$expression" | cut -d: -f1 )  # get line number
+                # [ -z "$line_num" ] && continue ;  # couldn't find line-number, so it's not from this file (loaded from somewhere else)
+                local matched_comment=$( echo "$this_file_text" | grep -B "$num_of_rows_above" -E "$expression" )  # match declaration and some rows above for documentation
+                # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO or =====
+                matched_comment=$(echo "$matched_comment" | grep -E '^#[^#]' |  grep -vE '^#[[:space:]]*TODO' |  grep -vE '^#[[:space:]]*===' )  
+                matched_comment=$(echo "${matched_comment}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
+                echo "$line_num${delimiter}$name  $matched_comment"
+            } &  # no need for wait (hopefully), as all the results are collected into a var
+            done <<< "$cmd_names"
+        )"
 
-            # we already have the names, we need the documentation. And maybe also line number.
-            local expression=$(echo "$expression_template" | sed "s/<name>/$name/")
-            local line_num=$( echo "$this_file_text" | grep -nE "$expression" | cut -d: -f1 )  # get line number
-            local matched=$( echo "$this_file_text" | grep -B "$num_of_rows_above" -E "$expression" )  # match declaration and some rows above for documentation
-            # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO or =====
-            matched=$(echo "$matched" | grep -E '^#[^#]' |  grep -vE '^#[[:space:]]*TODO' |  grep -vE '^#[[:space:]]*===' )  
-            matched=$(echo "${matched}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
-            line_to_cmd["$line_num"]="$name  $matched"
-        done <<< "$cmd_names"
+        local line
+        while read -r line; do
+            local mres_linenum="${line%%${delimiter}*}"  # get before delimiter (this is much faster than using awk)
+            local mres_contents="${line#*${delimiter}}"  # get after delimiter
+            line_to_cmd["$mres_linenum"]="$mres_contents"
+        done <<< "${match_results[@]}"
     }
 
     # aliases
@@ -829,6 +844,19 @@ function remindme () {
 
     # functions
     get_commands_by_expression "^\s*function\s+<name>\s*\(\)\s*{" 2 "$CUSTOM_FUNCTIONS"
+
+    # scripts
+    local commands_external="$(_list_script_calls)"
+    if [ -n "$commands_external" ]; then
+        local line_num_past_file="$(($(cat $CUSTOM_BASHRC_FILE | wc -l)+1))"  # get row count of this file and start adding "virtual" lines for loaded scripts
+        line_to_cmd["$line_num_past_file"]="# ---------- EXTERNAL (sourced non-bash) ----------"
+        local cmde
+        while IFS= read -r cmde; do
+            if [ -z "$show_hidden" ] && [[ "${cmde:0:1}" == '_' ]]; then continue; fi
+            line_num_past_file=$((line_num_past_file + 1))
+            line_to_cmd["$line_num_past_file"]="$cmde"
+        done <<< "${commands_external[@]}"
+    fi
 
     # categories (comments, not callable)
     if [ -z "$sort" ]; then  # if not sorting by name (so, sorting by line number - categories are relevant)
@@ -838,10 +866,11 @@ function remindme () {
         while IFS=- read -r number comment; do line_to_cmd["$number"]="$comment" ; done <<< "$topic_comments"
     fi
 
-    local cmd_list=$(for key in "${!line_to_cmd[@]}"; do echo "$key $(commecho "${line_to_cmd[$key]}")"; done )  # include line-number for possible line-num sorting
+    # colorize and separate into lines
+    local cmd_list=$(for key in "${!line_to_cmd[@]}"; do { echo "$key $(commecho "${line_to_cmd[$key]}")"; } & done )  # include line-number for possible line-num sorting
+    
     [ -n "$sort" ] && cmd_list=$(echo "$cmd_list" | sort -k2) || cmd_list=$(echo "$cmd_list" | sort -n -k1) # If user specified alphabetical sorting, sort by command name. Otherwise sort by line num
     [ -z "$include_line_num" ] && cmd_list=$(echo "$cmd_list" | cut -d" " -f2-)  # if flag not specified, remove line numbers
-
 
     echo "$(becho The following commands were overridden, but retain their original functionality:)  $(printf "%s, " "${unoriginal[@]}" | sed 's/, $//')"
     echo "$cmd_list"
@@ -2086,6 +2115,8 @@ function _shortaccess_folder () {
     
     lsblk -a -o UUID | tail -n +2 | grep -Fxq "$uuid" || { errcho "UUID \"$uuid\" isn't connected or doesn't exist!" ; return 1 ; }  # Check that UUID is usable
     
+    # TODO - check if there's an issue where there's already a similarly-named folder where the mounting is supposed to happen (does it cause problems?)
+
     # if device is not mounted, and we're not told to avoid mounting it: mount it
     ! findmnt -S UUID="$uuid" >/dev/null && [ -z "$nomount" ] && mount_media_by_uuid "$uuid" >/dev/null
 
@@ -2275,7 +2306,7 @@ function chatgpt_ask () {
 #TODO - offer to choose a vm by number [1-n]. Need to create a function like y_n one that gets a dicitonary as an argument 
 # TODO - offer to add USB (and other?) devices by ID (from displayed list). Filter out devices already in XML.
 # interactively launch looking-glass session and VM (if not running). 
-function launch_vm_w_lookingglass() {
+function launch_vm_w_lookingglass () {
     local is_vm_chosen vm_name
     while [ -z "$is_vm_chosen" ]
     do
@@ -2629,14 +2660,6 @@ function commecho () {
 }
 
 
-# alias _draw_formatted='_py_draw_formatted' (recolors text by replacing color tags with their appropriate color-codes)
-# this function got too complicated to easily maintain and add features in bash
-function _draw_formatted () {
-    echo -e "$(_py_draw_formatted "$@")"
-    # [ -n "$GARBAGE_OUTPUTS" ] && echo -e "$(_py_draw_formatted "$@")" | sed 's/\x1b/\\033/g' >> "$GARBAGE_OUTPUTS"  # debug (tail -f this file)
-}
-
-
 # the best function in this entire collection
 function draw_hentai () {
     local HY='<=b_yellow=>'  # Hair Yellow
@@ -2860,20 +2883,52 @@ function animate_lets_go () {
 
 
 
+## Script-files dependent functions
+###################################
+
+# On first run, checks if scripts are loaded and attempts loading them if not. On any following run, returns success or failure
+# arg 1: script's alias call
+function _verify_scripts_loaded () {
+    if ! type -t _scripts_loaded_comfirmation > /dev/null || ! _scripts_loaded_comfirmation ; then  # if scripts confirmation (script function) isn't a thing yet
+        # source commands that call scripts in other languages
+        [ -f "$SCRIPTS_BASHRC_FILE" ] && { source "$SCRIPTS_BASHRC_FILE"; }  # if the file for it exists, source bashrc functions that bring over to the terminal various external scripts
+
+        # TODO - make this depend on a flag
+        # # output message only if user isn't root
+        # if [[ $EUID -ne 0 ]]; then
+        #     echo "$( _scripts_loaded_comfirmation 2> /dev/null && gecho "Successfully loaded" || recho "Failed loading" ) script functions loader: \"$SCRIPTS_BASHRC_FILE\""
+        # fi
+    fi
+
+    # redeclare this function - whatever the last result was, it stays the status of the scripts-load
+    eval "function _verify_scripts_loaded () { return $(_scripts_loaded_comfirmation &> /dev/null ; echo $?) ; }"
+}
+
+# alias _draw_formatted='_py_draw_formatted' (recolors text by replacing color tags with their appropriate color-codes)
+function _draw_formatted () {
+    if _verify_scripts_loaded ; then echo -e "$(_py_draw_formatted "$@")";
+    else echo -e "$@"; fi
+}
+
+
+
+
 ## Finishing touches (parsing this file and announcing that we're done to user)
 #################################################################################
 
+# remember which functions and aliases were added
 if [ "$IS_FIRST_SOURCING" = true ]; then
     # create CUSTOM_ALIASES_MAP and CUSTOM_FUNCTIONS_MAP
     CUSTOM_ALIASES="$(_unique_in_first "$(_alias_names)" "$CUSTOM_ALIASES_INITIAL")" # keep list of (only) aliases that were added between now and the start of the file
     eval $(_hashmap_this_var 'CUSTOM_ALIASES')  # create hashmap: CUSTOM_FUNCTIONS_MAP
     CUSTOM_FUNCTIONS="$(_unique_in_first "$(_function_names)" "$CUSTOM_FUNCTIONS_INITIAL")"  # keep list of (only) functions that were added between now and the start of the file
     eval $(_hashmap_this_var 'CUSTOM_FUNCTIONS')  # create hashmap: CUSTOM_FUNCTIONS_MAP
-
-    # source commands that call scripts in other languages
-    [ -f "$SCRIPTS_BASHRC_FILE" ] && source "$SCRIPTS_BASHRC_FILE"  # if the file for it exists, source bashrc functions that bring over to the terminal various external scripts
 fi
 
+_verify_scripts_loaded  # load the external (other-language) scripts!
+
+
+# End-message (finished sourcing)
 if [[ $EUID -ne 0 ]]; then   # don't output messages if user is root (sudo running)
     echo "$(gecho "Finished loading") \"$CUSTOM_BASHRC_FILE\" for: \"`readlink -f $0`\". To view added commands, run: $(becho remindme)"  # announce done
     [ -f "$TESTS_FILE" ] && source "$TESTS_FILE"  # run the tests file if it exists and we're not in sudo mode
