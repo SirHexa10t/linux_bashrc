@@ -1,0 +1,5 @@
+# common media file operations
+* pdftk <file1> <file2> <file3> cat output <merged_name.pdf>  # create a unified pdf file 
+* xournal <pdf_filepath>  # edit a pdf file with option to add signatures
+* ffmpeg  # general media (audio / video) handling package, you can find some usages in this bashrc file
+

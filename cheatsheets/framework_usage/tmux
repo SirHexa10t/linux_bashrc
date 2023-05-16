@@ -1,0 +1,26 @@
+# Reminders for the basic gimmicks of tmux terminal
+tmux offers split-panes and sessions for terminals.
+>> Good for managing a server:
++ tmux terminals persist even after disconnection. They keep running until restart the server or send a closure command.
++ tmux windows can be named, listed and looked up.
++ tmux can accomodate multiple users on the same terminal simultanously; good for assistance/collaboration and for doing jobs that need a "lock" (having a channel where certain jobs run, so people would know if someone elses job is underway and should be allowed to finish first)
+>> Quick explanation: tmux has sessions. Each session can have various windows, each window (has a number and name) is a "screen" thats visible at the moment and has vertically/horizontally added panes 
++ For simplicity you can just have a SINGLE SESSION and manage all your windows there. Its easier to navigate windows, thanks to the green bar listing them at the bottom.
++ If a window has only need for a SINGLE TERMINAL (lets say the window is called "grub_config"), you can keep it simple and avoid adding extra panes. Add panes to multi-faceted things, like a project which has code, git-management, assets, runtime area etc.
+> Sessions:
+* tmux  # create a new tmux session
+* CTRL+B, D  : leave (detach) current session
+* tmux ls  # view all existing tmux sessions (+ info about creation date and number of windows)
+* tmux rename-session -t <0/1/2/3/.../past_name> <name>  # rename session (using number/name from "tmux ls")
+* tmux attach -t <0/1/2/3/.../name>  # connect (attach) to an existing tmux session (using number/name from "tmux ls")
+* tmux kill-session -t <0/1/2/3/.../name>  # kill specified session
+> Windows:
+* CTRL+B, <0/1/2/3/...>  : go to window number
+* CTRL+B, C  :  create a new window
+* CTRL+B, ,  :  rename current window
+> Panes:
+* CTRL+B, %  :  create a new pane to the right
+* CTRL+B, "  :  create a new pane to the bottom
+* CTRL+B, <left/right/up/down>  :  move focus to other pane
+* exit  # close pane. If last pane, close window.
+

@@ -52,8 +52,8 @@ def draw_formatted(text: str, is_testing=False):
         if after_persistence_match:
             matched_str = after_persistence_match.group()
             persisted_chain = re.search(f'{persistence_regex}', matched_str).group(0).removeprefix('<=persist').removesuffix('this=>')
+            line = re.sub(f'({reset_either_regex})(?!.*{persisted_chain})', rf'{reset_tag}{persisted_chain}', line)  # attach the persisting tag after each reset tag, after the match
             line = re.sub(f'{persistence_regex}', persisted_chain, line, count=1)  # remove the matched persistence tagging
-            line = re.sub(f'{reset_either_regex}(?!$)', f'{reset_tag}{persisted_chain}', line)  # attach the persisting tag after each reset tag (but not if it's at end of line)
 
         # add resets
         line = re.sub(f'({color_tag_chain_regex})', rf'{reset_tag}\1', line)  # add resets before (groups of) color tags
@@ -143,6 +143,8 @@ else:
     #          outpt_str=f"{fin('bold', 'green')}aaa {fin_rst}{fin('blue')}bbb{fin_rst}{fin('bold', 'green')} ccc{fin_rst}")
     #     asrt(input_str=f"unnecessary color at end <=bold=>",
     #          outpt_str=f"unnecessary color at end {fin_rst}")
+    #     asrt(input_str=f"<=green=>*<=reset=> ip addr  <=persist<=yellow=>this=># display own networking interfaces",
+    #          outpt_str=f"{fin('green')}*{fin_rst} ip addr  {fin_rst}{fin('yellow')}# display own networking interfaces{fin_rst}")
     # run_tests()
 
 

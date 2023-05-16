@@ -1,0 +1,12 @@
+# Reminders for vm tools and command options (mostly stuff you can't do through Virtual Machine Manager)
+* systemctl restart libvirtd  # restart the libvirt daemon vm-manager
+* virsh start <name>  # start VM
+* virsh domrename <old_name> <new_name>  # rename vm
+* virsh edit <name>  # modify the xml of a VM (you can do that in Virtual Machine Manager instead)
+* sudo virt-sparsify --in-place -v <diskimg.qcow2>  # compress vm disk file
+* virsh list --all  # show VM list
+* virsh snapshot-create-as --domain <VM-NAME> --name <SNAPSHOT-NAME>  # create snapshot for a vm (has to be turned off)
+* virsh snapshot-list --domain <VM-NAME>  # list snapshots of vm
+* virsh snapshot-info/snapshot-revert/snapshot-delete --domain <VM-NAME> --snapshotname <SNAPSHOT-NAME>  # detail/go_back_to/delete snapshot
+* qemu-img create -f qcow2 -F qcow2 -b <path_to_src_disk.qcow2> <path_to_output_disk.qcow2>  # snapshot a single disk
+

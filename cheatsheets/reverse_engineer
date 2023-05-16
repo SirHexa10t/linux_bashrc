@@ -1,0 +1,7 @@
+# Reminders how to approach sketchy executables
++ disassembly can be done through "IDA" (Interactive DisAssembler), or "Ghidra"
++ you can test-run an executable on: "https://any.run"
+* strings <my_executable.exe> | less  # list used strings. See if any URLs are being used.
+* objdump -d -Minterl <program_file>  # using Intel syntax, describe the program as a list of assembly instructions
+* checksec --file=<file_to_check> --output=json | jq  # check which security features (if any) are active for the specified file, for things like buffer overflow
+

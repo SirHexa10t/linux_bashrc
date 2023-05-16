@@ -1,0 +1,9 @@
+# Reminders for some neat time-saving GUI keybind tricks
+* Built-in Nemo [space]  :  select (click) a file/folder, and press [space] to get a summary/preview; press again to close
+* Custom Gnome-Nemo CTRL+SHIT+T  :  open Terminal at current Nemo location
+* Built-in CTRL+ALT+T  :  open Terminal
+* Built-in CTRL+ALT+[backspace]  :  log out of current session (resets your GUI)
+* Built-in CTRL+ALT+F1  :  enter TTY mode (terminal without anything graphic to lock/interrupt you)
+* Built-in CTRL+ALT+F7  :  exit TTY mode
+* Evdev installation LCTRL+RCTRL  :  switch mouse and keyboard (and maybe other things) between guest/host. Won't work if you gave the VM your USB device directly.
+

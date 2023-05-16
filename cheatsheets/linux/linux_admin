@@ -1,0 +1,24 @@
+# Reminders for linux system tools and command options
+>> Messing around with the system itself
+* reboot  # reboots the system (gracefully)
+* sudo systemctl start sshd  # start ssh service for external access
+* udisksctl mount --block-device=/dev/<device-name>  # Mount a device the way nemo would. No need for mkdir (and nemo can dismount it right), no harm in calling while unnecessary, automatically uses LABEL to mount at /media/<username>/
+*   udisksctl mount --block-device=/dev/<device-name> 2> /dev/null
+>> configurations
+* /etc/default/grub  :  boot configurations
+* /etc/modprobe.d/blacklist.conf  :  blacklist modules, such as firmware
+* /etc/fstab  :  mounting configurations, including for dir /
+* /etc/environment  :  OS environment variables
+*   printenv  # print (all) current environment variables 
+* sudo nvidia-xconfig  # create new xorg config, used by nvidia driver
+>> configurations (GNOME)
+* ~/.config/autostart/  :  location of startup scripts that run for your own user after startup 
+* ~/Templates/  :  anything you put in this folder will be a new-file template when you right-click in nemo
+>> configurations (Nemo file-manager)
+* ~/.local/share/nemo/scripts/  :  anything you put in this folder will be an executable-script available when you right-click in nemo
+>> logs (to tail a logfile in real-time run: "tail -f <logfile>", or to get last 100 lines: "tail -100 <logfile>" )
+* log-file: /var/log/boot.log  :  System boot log
+* log-file: /var/log/dmesg  :  log for kernel ring buffer
+*   dmesg -k | grep -E "warn|error"  # the command dmesg displays kernel logs buffer
+* log-file: /var/log/kern.log  :  log for kernel ring buffer
+

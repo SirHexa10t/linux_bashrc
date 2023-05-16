@@ -1,0 +1,15 @@
+# Reminders for docker
+>> view (might need to run sudo to find all)
+* docker ps -a  # list ALL containers
+* docker images -a  # list all images
+* docker volume ls  # list all volumes
+* sudo docker inspect <container_name_or_id>  # view container details 
+>> managing container states
+* docker-compose -f <yml_file> up  # Start a conteiner using a yaml/yml file. Use -d to make it run in the background
+>> removal
+* docker system prune -a  # remove all images/containers/volumes/networks. The flag -a also remove unused images
+* docker rmi <image(s)>  # remove images ; to remove all images:   docker rmi $(docker images -a -q)
+* docker rm <container_id(s)_or_name(s)>  # remove container(s) ; to force-remofe, add -f ; to remove all stopped containers:   docker rm $(docker ps -a -f status=exited -f status=created -q)
+* docker volume rm <volume_name(s)>  # remove volume(s)
+* docker run --rm <image_name>  # run an image and remove its container when it exits
+

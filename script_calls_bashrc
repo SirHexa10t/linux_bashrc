@@ -2,7 +2,8 @@
 
 # This file calls script files in another location (relative to own location) in definitions that makes them accessible as terminal commands
 
-SCRIPTS_PATH="$CUSTOM_BASHRC_FOLDER/unlimited_script_works"  # name of the folder within this project. Change it if you want, just be aware this could break.
+SCRIPTS_PATH="$CUSTOM_BASHRC_FOLDER/unlimited_script_works"  # name of the scripts folder within this project. Change it if you want, just be aware this could break.
+CHEATSHEETS_PATH="$CUSTOM_BASHRC_FOLDER/cheatsheets"  # name of the cheatsheets folder within this project. Change it if you want, just be aware this could break.
 
 alias _scripts_loaded_comfirmation='_py_confirm_loaded'  # a call to a script added in just to confirm that the rest of the scripts are reached right 
 
@@ -13,22 +14,30 @@ function _reload_scriptfiles () {
     [[ "$@" =~ ^"--declare_commands"$ ]] && declare_commands='true'
     [[ "$@" =~ ^"--output_commands"$ ]] && output_commands='true'
 
+    # loading scripts
     local file_names=$(ls "$SCRIPTS_PATH")
-    # Loop through the list of files and create a function for each
-    while IFS= read -r filename; do
+    local filename
+    while IFS= read -r filename; do  # Loop through the list of files and create a function for each
         local function_name=${filename%.*}  # keep the file name but not the ending suffix
         local extension=${filename##*.}  # gets file-type or entire filename if there's no file-type
         [[ "$extension" == "$function_name" ]] && extension='generic'  # to avoid having functions for no-extention files named "fooname_fooname", we'll write "generic" as the file-type
         local cmd_name=$([[ "$function_name" = _* ]] && echo "_${extension}${function_name}" || echo "${extension}_${function_name}" )
-        local script_file="${SCRIPTS_PATH}/${filename}"
-        if [ -n "$declare_commands" ]; then
-            # local alias_content="${cmd_name}='${script_file}'"  &&  alias "$alias_content"  # Define through alias instead of function. Aliases are less dynamic (usage of args) and has env-scope issues.
+        local file_path="${SCRIPTS_PATH}/${filename}"
 
-            eval "function $cmd_name () { "$script_file" \"\$@\"; }"  # function with args
-        fi
-
-        [ -n "$output_commands" ] && echo "$cmd_name:$script_file"
+        [ -n "$declare_commands" ] && eval "function $cmd_name () { "$file_path" \"\$@\"; }"  # make script callable with optional args
+        [ -n "$output_commands" ] && echo "$cmd_name:$file_path"
     done <<< "$file_names"
+
+    # loading cheatsheets
+    local chsh_files=$(find "$CHEATSHEETS_PATH" -type f)
+    local chsh_file
+    for chsh_file in $chsh_files; do
+        local filename="$(basename "$chsh_file")"
+        local cmd_name="howdoi_$filename"
+
+        [ -n "$declare_commands" ] && eval "function $cmd_name () { commecho -l < $chsh_file; }"
+        [ -n "$output_commands" ] && echo "$cmd_name:$chsh_file"
+    done
 }
 _reload_scriptfiles --declare_commands
 
@@ -41,9 +50,15 @@ function _list_script_calls () {
         local documentation=''
         if [[ "$file" == *.py ]]; then
             documentation=$(sed -n '/"""/, /"""/{ /"""/! { /"""/! p } }' "$file")  # get the documentation between 2 """ strings
-            documentation=$(paste -s -d ' ' <<< "$documentation" )  # merge into one line
+        else  # default (no extension)
+            local non_comment_line_number="$(grep -n -m 1 -v '^#' "$file" | cut -d ':' -f 1)"  # get number of first line that doesn't start with '#'
+            documentation="$(head -n $((non_comment_line_number - 1)) "$file")"  # get all lines until last-found
         fi
 
+        if [ -n "$documentation" ]; then
+            documentation=$(paste -s -d ' ' <<< "$documentation" )  # merge into one line
+            documentation=$(sed 's/^#[[:space:]]*//' <<< "$documentation" )  # trim leading sharp-comment if it's there
+        fi
         cmds_to_text+=("$name  # $documentation")
     done <<< "$commands"
 

@@ -278,256 +278,8 @@ alias autoclick_hold_100cps='py_clicker --cps 100'
 alias autoclick_toggle_100cps='py_clicker --cps 100 --toggle'
 
 
-# Cheatsheets
-# =================
 
 # TODO - write down flatpak/appimage/snap/(other?) differences
-# Reminders for linux system tools and command options
-alias howdoi_linux='commecho -l '\''
->> Messing around with the system itself
-* reboot  # reboots the system (gracefully)
-* sudo systemctl start sshd  # start ssh service for external access
-* udisksctl mount --block-device=/dev/<device-name>  # Mount a device the way nemo would. No need for mkdir (and nemo can dismount it right), no harm in calling while unnecessary, automatically uses LABEL to mount at /media/<username>/
-*   udisksctl mount --block-device=/dev/<device-name> 2> /dev/null
->> configurations
-* /etc/default/grub  :  boot configurations
-* /etc/modprobe.d/blacklist.conf  :  blacklist modules, such as firmware
-* /etc/fstab  :  mounting configurations, including for dir /
-* /etc/environment  :  OS environment variables
-*   printenv  # print (all) current environment variables 
-* sudo nvidia-xconfig  # create new xorg config, used by nvidia driver
->> configurations (GNOME)
-* ~/.config/autostart/  :  location of startup scripts that run for your own user after startup 
-* ~/Templates/  :  anything you put in this folder will be a new-file template when you right-click in nemo
->> configurations (Nemo file-manager)
-* ~/.local/share/nemo/scripts/  :  anything you put in this folder will be an executable-script available when you right-click in nemo
->> logs (to tail a logfile in real-time run: "tail -f <logfile>", or to get last 100 lines: "tail -100 <logfile>" )
-* log-file: /var/log/boot.log  :  System boot log
-* log-file: /var/log/dmesg  :  log for kernel ring buffer
-*   dmesg -k | grep -E "warn|error"  # the command dmesg displays kernel logs buffer
-* log-file: /var/log/kern.log  :  log for kernel ring buffer
-'\'
-
-# Reminders for user/groups management
-alias howdoi_users='commecho -l '\''
-* groups <username>  # display the groups of a user
-* usermod -aG <groupA,groupB,groupC> <username>  # add user to group(s). You can even add to group sudo (makes into superuser in Ubuntu).
-* getent group  # list all groups and their user-members
-* sudo adduser --disabled-password --gecos "" <username>  # adduser is a useradd wrapper (addused is generally better). The --disabled-password and --gecos options are required for no-prompt; gecos fills thumbnail info (cancels interactive). --no-create-home skips homedir creation. --disabled-password skips password creation and disables password login.
-*   sudo adduser <username> --gecos "" --disabled-password && echo "<username>:<password>" | sudo chpasswd  # Add user with password in one line. take care to specify the username twice, as needed here
-* sudo deluser --remove-home <username>  # delete user and associate homedir
-* su - <username>  # Switch to user. Might require sudo.
-'\'
-
-# Reminders for the basic gimmicks of bash scripting and terminal usage
-alias howdoi_bash_terminal='commecho -l '\''
->> packages and built-in commands
-* apt search <term>  # look for substring in known packages. As usual, nala can also be used
-* man <command>  # read the manual of the command
-*   help  # list built-in Bash commands
-* sudo !!  # rerun last command with sudo permissions
->> Packages (Debian)
-* sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
-* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for "no prompt")
-* dpkg -l  # show all installed packages in table format
-* sudo dpkg -r <package>  # remove a package installed from a .deb file
-* sudo dpkg --purge <package>  # purge a package installed from a .deb file
-* dpkg-query --list <package>  # print info related to installed package (autocompletes the name), works for all installations including from .deb
-* apt list  # list all packages in followed repositories
-*   apt list --installed  # list installed packages
-*   dpkg -l  # show all installed packages in table format
->> filesystem
-* ln -s <existing_file_to_link> <link_name>  # define soft-link. There are 2 symlink types; soft (denoted with -s, which points to a file`s address) and hard (points directly to the data of a file. Editing the data in either "original" or hard-link is the same, and deleting either file alone wouldn`t delete the data since it`s still pointed to)
-+   soft links don`t really utilize permissions - they allow everything and rely on the target to determine access. chmodding a symlink would forward the modification to the target. 
-*   ln -sr scripts/*.js target/  # create soft-links for all .js files in "scripts/", in "target/" (target/[filename.js] -> scripts/[filename.js]) 
-* cd  # write no directory to return to home-dir. Equivalent to cd ~
-*   cd -  # go back to previous directory
-* less <file>  # Read file with up/down controls. Newer and more convenient than "more".
->> processes
-* htop  # show real-time processes/resource-usage
-* xkill  # after you run this, your mouse cursor would turn into an "x" sign, and the next window youll click would be killed. A bit lazy and silly.
-* visudo  # edit the /etc/sudoers file (only if you know what you are doing)
->> bash basic utility commands (can be used in terminal of-course)
-* Use $ to reference variables
-*   "$my_var": value of variable my_var
-*   "$1": first arg in current scope (and so on for each num accordingly)
-*   "$@": all args in current scope as separate items ; "$*": all args in current scope concatenated into a unified string ; "$#": args count
-*   "$$": current PID
-*   "$?": the return code of last operation (can be used to check if it ran successfully)
-*    "$(<cmd here>)": run commands within commands (can also be done like so: `<cmd here>`)
-* add "& disown" after a command to have it run in its own thread (thats the "&"), and "disown" it so that it wont be tied to current terminal-run process and thus stop when the terminal closes
-* Use "<" to redirect a file. Example; to use file-contents as input: "./my_script.sh < input.txt"
-* Use "<<" ("here-document") to specify on what word (alone, not as an internal part of line) to stop reading text.
-* Use "<<<" ("here-string") to input a string as if it came from a file. For example, when running via while-loop on lines stored in a variable
-* add "<0/1/2> > <filename>" after a command to write input(0)/output(1)/error(2) streams to a file. Specify "&" to write both 1 and 2. You can also use numbers 3 to 9, those are free descriptors for you to use as you like.
-*   add "2> /dev/null" after a command to throw away warning/error messages it might bring up
-* declare -p <variable>  # Note: no use of $. Print the variable to check data / data-type
-* time <command>  # get time measurement for command runtime. No need for quotes or any encapsulation, just prepend "time". Example: time ls -l
->> conditions
-* The return value of a function (0 is successful, anything else is failure) can be used as a condition
-* You can use brackets (spaced) for simple file/string checks, like so: [ -n "$1" ]
-*   filesystem:
-*       "-d": does directory exist ; "-f": does file exist ; "-L": does symlink exist ; "-e": does exist in filesystem ; "-s": does exist in filesystem and with non-zero size
-*       "-r": is file readable by current user ; "-w": is file writable by current user ; "-x": is file executable by current user
-*   emptiness/presence check:
-*       "-n": is string non-empty (specifying a variable that doesnt exist returns empty string) 
-*       "-z": is string empty (opposite of -n)
-*       "-v": is var name set and isnt empty. Similar to -n but without the need to add $ to the var-name 
-*   comparison:
-*       "=": check if equal ; "==": check if equal (bash-specific). Example; is num of args 0: [ $# == 0 ]
-*       "-eq": check if equal ; "-ne": check if not equal
-*       "-gt": check if greater than ; "-lt": check if less than ; "-ge": greater or equal ; "-le": lesser or equal
-* You can use double-brackets (spaced) for complex checks
-*       "=~": pattern matching. Example: check if string starts with h: [[ "hello" =~ ^h.*$ ]]
-*       operators "&&" and "||": AND and OR within the brackets, no parentheses needed for the conditions
-* extra_dist=$(( (a > b) ? (a - b) : 0 ))  # example for ternary in bash (use the "&&", "||" ternary instead when you have a condition in "[]"). The double-parentheses mean you dont need "$" to reference variables and that the math operations get evaluated
->> tools (utilities for usage that isnt about managing the OS)
-* wget <url>  # download files
-* curl <url>  # communicate through HTTP(S)/(S)FTP/SCP - make any request (but if you just want to download something, you should probably use wget)
-* diff <file1> <file2>  # get the text difference between 2 files
-* espeak <text>  # read-out (audio) the given text. A bit of a gimmick, sounds very robotic
->> shortcuts
-* Terminal CTRL+L : clear screen
-* Terminal CTRL+Z : send to background (leave any interactive UI for a while).
-*   fg  # return process to foreground (resume the UI of the process). If you have several stuff in the background stack, this pops the last one
-'\'
-
-# Reminders for some neat time-saving GUI keybind tricks
-alias howdoi_gui_shortcut='commecho -l '\''
-* Built-in Nemo [space] :  select (click) a file/folder, and press [space] to get a summary/preview; press again to close
-* Custom Gnome-Nemo CTRL+SHIT+T :  open Terminal at current Nemo location
-* Built-in CTRL+ALT+T :  open Terminal
-* Built-in CTRL+ALT+[backspace] :  log out of current session (resets your GUI)
-* Built-in CTRL+ALT+F1 :  enter TTY mode (terminal without anything graphic to lock/interrupt you)
-* Built-in CTRL+ALT+F7 :  exit TTY mode
-* Evdev installation LCTRL+RCTRL  :  switch mouse and keyboard (and maybe other things) between guest/host. Wont work if you gave the VM your USB device directly.
-'\'
-
-# common media file operations
-alias howdoi_media_and_docs='commecho -l '\''
-* pdftk <file1> <file2> <file3> cat output <merged_name.pdf>  # create a unified pdf file 
-* xournal <pdf_filepath>  # edit a pdf file with option to add signatures
-* ffmpeg  # general media (audio / video) handling package, you can find some usages in this bashrc file
-'\'
-
-# Reminders for microsoft-format handling tools
-alias howdoi_microsoft='commecho -l '\''
-* lnkinfo <lnk-file>  # display link info
-* dos2unix <file>  # convert files from windows to unix encoding
-* sudo ntfsfix <device> -v  # run check-disk on NTFS device
-* ldmtool  #  Read dynamic disks by running "sudo ldmtool create all", and then mounting with "mount -t ntfs /dev/mapper/<volume_name>"
-'\'
-
-# Snippets and tricks for Chromium-based browsers
-alias howdoi_chromium='commecho -l '\''
-* chrome://flags/#hardware-media-key-handling  # Advanced operation flags. Specifically media-key-handline - disable this to get rid of the banner that appears when you change audio-volume
-* document.getElementsByTagName("video")[0].playbackRate = 4  # change youtube playback speed (example here: x4)
-'\'
-
-
-# Reminders for android-related tools
-alias howdoi_android='commecho -l '\''
-* scrcpy  # run daemon that casts the connected Android device screen onto a window, and shares the clicks within it back to the Android device
-* scrcpy -r <filename.mp4>  # save a video recording of your connected android device activity (needs USB-Debug and File-Transfer mode)
-'\'
-
-# Reminders for network management
-alias howdoi_network='commecho -l '\''
->> Own network info
-* ip addr  # display own networking interfaces. A modern safer alternative to: ifconfig
-* sudo netstat -tulpn  # display active network connections and filter by port number
->> Seeking addresses
-* dig "amazon.com" +short  # resolve dns address (or addresses, in case content-distribution-networks are involved)
-* ping google.com  # ping address
->> Firewall and incoming requests
-* UFW config-file: /etc/ufw/ufw.conf  :  to monitor incoming requests, set in it: LOGLEVEL=debug , then run "sudo ufw reload" (no-interruption reset; if it wont work run: "sudo service ufw restart"), and then "sudo tail -f /var/log/ufw.log" to monitor
-* ufw allow 21115:21119/tcp  # change firewall rules (by ports or src address) - in this case, allow ports 21115 to 21119 (including) on tcp
-* sudo tcpdump -i any -n  # capture traffic on all networks for all ports
-* sudo tcpdump -i [interface] -n "src host [external_IP] and dst port [dst_port]"  # detailed monitoring
-*   detailed monitoring example 1:  sudo tcpdump -i enp5s0 -n "dst port 21118"
-*   detailed monitoring example 2:  sudo tcpdump -i any -n "tcp and (dst port 21115 or dst port 21116 or dst port 21117 or dst port 21118 or dst port 21119)"
-*   detailed monitoring example 3:  sudo tcpdump -i any src 46.120.97.16 -nn -c 20  # -nn shows ip addresses and port-num without resolving hostname, -c stops capturing after 20 packets
-'\'
-
-# Reminders for the basics of systemd
-alias howdoi_manage_services='commecho -l '\''
->> Crontab
-* crontab -e  # edit routine-scheduled tasks
->> systemd
-* /etc/systemd/system/  :   add/remove .service files here
-* sudo systemctl daemon-reload  # rescan and reload service files
-* sudo systemctl <start/stop/restart/status> <myservice>.service  # manage the state of the service or check its running-status
-* sudo systemctl <enable/disable> example.service  # allow/disallow service to run after boot
-* journalctl -u <service_name.service>  # check the logs of a systemd service. Can also specify how to view them; example:   journalctl -u ssh --since "1 hour ago" --until now -f
-'\'
-
-# Reminders for docker
-alias howdoi_manage_docker='commecho -l '\''
->> view (might need to run sudo to find all)
-* docker ps -a  # list ALL containers
-* docker images -a  # list all images
-* docker volume ls  # list all volumes
-* sudo docker inspect <container_name_or_id>  # view container details 
->> managing container states
-* docker-compose -f <yml_file> up  # Start a conteiner using a yaml/yml file. Use -d to make it run in the background
->> removal
-* docker system prune -a  # remove all images/containers/volumes/networks. The flag -a also remove unused images
-* docker rmi <image(s)>  # remove images ; to remove all images:   docker rmi $(docker images -a -q)
-* docker rm <container_id(s)_or_name(s)>  # remove container(s) ; to force-remofe, add -f ; to remove all stopped containers:   docker rm $(docker ps -a -f status=exited -f status=created -q)
-* docker volume rm <volume_name(s)>  # remove volume(s)
-* docker run --rm <image_name>  # run an image and remove its container when it exits
-'\'
-
-# Reminders for vm tools and command options (mostly stuff you can't do through Virtual Machine Manager)
-alias howdoi_manage_vm='commecho -l '\''
-* systemctl restart libvirtd  # restart the libvirt daemon vm-manager
-* virsh start <name>  # start VM
-* virsh domrename <old_name> <new_name>  # rename vm
-* virsh edit <name>  # modify the xml of a VM (you can do that in Virtual Machine Manager instead)
-* sudo virt-sparsify --in-place -v <diskimg.qcow2>  # compress vm disk file
-* virsh list --all  # show VM list
-* virsh snapshot-create-as --domain <VM-NAME> --name <SNAPSHOT-NAME>  # create snapshot for a vm (has to be turned off)
-* virsh snapshot-list --domain <VM-NAME>  # list snapshots of vm
-* virsh snapshot-info/snapshot-revert/snapshot-delete --domain <VM-NAME> --snapshotname <SNAPSHOT-NAME>  # detail/go_back_to/delete snapshot
-* qemu-img create -f qcow2 -F qcow2 -b <path_to_src_disk.qcow2> <path_to_output_disk.qcow2>  # snapshot a single disk
-'\'
-
-# Reminders how to approach sketchy executables
-alias howdoi_reverse_engineer='commecho -l '\''
-+ disassembly can be done through "IDA" (Interactive DisAssembler), or "Ghidra"
-+ you can test-run an executable on: "https://any.run"
-* strings <my_executable.exe> | less  # list used strings. See if any URLs are being used.
-* objdump -d -Minterl <program_file>  # using Intel syntax, describe the program as a list of assembly instructions
-* checksec --file=<file_to_check> --output=json | jq  # check which security features (if any) are active for the specified file, for things like buffer overflow
-'\'
-
-# Reminders for the basic gimmicks of tmux terminal
-alias howdoi_use_tmux='commecho -l '\''
-tmux offers split-panes and sessions for terminals.
->> Good for managing a server:
-+ tmux terminals persist even after disconnection. They keep running until restart the server or send a closure command.
-+ tmux windows can be named, listed and looked up.
-+ tmux can accomodate multiple users on the same terminal simultanously; good for assistance/collaboration and for doing jobs that need a "lock" (having a channel where certain jobs run, so people would know if someone elses job is underway and should be allowed to finish first)
->> Quick explanation: tmux has sessions. Each session can have various windows, each window (has a number and name) is a "screen" thats visible at the moment and has vertically/horizontally added panes 
-+ For simplicity you can just have a SINGLE SESSION and manage all your windows there. Its easier to navigate windows, thanks to the green bar listing them at the bottom.
-+ If a window has only need for a SINGLE TERMINAL (lets say the window is called "grub_config"), you can keep it simple and avoid adding extra panes. Add panes to multi-faceted things, like a project which has code, git-management, assets, runtime area etc.
-> Sessions:
-* tmux  # create a new tmux session
-* CTRL+B, D  : leave (detach) current session
-* tmux ls  # view all existing tmux sessions (+ info about creation date and number of windows)
-* tmux rename-session -t <0/1/2/3/.../past_name> <name>  # rename session (using number/name from "tmux ls")
-* tmux attach -t <0/1/2/3/.../name>  # connect (attach) to an existing tmux session (using number/name from "tmux ls")
-* tmux kill-session -t <0/1/2/3/.../name>  # kill specified session
-> Windows:
-* CTRL+B, <0/1/2/3/...>  : go to window number
-* CTRL+B, C  :  create a new window
-* CTRL+B, ,  :  rename current window
-> Panes:
-* CTRL+B, %  :  create a new pane to the right
-* CTRL+B, "  :  create a new pane to the bottom
-* CTRL+B, <left/right/up/down>  :  move focus to other pane
-* exit  # close pane. If last pane, close window.
-'\'
 
 # TODO - create a script thatll establish tmux workspaces when logging into your user (so youd have things ready for debugging or coding and such)
 # TODO - create functions that run these commands interactively (like listing, then letting the user pick a number, then go there...)
@@ -536,26 +288,6 @@ tmux offers split-panes and sessions for terminals.
 
 # TODO - howdoi_program_python/java/rust/c/bash(?)...
 #   in python: `python3 -m mypy --strict <python_file.py>`  # requires `pip install mypy` ; checks typing in your python file
-
-
-alias howdoi_use_git='commecho -l '\''
-+ You can delete files or lines from code retroactively using the tool from here: https://rtyley.github.io/bfg-repo-cleaner/
-*    java -jar bfg-1.14.0.jar --delete-files <file_to_delete.sh>  # after running this, you would be asked to run another command; do that too and push your modified branch to overwrite remote branch.
-* Theres a lot to say about managing git through CLI, but Im a proponent for using a graphical tool. Get GitKraken or GitFork or some other tool like that.
-'\'
-
-# Reminders for ascii-related commands and handling
-alias howdoi_ascii='commecho -l '\''
-+ Create ASCII writings in this site: http://patorjk.com/software/taag/
-* figlet <text>  # write ASCII styled text, different fonts are also supported
-* banner <text>  # write ASCII styled text
-* toilet <text>  # write ASCII styled text, different fonts and styles are also supported
-* jp2a --output=<output.txt> --colors <input.png>  # convert image to ASCII
-* ascii-image-converter <input.png>  # convert image to ASCII
-* <text_output_command> | lolcat  # rainbow-color text
-* <text_output_command> | pv -qL 200  # write text progressively (like being typed, or (if fast) etched by a laser engraver). Try testing with neofetch. Try adding pipe to lolcat.
-'\'
-
 
 
 # Custom
@@ -814,7 +546,6 @@ function remindme () {
         local match_results="$(
             local name  # iteration variables
             while read -r name; do
-                
                 if [ -z "$show_hidden" ] && [[ "${name:0:1}" == '_' ]]; then continue; fi  # if not showing hidden functions and current function starts with '_', skip it
                 if [ -n "${unoriginal_map[$name]}" ]; then continue; fi  # if it's an override of a known command (user already knows what it does), don't mention it - skip
             {
@@ -824,7 +555,8 @@ function remindme () {
                 # [ -z "$line_num" ] && continue ;  # couldn't find line-number, so it's not from this file (loaded from somewhere else)
                 local matched_comment=$( echo "$this_file_text" | grep -B "$num_of_rows_above" -E "$expression" )  # match declaration and some rows above for documentation
                 # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO or =====
-                matched_comment=$(echo "$matched_comment" | grep -E '^#[^#]' |  grep -vE '^#[[:space:]]*TODO' |  grep -vE '^#[[:space:]]*===' )  
+                matched_comment=$(echo "$matched_comment" | grep -E '^\s*#[^#]' |  grep -vE '^\s*#[[:space:]]*TODO' |  grep -vE '^\s*#[[:space:]]*===' )
+                matched_comment=$(echo "$matched_comment" | sed -e 's/^[[:space:]]*//')  # trim away possible leading whitespaces before the comment
                 matched_comment=$(echo "${matched_comment}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
                 echo "$line_num${delimiter}$name  $matched_comment"
             } &  # no need for wait (hopefully), as all the results are collected into a var
@@ -2652,9 +2384,9 @@ function commecho () {
     formatted=$(echo "$formatted" | sed "s/^>>.*$/${double_cat_line_color}&/g")  # recolor lines beginning '>>'  (topics)
     formatted=$(echo "$formatted" | sed "s/^>.*$/${single_cat_line_color}&/g")  # recolor lines beginning '>'  (sub-topics)
     formatted=$(echo "$formatted" | sed "s/^+.*$/${plus_line_color}&/g")  # recolor lines beginning '+'  (notes)
-    formatted=$(echo "$formatted" | sed "s/  #.*$/${sharp_comment_color}&/g")  # recolor after '  #'  (code-comments)
-    formatted=$(echo "$formatted" | sed "s/^# /${sharp_documentation_color}&/g")  # recolor after '# '  (page's documentation)
-    formatted=$(echo "$formatted" | sed "s/  :.*$/${colon_comment_color}&/g")  # recolor after '  :'  (item-comments)
+    formatted=$(echo "$formatted" | sed "s/  \(#.*\)$/  ${sharp_comment_color}\1/g")  # recolor starting from '  #'  (code-comments)
+    formatted=$(echo "$formatted" | sed "s/^# /${sharp_documentation_color}&/g")  # recolor starting from '# '  (page's documentation)
+    formatted=$(echo "$formatted" | sed "s/  \(:.*\)$/  ${colon_comment_color}\1/g")  # recolor starting from '  :'  (item-comments)
     formatted=$(echo "$formatted" | sed "s/[A-Z]\+![!]\+/${warning_color}&$reset/g")  # recolor capitalized words with at least two '!' exclamation marks
     _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
 }
@@ -2886,27 +2618,9 @@ function animate_lets_go () {
 ## Script-files dependent functions
 ###################################
 
-# On first run, checks if scripts are loaded and attempts loading them if not. On any following run, returns success or failure
-# arg 1: script's alias call
-function _verify_scripts_loaded () {
-    if ! type -t _scripts_loaded_comfirmation > /dev/null || ! _scripts_loaded_comfirmation ; then  # if scripts confirmation (script function) isn't a thing yet
-        # source commands that call scripts in other languages
-        [ -f "$SCRIPTS_BASHRC_FILE" ] && { source "$SCRIPTS_BASHRC_FILE"; }  # if the file for it exists, source bashrc functions that bring over to the terminal various external scripts
-
-        # TODO - make this depend on a flag
-        # # output message only if user isn't root
-        # if [[ $EUID -ne 0 ]]; then
-        #     echo "$( _scripts_loaded_comfirmation 2> /dev/null && gecho "Successfully loaded" || recho "Failed loading" ) script functions loader: \"$SCRIPTS_BASHRC_FILE\""
-        # fi
-    fi
-
-    # redeclare this function - whatever the last result was, it stays the status of the scripts-load
-    eval "function _verify_scripts_loaded () { return $(_scripts_loaded_comfirmation &> /dev/null ; echo $?) ; }"
-}
-
 # alias _draw_formatted='_py_draw_formatted' (recolors text by replacing color tags with their appropriate color-codes)
 function _draw_formatted () {
-    if _verify_scripts_loaded ; then echo -e "$(_py_draw_formatted "$@")";
+    if type -t _py_draw_formatted &> /dev/null ; then echo -e "$(_py_draw_formatted "$@")";
     else echo -e "$@"; fi
 }
 
@@ -2925,8 +2639,8 @@ if [ "$IS_FIRST_SOURCING" = true ]; then
     eval $(_hashmap_this_var 'CUSTOM_FUNCTIONS')  # create hashmap: CUSTOM_FUNCTIONS_MAP
 fi
 
-_verify_scripts_loaded  # load the external (other-language) scripts!
-
+# load the external (other-language) scripts!
+[ -f "$SCRIPTS_BASHRC_FILE" ] && { source "$SCRIPTS_BASHRC_FILE"; }
 
 # End-message (finished sourcing)
 if [[ $EUID -ne 0 ]]; then   # don't output messages if user is root (sudo running)

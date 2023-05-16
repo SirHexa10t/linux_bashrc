@@ -1,0 +1,10 @@
+# Reminders for the basics of systemd and other service daemons
+>> Crontab
+* crontab -e  # edit routine-scheduled tasks
+>> systemd
+* /etc/systemd/system/  :   add/remove .service files here
+* sudo systemctl daemon-reload  # rescan and reload service files
+* sudo systemctl <start/stop/restart/status> <myservice>.service  # manage the state of the service or check its running-status
+* sudo systemctl <enable/disable> example.service  # allow/disallow service to run after boot
+* journalctl -u <service_name.service>  # check the logs of a systemd service. Can also specify how to view them; example:   journalctl -u ssh --since "1 hour ago" --until now -f
+
