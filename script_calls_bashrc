@@ -4,6 +4,7 @@
 
 SCRIPTS_PATH="$CUSTOM_BASHRC_FOLDER/unlimited_script_works"  # name of the scripts folder within this project. Change it if you want, just be aware this could break.
 CHEATSHEETS_PATH="$CUSTOM_BASHRC_FOLDER/cheatsheets"  # name of the cheatsheets folder within this project. Change it if you want, just be aware this could break.
+CHEATSHEET_PREFIX='howdoi_'
 
 alias _scripts_loaded_comfirmation='_py_confirm_loaded'  # a call to a script added in just to confirm that the rest of the scripts are reached right 
 
@@ -15,14 +16,15 @@ function _reload_scriptfiles () {
     [[ "$@" =~ ^"--output_commands"$ ]] && output_commands='true'
 
     # loading scripts
-    local file_names=$(ls "$SCRIPTS_PATH")
-    local filename
-    while IFS= read -r filename; do  # Loop through the list of files and create a function for each
+    local file_names=$(find "$SCRIPTS_PATH" -type f)
+    local file_path
+    for file_path in $file_names; do  # Loop through the list of files and create a function for each
+        local filename="$(basename "$file_path")"
         local function_name=${filename%.*}  # keep the file name but not the ending suffix
-        local extension=${filename##*.}  # gets file-type or entire filename if there's no file-type
-        [[ "$extension" == "$function_name" ]] && extension='generic'  # to avoid having functions for no-extention files named "fooname_fooname", we'll write "generic" as the file-type
-        local cmd_name=$([[ "$function_name" = _* ]] && echo "_${extension}${function_name}" || echo "${extension}_${function_name}" )
-        local file_path="${SCRIPTS_PATH}/${filename}"
+
+        local extension=$([[ "$filename" = *.* ]] && echo "${filename##*.}" || echo 'generic' )  # gets file-type, or default if there's no dot.
+        local prefix=$([[ "$function_name" = _* ]] && echo "_${extension}" || echo "${extension}_")
+        local cmd_name="${prefix}${function_name}"
 
         [ -n "$declare_commands" ] && eval "function $cmd_name () { "$file_path" \"\$@\"; }"  # make script callable with optional args
         [ -n "$output_commands" ] && echo "$cmd_name:$file_path"
@@ -33,7 +35,7 @@ function _reload_scriptfiles () {
     local chsh_file
     for chsh_file in $chsh_files; do
         local filename="$(basename "$chsh_file")"
-        local cmd_name="howdoi_$filename"
+        local cmd_name="${CHEATSHEET_PREFIX}${filename}"
 
         [ -n "$declare_commands" ] && eval "function $cmd_name () { commecho -l < $chsh_file; }"
         [ -n "$output_commands" ] && echo "$cmd_name:$chsh_file"

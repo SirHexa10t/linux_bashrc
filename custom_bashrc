@@ -13,11 +13,22 @@
 
 # TODO - add a function that backs up personal configurations and files from HOME
 
-# TODO - add this to cheatsheet: https://itsfoss.com/read-compressed-log-files-linux/
-
 # TODO - use pipe files (RAM-residing files created through: mkfifo)
 
 # TODO - download function; provide link (youtube/twitter/reddit...) and it'll download stuff.
+
+
+# TODO - add this to cheatsheet: https://itsfoss.com/read-compressed-log-files-linux/
+
+# TODO - write down flatpak/appimage/snap/(other?) differences
+
+# TODO - create a script thatll establish tmux workspaces when logging into your user (so youd have things ready for debugging or coding and such)
+# TODO - create functions that run these commands interactively (like listing, then letting the user pick a number, then go there...)
+
+# TODO - cargo (maven-like manager for Rust) cheatsheet. Reference: https://www.youtube.com/watch?v=zF34dRivLOw
+
+# TODO - howdoi_program_python/java/rust/c/bash(?)...
+#   in python: `python3 -m mypy --strict <python_file.py>`  # requires `pip install mypy` ; checks typing in your python file
 
 
 #---------------------------------------------------------------------------------------------
@@ -251,6 +262,8 @@ alias whosmyisp='curl -s ipinfo.io/org'
 
 # Synonymous to "remindme" with extra information (less useful to user).
 alias list_cmds='remindme --show_hidden --include_line_num'
+# displays all cheatsheet commands
+alias cheatsheets='compgen -c | grep --color=never "^$CHEATSHEET_PREFIX" ; echo -e "To manually view the cheatsheet files, you can open your window-manager at their directory with this command:\n gui \"$CHEATSHEETS_PATH\""'
 # Synonymous to "remindme".
 alias what_commands='remindme'
 ## Mispelled intentionally; don't fix it.
@@ -276,18 +289,6 @@ alias benchmark_internet_connectivity='multiping'
 alias autoclick_hold_100cps='py_clicker --cps 100'
 # alias to a python script (auto-clicker toggled)
 alias autoclick_toggle_100cps='py_clicker --cps 100 --toggle'
-
-
-
-# TODO - write down flatpak/appimage/snap/(other?) differences
-
-# TODO - create a script thatll establish tmux workspaces when logging into your user (so youd have things ready for debugging or coding and such)
-# TODO - create functions that run these commands interactively (like listing, then letting the user pick a number, then go there...)
-
-# TODO - cargo (maven-like manager) cheatsheet. Reference: https://www.youtube.com/watch?v=zF34dRivLOw
-
-# TODO - howdoi_program_python/java/rust/c/bash(?)...
-#   in python: `python3 -m mypy --strict <python_file.py>`  # requires `pip install mypy` ; checks typing in your python file
 
 
 # Custom
