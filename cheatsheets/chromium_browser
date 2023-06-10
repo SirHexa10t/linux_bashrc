@@ -1,4 +1,4 @@
 # Snippets and tricks for Chromium-based browsers
 * chrome://flags/#hardware-media-key-handling  # Advanced operation flags. Specifically media-key-handline - disable this to get rid of the banner that appears when you change audio-volume
 * document.getElementsByTagName("video")[0].playbackRate = 4  # change youtube playback speed (example here: x4)
-
+* greasyfork.org  : source for scripts to run on your ViolentMonkey add-on/plugin

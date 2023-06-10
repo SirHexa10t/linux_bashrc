@@ -37,6 +37,8 @@
 * Use "<" to redirect a file. Example; to use file-contents as input: "./my_script.sh < input.txt"
 * Use "<<" ("here-document") to specify on what word (alone, not as an internal part of line) to stop reading text.
 * Use "<<<" ("here-string") to input a string as if it came from a file. For example, when running via while-loop on lines stored in a variable
+* Use ">" to truncate and then write output into a file; if file doesn't exist, it's created. Example: echo 'only this line' > file.txt 
+* Use ">" to write output into a file (no truncate); if file doesn't exist, it's created. Example: echo 'add me as last line' >> file.txt 
 * add "<0/1/2> > <filename>" after a command to write input(0)/output(1)/error(2) streams to a file. Specify "&" to write both 1 and 2. You can also use numbers 3 to 9, those are free descriptors for you to use as you like.
 *   add "2> /dev/null" after a command to throw away warning/error messages it might bring up
 * declare -p <variable>  # Note: no use of $. Print the variable to check data / data-type

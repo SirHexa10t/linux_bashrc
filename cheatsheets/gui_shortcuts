@@ -6,4 +6,7 @@
 * Built-in CTRL+ALT+F1  :  enter TTY mode (terminal without anything graphic to lock/interrupt you)
 * Built-in CTRL+ALT+F7  :  exit TTY mode
 * Evdev installation LCTRL+RCTRL  :  switch mouse and keyboard (and maybe other things) between guest/host. Won't work if you gave the VM your USB device directly.
++ browser shortcuts are mentioned in a browser-dedicated cheatsheet
+* in MPV/Celluloid video player:
+*   playback speed: '[' and ']' to increase/decrease, '{' and '}' to multiply/divide by 2, [backspace] to reset
 

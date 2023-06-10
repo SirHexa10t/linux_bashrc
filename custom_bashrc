@@ -30,6 +30,8 @@
 # TODO - howdoi_program_python/java/rust/c/bash(?)...
 #   in python: `python3 -m mypy --strict <python_file.py>`  # requires `pip install mypy` ; checks typing in your python file
 
+# TODO - implement following stocks (listed in a personal file)
+
 
 #---------------------------------------------------------------------------------------------
 #----CUSTOM-----------------------------------------------------------------------------------
@@ -58,6 +60,7 @@ function _file_content_or_nothing () { [ -f "$1" ] && cat "$1" || echo '' ; }
 # arg 1: symlink file
 function _symlink_or_nothing () { [[ -L "$1" && -e $(readlink -f "$1") ]] && echo "$1" || echo '' ; }
 
+
 ## Session data
 #################################################################################
 SUDO_FILE="$(which sudo)"
@@ -71,6 +74,7 @@ if [ "$IS_FIRST_SOURCING" = true ]; then  # only do if not defined already (can 
     CUSTOM_FUNCTIONS_INITIAL=$(_function_names)
 fi
 
+
 ## My settings / constants (customize this to your needs/liking)
 #################################################################################
 
@@ -81,6 +85,7 @@ GARBAGE_OUTPUTS="$(_filename_or_nothing "$UTILITY_FILES_FOLDER/outputs.txt")"  #
 
 SUBDIR_MOUNTS_FILE="$(_filename_or_nothing "$HOME/symlink_folder_mounts.sh")"  # if you have various media-drives and choose to have this file, insert mounting/symlinking instructions into it. Search the usage of this keyword to see how it's expected to work.
 CREDENTIALS_OPENAI=$(_file_content_or_nothing "$UTILITY_FILES_FOLDER/openai_api_key")  # API key for ChatGPT 3.5 (if file exists)
+SCREEN_ARRANGEMENTS_FILE=$(_file_content_or_nothing "$UTILITY_FILES_FOLDER/screen_arrangement")
 
 CRYPTO_PROGRAMS_DIR="$CUSTOM_BASHRC_FOLDER/external_programs/crypto"  # your crypto miners dir, if you want to do mining
 
@@ -131,7 +136,7 @@ if [[ "$EUID" -ne 0 ]]; then  # no binding keys when running as root.
     # ==================
 
     # CTRL+X : (let's pretend X is for X-Server...) arrange monitors when the nvidia settings won't keep them arranged
-    bind -x '"\C-x": "arrange_monitors"$\r$\n'
+    [ -n "$SCREEN_ARRANGEMENTS_FILE" ] && bind -x '"\C-x": "arrange_monitors"$\r$\n'
 
 fi
 
@@ -150,8 +155,14 @@ if [ -n "$GARBAGE_OUTPUTS" ]; then
     alias garbage_tail='tail -f "$GARBAGE_OUTPUTS"'
     # truncate/clear the garbage-outputs file
     alias garbage_clear='truncate -s 0 "$GARBAGE_OUTPUTS"'
+    # print to garbage-outputs file
+    function garbage_print () { echo "$1" >> "$GARBAGE_OUTPUTS" ; }
 fi
 
+# Ad-Hoc screen layout rearrangement (sometimes they get messed up; maybe it's an Nvidia-Linux problem)
+if [ -n "$SCREEN_ARRANGEMENTS_FILE" ]; then
+    alias arrange_monitors="nvidia-settings --load-config-only && nvidia-settings --assign CurrentMetaMode=\"$SCREEN_ARRANGEMENTS_FILE\""
+fi
 
 ## Basic functionalitiy override !
 # ===============================
@@ -184,6 +195,8 @@ alias g3='grep -iF --color=auto -C 3'
 # history grep
 alias hg='history | grep -iF --color=auto'
 
+# get parameter's value (use by specifying variable's name, no '$')
+alias valueof='declare -p'
 
 
 # Service/Application handling
@@ -205,9 +218,9 @@ alias anew='exec bash'
 # TODO - support more systems
 # Upgrade your system. Includes autoremove
 alias updatengrade='\
-[ -n "$(which apt)" ] && sudo apt update && sudo apt-get full-upgrade -y && sudo apt-get autoremove -y
-[ -n "$(which dnf)" ] && sudo dnf check-update && sudo dnf distro-sync -y && sudo dnf autoremove -y
-[ -n "$(which nix)" ] && nix-channel --update && nix-env --upgrade
+[ -n "$(which apt)" ] && { sudo apt update ; sudo apt-get full-upgrade -y && sudo apt-get autoremove -y ; }
+[ -n "$(which dnf)" ] && { sudo dnf check-update ; sudo dnf distro-sync -y && sudo dnf autoremove -y ; }
+[ -n "$(which nix)" ] && { nix-channel --update ; nix-env --upgrade ; }
 '
 
 # rebuild boot parameters using GRUB
@@ -271,6 +284,8 @@ alias what_commands='remindme'
 alias i_forgor='remindme'
 # Synonymous to "find_proc". psg is short for "ps grep"
 alias psg='find_proc'
+# Synonymous to "spellcheck". def is short for "define"
+alias def='spellcheck'
 # Synonymous to "kill_interactively". Easy to associate with kill, and doesn't share the same leading chars
 alias murder='kill_interactively'
 # used to allow running this function on aliases
@@ -291,15 +306,6 @@ alias autoclick_hold_100cps='py_clicker --cps 100'
 alias autoclick_toggle_100cps='py_clicker --cps 100 --toggle'
 
 
-# Custom
-# ======
-
-# Ad-Hoc screen layout rearrangement (sometimes they get messed up; maybe it's an Nvidia-Linux problem)
-alias arrange_monitors='nvidia-settings --load-config-only && nvidia-settings --assign CurrentMetaMode="HDMI-0: nvidia-auto-select +1920+1080, DP-0: nvidia-auto-select +1920+0, DP-2: nvidia-auto-select +3840+1080, DP-4: 1920x1080_240 +0+1080"'
-
-
-
-
 
 # ---------- FUNCTIONS ----------
 #################################################################################
@@ -315,7 +321,9 @@ function _sudo_if_necessary () {
     [ $# -ge 1 ] || { errcho "WTF are you expecting me to sudo? Give me a command-string as argument" ; return ; }
     (  # can't make the output-catch var local - you'd get no root password prompt. So we put it in its own enclosed env.
         command_output=$(eval "$@" 2>/dev/null)
-        [ $? -ne 0 ] && sudo "$@" || echo "$command_output"
+        if [ $? -ne 0 ]; then sudo "$@";
+        else echo "$command_output";
+        fi
     )
 }
 
@@ -357,8 +365,9 @@ function mkdir () {
 
 # make date output in a specific format by default
 function date () {
-    local args=$([ $# == 0 ] && echo "+%Y-%m-%d_%T" || echo "$@")  # if provided 0 args, set the time-format to own preference
-    /usr/bin/date "$args"
+    if [ $# -eq 0 ]; then /usr/bin/date "+%Y-%m-%d_%T";  # no args provided, so default to this time format
+    else /usr/bin/date "$@";  # user provided args - leave the command alone
+    fi
 }
 
 
@@ -369,8 +378,8 @@ function date () {
 # TODO - integrate this into some functions that check if an arg exists?
 # check if arg 1 (string) exactly matches any within the rest of the args (list)
 function is_str_in_list () {
-    local list="${@:2}" line
-    for line in $list; do [[ "$1" == "$line" ]] && return 0; done  # also separates by newlines even if the lines are part of the same string
+    local list=("${@:2}") line
+    for line in "${list[@]}"; do [ "$1" = "$line" ] && return 0; done  # also separates by newlines even if the lines are part of the same string
     return 1
 }
 
@@ -440,13 +449,15 @@ function _hashmap_instructions () {
     [ -z "$the_list" ] && errcho "no list provided" && return 1
 
     # TODO - see if you can declare with -g -A (global declaration, no need to evaluate printed reply). The difficulty I had was assigning values to the hashmap (since its name was saved in a var)
-    local hasmap_builder="declare -A $hashmap_name=("
     local item
-    for item in $the_list; do hasmap_builder+=" [$item]='1'"; done 
-    hasmap_builder+=")"
+    declare -A buffer_hashmap
+    for item in $the_list; do buffer_hashmap[$item]='1'; done  # eliminate duplications
+    
+    local hm_content=$(for item in ${!buffer_hashmap[@]}; do echo -n " [$item]='1'"; done)  # echo segments to concatenate the string efficiently
+    # for item in "${the_list[@]}"; do hasmap_builder+=" [$item]='1'"; done 
     
     # "return" the hashmap-creation string that needs to be evaluated
-    echo "$hasmap_builder"
+    echo "declare -A $hashmap_name=($hm_content)"
 }
 
 # gets variable name, evaluates it and returns hashmap-creation-string for same varname with suffix _map or _MAP
@@ -478,7 +489,7 @@ function _unique_in_first () {
 # Basic user interactivity
 # ========================
 
-# adds y/n prompt. Call like this:  if prompt_yn "<prompt q>?"; then echo "<starting-process msg>"; else echo "<cancellation msg>" && return ; fi
+# y/n prompt. Call like this:  if prompt_yn "<prompt q>?"; then echo "<starting-process msg>"; else echo "<cancellation msg>" && return ; fi
 function _prompt_yn () {   
     local response
     # keep prompting the user until they provide a valid response
@@ -539,14 +550,14 @@ function remindme () {
     function get_commands_by_expression {
         local expression_template="$1"
         local num_of_rows_above="$2"
-        local cmd_names="${@:3}"  # args 3 and onwards
+        local cmd_names=(${@:3})  # args 3 and onwards
 
         [ -z "$cmd_names" ] && errcho 'No commands given to search!' && return
 
         local delimiter='->->->'  # separator between 2 different strings; it needs to be unlikely to be there "naturally"
         local match_results="$(
             local name  # iteration variables
-            while read -r name; do
+            for name in "${cmd_names[@]}"; do
                 if [ -z "$show_hidden" ] && [[ "${name:0:1}" == '_' ]]; then continue; fi  # if not showing hidden functions and current function starts with '_', skip it
                 if [ -n "${unoriginal_map[$name]}" ]; then continue; fi  # if it's an override of a known command (user already knows what it does), don't mention it - skip
             {
@@ -561,7 +572,7 @@ function remindme () {
                 matched_comment=$(echo "${matched_comment}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
                 echo "$line_num${delimiter}$name  $matched_comment"
             } &  # no need for wait (hopefully), as all the results are collected into a var
-            done <<< "$cmd_names"
+            done
         )"
 
         local line
@@ -667,7 +678,7 @@ function network_search () {
 function multiping () {
     local num_of_pings=3
     # random_lan_device=$(ip neigh | cut -f 1 -d ' ' | grep -v '127.0.0.1' | shuf -n 1)
-    local user_choice="$@"
+    local user_choice=($@)
     local big_domains="wikipedia.org youtube.com discord.com google.com cloudflare.com"
     local dns_addresses="8.8.8.8 1.1.1.1"  # google and cloudflare
     local aws_endpoints="$(curl -s "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html" | sed -n 's|\(rds.[[:alpha:]]\+-[[:alpha:]]\+-[[:digit:]]\+.amazonaws.com\)|\1|p')"
@@ -690,17 +701,18 @@ function multiping () {
             # ping (async), and average the response time, then print result.
             {
                 protocol_name="IPv$protocol"
+                colored_address=$( is_str_in_list "$address" "${user_choice[@]}" && orecho "$address" || becho "$address" )
                 failure=''
                 ping_results="$(ping "-$protocol" -c "$num_of_pings" "$address" 2> /dev/null)"
                 if [ $? -ne 0 ]; then
-                    [[ "$protocol" == "4" ]] && recho "Failed pinging $address on $protocol_name"  # only print if failed at IPv4
+                    [[ "$protocol" == "4" ]] && recho -p "Failed pinging $colored_address on $protocol_name"  # only print if failed at IPv4
                     failure='true'
                 fi 
 
                 # if didn't fail, print the resutls
                 [ -z "$failure" ] && echo "$ping_results" \
-                 | awk -F 'time=' '{if (NF > 1) {print $2}}' \
-                 | awk '{ total += $1 } END { print total/NR }' | echo "$(becho "$address") on $protocol_name, avg ping time: $(grade_ping $(cat)) ms"                
+                    | awk -F 'time=' '{if (NF > 1) {print $2}}' \
+                    | awk '{ total += $1 } END { print total/NR }' | echo "$colored_address on $protocol_name, avg ping time: $(grade_ping $(cat)) ms"      
             } &
 
         done
@@ -1444,17 +1456,17 @@ function explore () {
 
 # finds files that shouldnt be executable and chmods them
 function revoke_exe_mod () {
-    local location=${1:-.}  # use given address, default to current location
+    local location=${1:-"$(pwd)"}  # use given address, default to current location
     local format=${2:-'txt'}  # use given format, default to txt
     local files=$(find "$location" -type f -name "*.$format")  # get txt (or specified) files recursively
     local file
-    while read -r file; do
+    for file in ${files[@]}; do
         # if file is executable
         if [ -x "$file" ]; then
             # revoke exe permission (run as sudo IF necessary)
             _sudo_if_necessary chmod -x "$file" && echo "file no longer executable: $file"
         fi
-    done <<< "$files"
+    done
 }
 
 # TODO - archive multiple (support archiving multiple files at once, and a whole folder's contents indivisually)
@@ -2067,6 +2079,8 @@ function launch_vm_w_lookingglass () {
     local portnum=$(sudo grep -oP "<graphics type=[\"']spice[\"'] port=[\"']\K\d+" "$xml_file")  # works for either single or double quotes
     portnum=${portnum:=5900}  # default if empty
 
+    # TODO - add estimation of amount of memory to allocate in shmem (add table of estimations to dialog) for 2K/HDR/4K
+
     # Show user the parameters and ask for approval (quit if disapproved)
     becho "Please authorize the following. Note: no two running VMs may have the same looking-glass session-file or VNC-port at the same time"
     if _prompt_yn "$(becho "VM:") $vm_name, $(becho "looking-glass_name:") $shmem_name, $(becho "VNC-port:") $portnum. Launch with these parameters?"; then
@@ -2215,6 +2229,8 @@ function becho () { _colored_echo "<=bold=><=blue=>" "$@" ; }
 function cecho () { _colored_echo "<=bold=><=cyan=>" "$@" ; }
 # echo in yellow
 function yecho () { _colored_echo "<=bold=><=yellow=>" "$@" ; }
+# echo in orange
+function orecho () { _colored_echo "<=bold=><=orange=>" "$@" ; }
 # echo in white, bold
 function wecho () { _colored_echo "<=bold=><=grey=>" "$@" ; }
 
@@ -2229,6 +2245,8 @@ function guecho () { gecho "<=uline=>" "$@" ; }
 function buecho () { becho "<=uline=>" "$@" ; }
 # underlined echo in yellow
 function yuecho () { yecho "<=uline=>" "$@" ; }
+# underlined echo in orange
+function oruecho () { orecho "<=uline=>" "$@" ; }
 # underlined echo in white
 function wuecho () { wecho "<=uline=>" "$@" ; }
 
