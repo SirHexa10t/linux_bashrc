@@ -6,29 +6,6 @@ A bashrc file with various gimmicks I found or came up with
 
 It's still a work in progress; some features are commented out until they'll be finished
 
-### Guiding principles:
-
-+ **Informative** functions should pack of as much *relevant* data into as few user requests as possible.
-+ **Potentially-harmful** functions *always* require bold and clear messages that prompt the user for approval.
-+ **Overridden** functionalities have the highest potential of improving the user-experience, thus they're fair-game.
-  + Dare to replace basic functionalities with ones from better packages, or enforce the usage of 99%-necessary flags
-    + The user doesn't need to be familiar with the alternatives packages or useful flags, just make the same-old commands better.
-  + Include said replacements only if they're meaningfully-better.
-  + It's fine to rely on specific packages.
-    + It's up to the user to decide whether to install packages necessary for the bashrc functionality.
-    + If some command doesn't work because of a missing package, the function should fail; not fix itself.
-  + Damages due to common commands' override should always be unlikely, yet fully remain the user's responsibility
-  + Don't rely on your overrides' quirks in your own functions; they're there for the user's convenience and should be considered removable.
-+ Be considerate of the user: assume tiredness or weak memory.
-  + If something complicated is going on, there should be a notification/explanation about it.
-  + Don't let the text blend; color-code your messages, so it's easy to discern what kind of data is displayed.
-  + Command names should be simple to understand, pronounce, and type.
-    + Command names need to be different (at least start differently) than the system's. That way the user can tab-complete commands faster.
-+ There shouldn't be 2 functions that do the same thing.
-+ Extra comments are always fine
-  + Complicated functions should have usage-example(s)
-  + It's fine to leave TODOs within the bashrc file, it's a 1-file project.
-  + It's fine to leave dead code commented out if you plan on using it later (but clean it up once you're really done)
 
 ## Compatibility
 
@@ -41,11 +18,24 @@ This bashrc was written for Linux Mint 21 / 21.1, but should work for the most p
 
 ### Sourcing:
 
-The best way to use this project is to source the "custom_bashrc" file. It's the most modular approach; also arguably the easiest.
+OPTION 1: (recommended)
+--------
+Run the file "interactive_setup.sh" to integrate the custom_bashrc project and customize it to your needs.
 
-Simply download this project and **paste the following code at the end of your bashrc file**. Remember to edit it by specifying the "CUSTOM_BASHRC_FILE" path
+In case you're unsure how, run the following commands within the project-folder's directory:
+```
+chmod +x interactive_setup.sh  # allow execution of setup-file
+./interactive_setup.sh  # run the setup file
+```
 
-Your personal bashrc should be "$HOME/.bashrc", but you can alternatively source for all users through the "/etc/bash.bashrc" file (requires sudo)
+
+OPTION 2:
+--------
+Manually source the "custom_bashrc" file in one of your bashrc files.
+
+Some features won't be available without further configuration. Solving this by running the "interactive_setup.sh" script later is always an option.
+
+If you're unsure how to source it: **paste the following code at the end of your bashrc file**. Remember to edit it by specifying the "CUSTOM_BASHRC_FILE" path
 
 ```
 # source custom bashrc file (more modular than modifying the actual bashrc file)
@@ -56,22 +46,16 @@ else echo "couldn't find custom_bashrc file at \"$CUSTOM_BASHRC_FILE\" , fix the
 fi
 ```
 
-
-### Sourcing extra scripts (commands that reference non-bash scripts)
-
-No need to do anything.
-
-There is another bashrc file in this project called "script_calls_bashrc", which dynamically adds aliases that refer to scripts in a nearby folder (you can add your own scripts there)
-
-By default, custom_bashrc sources the scripts' bashrc-file by relative path. Just don't move custom_bashrc out of the project-folder.
+Your personal bashrc should be "$HOME/.bashrc", but you can alternatively source for all users at the "/etc/bash.bashrc" file (requires sudo)
 
 
 ### Using the custom_bashrc commands:
 
-The sourced bashrc files print a message when they're done loading; the message suggests running a command that tells you where/how to begin usage.
+The sourced bashrc files print a message when they're done loading; run the message's suggested command to view the available commands.
 
 User-specific settings can be set at the top of the file, in the appropriate "My settings" section.
 Just look-up the variables' names within this same file, you'll see what they're used for.
+
 
 
 ## Use Cases (examples)
@@ -149,3 +133,27 @@ Displays side-by-side comparison of media files (movies, pictures, music) metada
 Lists the bash commands that this project provides - can be used for lookup, reading the short documentation, or as the command's name implies - a reminder
 
 
+
+## Dev Guiding principles:
+
++ **Informative** functions should pack of as much *relevant* data into as few user requests as possible.
++ **Potentially-harmful** functions *always* require bold and clear messages that prompt the user for approval.
++ **Overridden** functionalities have the highest potential of improving the user-experience, thus they're fair-game.
+  + Dare to replace basic functionalities with ones from better packages, or enforce the usage of 99%-necessary flags
+    + The user doesn't need to be familiar with the alternatives packages or useful flags, just make the same-old commands better.
+  + Include said replacements only if they're meaningfully-better.
+  + It's fine to rely on specific packages.
+    + It's up to the user to decide whether to install packages necessary for the bashrc functionality.
+    + If some command doesn't work because of a missing package, the function should fail; not fix itself.
+  + Damages due to common commands' override should always be unlikely, yet fully remain the user's responsibility
+  + Don't rely on your overrides' quirks in your own functions; they're there for the user's convenience and should be considered removable.
++ Be considerate of the user: assume tiredness or weak memory.
+  + If something complicated is going on, there should be a notification/explanation about it.
+  + Don't let the text blend; color-code your messages, so it's easy to discern what kind of data is displayed.
+  + Command names should be simple to understand, pronounce, and type.
+    + Command names need to be different (at least start differently) than the system's. That way the user can tab-complete commands faster.
++ There shouldn't be 2 functions that do the same thing.
++ Extra comments are always fine
+  + Complicated functions should have usage-example(s)
+  + It's fine to leave TODOs within the bashrc file, it's a 1-file project.
+  + It's fine to leave dead code commented out if you plan on using it later (but clean it up once you're really done)

@@ -21,4 +21,5 @@
 * log-file: /var/log/dmesg  :  log for kernel ring buffer
 *   dmesg -k | grep -E "warn|error"  # the command dmesg displays kernel logs buffer
 * log-file: /var/log/kern.log  :  log for kernel ring buffer
-
+>> working with devices (disks/volumes)
+* wipefs -a /dev/<sd??>  # remove filesystem data; removes RAID metadata

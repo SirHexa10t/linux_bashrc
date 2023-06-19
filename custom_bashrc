@@ -32,6 +32,9 @@
 
 # TODO - implement following stocks (listed in a personal file)
 
+# TODO - how to use proxychains
+# also, look into github.com/Und3rf10w/kali-anonsurf
+
 
 #---------------------------------------------------------------------------------------------
 #----CUSTOM-----------------------------------------------------------------------------------
@@ -65,7 +68,7 @@ function _symlink_or_nothing () { [[ -L "$1" && -e $(readlink -f "$1") ]] && ech
 #################################################################################
 SUDO_FILE="$(which sudo)"
 CUSTOM_BASHRC_FILE="$(readlink -f -- "$BASH_SOURCE")"  # this file  TODO - check how it's different from using "realpath"
-CUSTOM_BASHRC_FOLDER="$(dirname "$CUSTOM_BASHRC_FILE")"  # this file's filder
+CUSTOM_BASHRC_FOLDER="$(dirname "$CUSTOM_BASHRC_FILE")"  # this file's folder-path
 SCRIPTS_BASHRC_FILE="$CUSTOM_BASHRC_FOLDER/script_calls_bashrc"  # optional extention file
 IS_FIRST_SOURCING=$([ ! -v CUSTOM_ALIASES_INITIAL ] && echo 'true' || echo 'false')
 
@@ -78,27 +81,46 @@ fi
 ## My settings / constants (customize this to your needs/liking)
 #################################################################################
 
-# Files this script could utilize. Definitions self-erase in case they don't exist, to avoid writing them accidentally
-UTILITY_FILES_FOLDER="$CUSTOM_BASHRC_FOLDER/utility_files"
-TESTS_FILE="$(_filename_or_nothing "$UTILITY_FILES_FOLDER/run_tests.sh")"  # Convenient debugging; if file exists, automatically runs when this bashrc file finishes loading. The contents (and address) are up to you.
-GARBAGE_OUTPUTS="$(_filename_or_nothing "$UTILITY_FILES_FOLDER/outputs.txt")"  # default location to dump data into (if exists)
+# Files this script could utilize (optional - if these files don't exist, their according variables would be assigned an empty string).
+UTILITY_FOLDER_GLOBAL="$CUSTOM_BASHRC_FOLDER/utility_files"  # global settings (same file for multiple users)
+UTILITY_FOLDER_PERSONAL="$HOME/bashrc_utility_files"  # personal settings (in case of one "installation" - different users should still have different settings)
 
-SUBDIR_MOUNTS_FILE="$(_filename_or_nothing "$HOME/symlink_folder_mounts.sh")"  # if you have various media-drives and choose to have this file, insert mounting/symlinking instructions into it. Search the usage of this keyword to see how it's expected to work.
-CREDENTIALS_OPENAI=$(_file_content_or_nothing "$UTILITY_FILES_FOLDER/openai_api_key")  # API key for ChatGPT 3.5 (if file exists)
-SCREEN_ARRANGEMENTS_FILE=$(_file_content_or_nothing "$UTILITY_FILES_FOLDER/screen_arrangement")
+CRYPTO_PROGRAMS_DIR="$UTILITY_FOLDER_PERSONAL/external_programs/crypto"  # your crypto miners dir, if you want to do mining
 
-CRYPTO_PROGRAMS_DIR="$CUSTOM_BASHRC_FOLDER/external_programs/crypto"  # your crypto miners dir, if you want to do mining
+declare -A _UTILITY_FILE_MAP=(
+    ['TESTS_FILE']="$UTILITY_FOLDER_PERSONAL/run_tests.sh"  # Convenient debugging; automatically runs when this bashrc file finishes loading. The contents (and address) are up to you.
+    ['GARBAGE_OUTPUTS']="$UTILITY_FOLDER_PERSONAL/outputs.txt"  # default location to dump data into
+    ['SUBDIR_MOUNTS_FILE']="$UTILITY_FOLDER_PERSONAL/symlink_folder_mounts.sh"  # mount/symlink media-drives's internal directories
+    ['CREDENTIALS_OPENAI']="$UTILITY_FOLDER_PERSONAL/openai_api_key"  # API key for ChatGPT 3.5
+    ['DISPLAY_ARRANGEMENT']="$UTILITY_FOLDER_PERSONAL/screen_arrangement"  # will map to a keybind to re-sort your screen outputs in case your OS scrambles them
+    ['CUSTOM_TMPDIR']="/temp_cache"  # use a different space (folder) for tmp-files, pointed to by this symlink 
+    ['VM_IMG_PARTITION_UUID']="$UTILITY_FOLDER_PERSONAL/vm_images_partition"  # the drive that contains VMs' disk data; must be mounted when running a VM
+    ['LOOKING_GLASS_CLIENT']="$UTILITY_FOLDER_PERSONAL/looking_glass_host_client"  # location of the program (binaries file) that 
+)
+
+function _remap_utility_files () {
+    local filepath filecontent link value
+
+    for filepath in "TESTS_FILE" "GARBAGE_OUTPUTS" "SUBDIR_MOUNTS_FILE"; do
+        value=$(_filename_or_nothing "${_UTILITY_FILE_MAP[$filepath]}")
+        eval "$filepath=\"$value\""
+    done
+    for filecontent in "CREDENTIALS_OPENAI" "DISPLAY_ARRANGEMENT" "VM_IMG_PARTITION_UUID" "LOOKING_GLASS_CLIENT"; do
+        value=$(_file_content_or_nothing "${_UTILITY_FILE_MAP[$filecontent]}")
+        eval "$filecontent=\"$value\""
+    done
+    for link in "CUSTOM_TMPDIR"; do
+        value=$(_symlink_or_nothing "${_UTILITY_FILE_MAP[$link]}")
+        eval "$link=\"$value\""
+    done
+}
+_remap_utility_files
 
 
-# env variables that you're expected to customize
-CUSTOM_TMPDIR="$(_symlink_or_nothing "/temp_cache")"
+# env variables that influence built-ins
 export TMPDIR=${CUSTOM_TMPDIR:-"$TMPDIR"}
 
 export HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
-
-# Constants for VM functions
-QEMU_PARTITION_UUID='A80899A4089971D4'  # the drive that contains VMs' disk data; must be mounted when running a VM  # TODO - place in a file, like a credential
-LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"  # run VM in a window
 
 
 
@@ -111,7 +133,7 @@ LOOKING_GLASS_CLIENT="/usr/local/bin/looking-glass-client"  # run VM in a window
 # before adding a bind, check whether it's already taken, by running "bind -p". You'd generally be overwriting existing binds, but some of them such as CTRL+M cause problems when you overwrite
 # To define it only if the shortcut doesn't exist, run a command like this:   if ! bind -q "\C-w"; then bind '"\C-w": "exit\n"'; fi
 
-if [[ "$EUID" -ne 0 ]]; then  # no binding keys when running as root.
+if [[ -z "$SCRIPTED_SOURCING" && "$EUID" -ne 0 ]]; then  # no binding keys when running as root or from a script.
     # Bash terminal related 
     # =====================
 
@@ -136,7 +158,8 @@ if [[ "$EUID" -ne 0 ]]; then  # no binding keys when running as root.
     # ==================
 
     # CTRL+X : (let's pretend X is for X-Server...) arrange monitors when the nvidia settings won't keep them arranged
-    [ -n "$SCREEN_ARRANGEMENTS_FILE" ] && bind -x '"\C-x": "arrange_monitors"$\r$\n'
+    [ -n "$DISPLAY_ARRANGEMENT" ] && \
+        bind -x '"\C-x": "arrange_monitors"$\r$\n'
 
 fi
 
@@ -160,8 +183,8 @@ if [ -n "$GARBAGE_OUTPUTS" ]; then
 fi
 
 # Ad-Hoc screen layout rearrangement (sometimes they get messed up; maybe it's an Nvidia-Linux problem)
-if [ -n "$SCREEN_ARRANGEMENTS_FILE" ]; then
-    alias arrange_monitors="nvidia-settings --load-config-only && nvidia-settings --assign CurrentMetaMode=\"$SCREEN_ARRANGEMENTS_FILE\""
+if [ -n "$DISPLAY_ARRANGEMENT" ]; then
+    alias arrange_monitors="nvidia-settings --load-config-only && nvidia-settings --assign CurrentMetaMode=\"$DISPLAY_ARRANGEMENT\""
 fi
 
 ## Basic functionalitiy override !
@@ -175,10 +198,12 @@ alias man='man '
 
 # replace apt with nala. Same thing but prettier
 # conditional alias - only if package is installed
-[ -n "$(which apt)" ] && _announce_pkg_installed 'nala' && alias apt='nala'
+[ -n "$(which apt)" ] && _announce_pkg_installed 'nala' && \
+    alias apt='nala'
 
 # rsync copy instead of cp - recursive by default and shows progress percentage
-_announce_pkg_installed 'rsync' && alias cp='rsync -ah --info=progress2'
+_announce_pkg_installed 'rsync' && \
+    alias cp='rsync -ah --info=progress2'
 
 
 # Lookup
@@ -489,6 +514,13 @@ function _unique_in_first () {
 # Basic user interactivity
 # ========================
 
+# wait until user makes an input to continue
+# arg 1: custom message
+function hang () {
+    echo "${1:-Press any key to continue}"
+    read -n 1 -s -r
+}
+
 # y/n prompt. Call like this:  if prompt_yn "<prompt q>?"; then echo "<starting-process msg>"; else echo "<cancellation msg>" && return ; fi
 function _prompt_yn () {   
     local response
@@ -679,7 +711,7 @@ function multiping () {
     local num_of_pings=3
     # random_lan_device=$(ip neigh | cut -f 1 -d ' ' | grep -v '127.0.0.1' | shuf -n 1)
     local user_choice=($@)
-    local big_domains="wikipedia.org youtube.com discord.com google.com cloudflare.com"
+    local big_domains="wikipedia.org youtube.com discord.com google.com cloudflare.com github.com bitbucket.org"
     local dns_addresses="8.8.8.8 1.1.1.1"  # google and cloudflare
     local aws_endpoints="$(curl -s "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html" | sed -n 's|\(rds.[[:alpha:]]\+-[[:alpha:]]\+-[[:digit:]]\+.amazonaws.com\)|\1|p')"
 
@@ -1308,6 +1340,13 @@ function lll () {
         becho "Blocks Permissions Hard-Links Owner Group Size Date_Modified Filename"  # headers, not aligned, but still helpful
         echo "$cmd_result"
     fi
+}
+
+
+# touch, but also make sure that the dir necessary exists
+function mktouch () {
+    mkdir -p $(dirname "$1")
+    touch "$1"
 }
 
 # take ownership of file (add file-name after this command) 
@@ -2048,10 +2087,12 @@ function chatgpt_ask () {
 # Virtual Machines
 # ================
 
-#TODO - offer to choose a vm by number [1-n]. Need to create a function like y_n one that gets a dicitonary as an argument 
+# TODO - offer to choose a vm by number [1-n]. Need to create a function like y_n one that gets a dicitonary as an argument 
 # TODO - offer to add USB (and other?) devices by ID (from displayed list). Filter out devices already in XML.
 # interactively launch looking-glass session and VM (if not running). 
 function launch_vm_w_lookingglass () {
+    [ -z "$LOOKING_GLASS_CLIENT" ] && { errcho "looking-glass host-client path hasn't been defined"; return 1; } 
+
     local is_vm_chosen vm_name
     while [ -z "$is_vm_chosen" ]
     do
@@ -2074,32 +2115,36 @@ function launch_vm_w_lookingglass () {
     local shmem_name=$(sudo awk -F 'name=' '/shmem/ {gsub("'\''", "", $2); print $2}' "$xml_file" | sed 's/^"\([^"]*\)".*/\1/' | sed 's/>$//')  # extract the string between the quotes, remove the quotes, remove the closing '>'
     [ -z "$shmem_name" ] && { errcho "Couldn't find shmem name (shared-memory for looking glass). If there's no GPU sharing its memory, Looking-Glass can't be used. Exiting."; return 1; }
     local lg_file="/dev/shm/$shmem_name"
+    local shmem_size=$(sudo awk '/<\/shmem>/ {exit} {print}' "$xml_file" | tac | sed -n -E "s/.*<size unit='([^']*)'>([^<]*)<\/size>.*/\2 \1/p")  # get first size match above closing tag
 
     # get the vnc port number from xml
     local portnum=$(sudo grep -oP "<graphics type=[\"']spice[\"'] port=[\"']\K\d+" "$xml_file")  # works for either single or double quotes
     portnum=${portnum:=5900}  # default if empty
 
-    # TODO - add estimation of amount of memory to allocate in shmem (add table of estimations to dialog) for 2K/HDR/4K
-
     # Show user the parameters and ask for approval (quit if disapproved)
-    becho "Please authorize the following. Note: no two running VMs may have the same looking-glass session-file or VNC-port at the same time"
-    if _prompt_yn "$(becho "VM:") $vm_name, $(becho "looking-glass_name:") $shmem_name, $(becho "VNC-port:") $portnum. Launch with these parameters?"; then
+    becho "Please authorize the following."
+    dabecho -p "$(wecho "Note:") no two running VMs may have the same looking-glass session-file or VNC-port at the same time"
+    dabecho -p "$(wecho "Note:") shmem size should suffice for your resolution. Rough estimates (according to \"https://looking-glass.io/docs/B6/install/#client-determining-memory\"): \
+$(becho "1080p:") 32M, $(becho "1200p:") 32M, $(becho "1440p:") 32M, $(becho "4K:") 128M ; if you want to support $(becho "HDR mode:") $(wecho "DOUBLE") the stated amount."
+    if _prompt_yn "$(becho -p "VM: $(wecho "$vm_name"), looking-glass/shmem name: $(wecho "$shmem_name") (size: $(wecho "$shmem_size")), VNC-port: $(wecho "$portnum"). Launch with these parameters?")"; then
+    # if _prompt_yn "$(becho "VM:") $vm_name, $(becho "looking-glass/shmem name:") $shmem_name ($(becho "size:") $shmem_size), $(becho "VNC-port:") $portnum. Launch with these parameters?"; then
         echo "Starting..." 
     else 
         echo "Quitting. If the details were off, modify your VM's xml file (easiest through VM Manager, but you can also run: \"virsh edit $vm_name\")" 
         return
     fi
 
-    if _is_dev "$QEMU_PARTITION_UUID" ; then  # if is a legitimate device, try mounting it
+    if _is_dev "$VM_IMG_PARTITION_UUID" ; then  # if is a legitimate device, try mounting it
         becho "Making sure os-virtual-drive file's volume is mounted"
-        mount_media_by_uuid "$QEMU_PARTITION_UUID"
+        mount_media_by_uuid "$VM_IMG_PARTITION_UUID"
     fi
 
     becho "Creating looking-glass session file: $lg_file"
     sudo touch "$lg_file" && sudo chown $(whoami):kvm "$lg_file" && sudo chmod 660 "$lg_file"
-    [ -f "$lg_file" ] && ls -alF "$lg_file"  # todo - print colored (green?)?
+    [ -f "$lg_file" ] && dagecho $(ls -alF "$lg_file")
     
     # run the vm (if needed)
+    becho "Starting/resuming VM. This might take a minue."
     local vm_state=$(virsh domstate "$vm_name")
     if [ "$vm_state" == "running" ]; then
         gecho "$vm_name is already running."
@@ -2122,7 +2167,7 @@ function launch_vm_w_lookingglass () {
     
     # run looking glass client
     # experimental -S : Prevent the screensaver from starting  , win:size=1920x1080 : Initial window size at startup (default is 1024x768)
-    becho "Starting looking-glass client"
+    becho "Starting host-side looking-glass client"
     "$LOOKING_GLASS_CLIENT" -f "$lg_file" -p $portnum -k -S & disown # -k : enable FPS & UPS display  ; -S : prevent host going to sleep
 
 }
@@ -2225,6 +2270,8 @@ function gecho () { _colored_echo "<=bold=><=green=>" "$@" ; }
 function dagecho () { gecho "<=dark=>" "$@" ; }
 # echo in blue
 function becho () { _colored_echo "<=bold=><=blue=>" "$@" ; }
+# echo in dark blue
+function dabecho () { becho "<=dark=>" "$@" ; }
 # echo in cyan
 function cecho () { _colored_echo "<=bold=><=cyan=>" "$@" ; }
 # echo in yellow
@@ -2662,7 +2709,7 @@ fi
 [ -f "$SCRIPTS_BASHRC_FILE" ] && { source "$SCRIPTS_BASHRC_FILE"; }
 
 # End-message (finished sourcing)
-if [[ $EUID -ne 0 ]]; then   # don't output messages if user is root (sudo running)
+if [[ -z "$SCRIPTED_SOURCING" && $EUID -ne 0 ]]; then   # don't output messages if user is root (sudo running) or if accessed through a script
     echo "$(gecho "Finished loading") \"$CUSTOM_BASHRC_FILE\" for: \"`readlink -f $0`\". To view added commands, run: $(becho remindme)"  # announce done
     [ -f "$TESTS_FILE" ] && source "$TESTS_FILE"  # run the tests file if it exists and we're not in sudo mode
 fi
