@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # prerequisites
 # =============
 LOCAL_BASHRC_FILE="$(dirname $(readlink -f -- "$BASH_SOURCE"))/custom_bashrc"
@@ -9,6 +10,7 @@ SCRIPTED_SOURCING=1  # silent sourcing and no key-binds
 
 buecho "From here-on, you may quit at any point during a prompt by pressing CTRL+C. It's fine to re-run the script later, after quitting a previous run in the middle."
 buecho "If any update breaks your configurations, try rerunning this script (it'll be updated accordingly)"
+
 
 
 # git handling (for updates and such)
@@ -55,6 +57,7 @@ else
     errcho "The program \"git\" is not installed. It's highly recommended that you install it and rerun this script."
     if _prompt_yn "Would you like to continue anyway?"; then dagecho "Alright, it's your choice."; else { dagecho "Exiting." ; exit ; } ; fi
 fi
+
 
 
 # setting up bashrc for the user
@@ -126,6 +129,7 @@ fi
 
 # add the sourcing if user didn't pick "skip"
 [ "$location_chosen" != 'skip' ] && write_sourcing_into_file
+
 
 
 # setting up utility files

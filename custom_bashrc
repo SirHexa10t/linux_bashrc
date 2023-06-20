@@ -182,8 +182,8 @@ if [ -n "$GARBAGE_OUTPUTS" ]; then
     function garbage_print () { echo "$1" >> "$GARBAGE_OUTPUTS" ; }
 fi
 
-# Ad-Hoc screen layout rearrangement (sometimes they get messed up; maybe it's an Nvidia-Linux problem)
 if [ -n "$DISPLAY_ARRANGEMENT" ]; then
+    # Ad-Hoc screen layout rearrangement (sometimes they get messed up; maybe it's an Nvidia-Linux problem)
     alias arrange_monitors="nvidia-settings --load-config-only && nvidia-settings --assign CurrentMetaMode=\"$DISPLAY_ARRANGEMENT\""
 fi
 
@@ -597,6 +597,7 @@ function remindme () {
                 local expression=$(echo "$expression_template" | sed "s/<name>/$name/")
                 local line_num=$( echo "$this_file_text" | grep -nE "$expression" | cut -d: -f1 )  # get line number
                 # [ -z "$line_num" ] && continue ;  # couldn't find line-number, so it's not from this file (loaded from somewhere else)
+                [ "$(echo "$this_file_text" | grep -B 1 -E "$expression" | head -n 1 | grep "^\s*\[")" ] && num_of_rows_above=$((num_of_rows_above+1))  # get 1 line above line; if it starts with '[', it's a condition for the existence of the function/alias, which takes a line. So compensate by getting +1 lines above
                 local matched_comment=$( echo "$this_file_text" | grep -B "$num_of_rows_above" -E "$expression" )  # match declaration and some rows above for documentation
                 # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO or =====
                 matched_comment=$(echo "$matched_comment" | grep -E '^\s*#[^#]' |  grep -vE '^\s*#[[:space:]]*TODO' |  grep -vE '^\s*#[[:space:]]*===' )
@@ -1840,6 +1841,7 @@ function benchmark_archiving () {
 
 # run file that binds mountdirs to folders
 # to delete the dirs added to root, 'sudo umount' them first (to solve the "resource busy" problem)
+[ -n "$SUBDIR_MOUNTS_FILE" ] && \
 function symlink_mountpoints () {
     # # The sought file would typically include calls to _bindmount_folder, like so:
     # _shortaccess_folder --uuid b25fb935-b252-466f-8e45-63c8e7f62acf \
@@ -2028,13 +2030,16 @@ function playlist_file_fix () {
 # Artificial Idiocy (the "intelligence" part isn't done in this project. But it's still "A.I.")
 # =================
 
+# ask ChatGPT
+# args: content of message sent to ChatGPT
+[ -n "$CREDENTIALS_OPENAI" ] && \
 function chatgpt_ask () {
-    [ -z "$CREDENTIALS_OPENAI" ] && errcho "no credentials found for ChatGPT"
-
     curl --request POST 'https://api.openai.com/v1/chat/completions' \
 --header "Authorization: Bearer $CREDENTIALS_OPENAI" \
 --header 'Content-Type: application/json' \
 --data-raw "{\"model\": \"gpt-3.5-turbo\", \"messages\": [{\"role\": \"user\", \"content\": \"$@\"}]}"
+
+    # TODO - maybe sanitize (escape) the input, don't know if double-quotes screw this request up
 
     # TODO pretty-print the reply (if they'll allow sending a request without payment)
 }
@@ -2090,9 +2095,8 @@ function chatgpt_ask () {
 # TODO - offer to choose a vm by number [1-n]. Need to create a function like y_n one that gets a dicitonary as an argument 
 # TODO - offer to add USB (and other?) devices by ID (from displayed list). Filter out devices already in XML.
 # interactively launch looking-glass session and VM (if not running). 
+[ -n "$LOOKING_GLASS_CLIENT" ] && \
 function launch_vm_w_lookingglass () {
-    [ -z "$LOOKING_GLASS_CLIENT" ] && { errcho "looking-glass host-client path hasn't been defined"; return 1; } 
-
     local is_vm_chosen vm_name
     while [ -z "$is_vm_chosen" ]
     do
