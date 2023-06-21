@@ -1,8 +1,9 @@
 #!/bin/bash
 
 
-# prerequisites
-# =============
+
+echo "# prerequisites"
+echo "# ============="
 LOCAL_BASHRC_FILE="$(dirname $(readlink -f -- "$BASH_SOURCE"))/custom_bashrc"
 echo "temporarily loading local bashrc file to access its functions (file: \"$LOCAL_BASHRC_FILE\" )"
 SCRIPTED_SOURCING=1  # silent sourcing and no key-binds
@@ -12,9 +13,10 @@ buecho "From here-on, you may quit at any point during a prompt by pressing CTRL
 buecho "If any update breaks your configurations, try rerunning this script (it'll be updated accordingly)"
 
 
+title_prnt_cmd='yecho'
 
-# git handling (for updates and such)
-# ===================================
+$title_prnt_cmd "# git handling (for updates and such)"
+$title_prnt_cmd "# ==================================="
 
 function update_with_git () {
     if [ -e "$CUSTOM_BASHRC_FOLDER/.git" ]; then
@@ -38,16 +40,14 @@ function update_with_git () {
     fi
 
     git fetch  # update git setup's metadata so it'll know the status of remote
-    current_branch=$(git symbolic-ref --short HEAD)
-    commits_diff=$(git rev-list --count $current_branch@{upstream}..HEAD)
-    if [[ -n "$commits_diff" && "$commits_diff" -gt 0 ]]; then
-        becho "Local repository is $commits_diff commit(s) behind. Pulling changes."
-        git pull
-
-        becho "Your project should be up-to-date now. The current script might no longer be the same, so it'll exit now. Rerun the script, preferably on a new terminal."
+    if git status -uno | grep 'Your branch is behind' | grep -q 'can be fast-forwarded'; then
+        becho "Local repository is behind on branch \"$(git branch --show-current)\""
+        git pull \
+            && becho "Your project should be up-to-date now. The current script might no longer be the same, so it'll exit now. Rerun the script, preferably on a new terminal." \
+            || errcho "Something went wrong with the pull command; resolve it"
         exit
     else
-        dagecho "Local repository is up to date."
+        dagecho "Local repository is up to date. Or just can't be fast-forwarded (if you think something is wrong, update your git branch manually)."
     fi
 }
 
@@ -60,8 +60,10 @@ fi
 
 
 
-# setting up bashrc for the user
-# ==============================
+
+
+$title_prnt_cmd "# setting up bashrc for the user"
+$title_prnt_cmd "# =============================="
 
 locations=(
     "$HOME/.bashrc"
@@ -132,8 +134,10 @@ fi
 
 
 
-# setting up utility files
-# ========================
+
+
+$title_prnt_cmd "# setting up utility files"
+$title_prnt_cmd "# ========================"
 
 var_pick_quit='done'
 utility_vars=($(printf '%s\n' "${!_UTILITY_FILE_MAP[@]}" | sort))
@@ -267,7 +271,6 @@ function setup_utility () {
 }
 
 
-
 while [ "$var_chosen" != "$var_pick_quit" ]; do
     choose_utility_var
     [ "$var_chosen" != "$var_pick_quit" ] && setup_utility
@@ -275,10 +278,12 @@ done
 
 
 
-# bringing in external tools and binaries
-# =======================================
 
-# TODO
+
+$title_prnt_cmd "# bringing in external tools and binaries"
+$title_prnt_cmd "# ======================================="
+
+echo TODO  # TODO
 
 
 
