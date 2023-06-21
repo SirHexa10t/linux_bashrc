@@ -30,7 +30,7 @@ function update_with_git () {
         mv "$CUSTOM_BASHRC_FOLDER" "$deprecated_folder_name"
 
         dagecho "cloning from git"
-        git clone "https://github.com/SirHexa10t/linux_bashrc.git" "$CUSTOM_BASHRC_FOLDER"
+        git -C "$CUSTOM_BASHRC_FOLDER" clone "https://github.com/SirHexa10t/linux_bashrc.git" "$CUSTOM_BASHRC_FOLDER"
 
         [ ! -e "$CUSTOM_BASHRC_FOLDER/.git" ] && { errcho "Something is wrong, I still don't see the git configurations. Exiting!" ; exit ; }
 
@@ -39,10 +39,10 @@ function update_with_git () {
         exit
     fi
 
-    git fetch  # update git setup's metadata so it'll know the status of remote
-    if git status -uno | grep 'Your branch is behind' | grep -q 'can be fast-forwarded'; then  # TODO - improve upon this. This might break once git would change its feedback messages.
+    git -C "$CUSTOM_BASHRC_FOLDER" fetch  # update git setup's metadata so it'll know the status of remote
+    if git -C "$CUSTOM_BASHRC_FOLDER" status -uno | grep 'Your branch is behind' | grep -q 'can be fast-forwarded'; then  # TODO - improve upon this. This might break once git would change its feedback messages.
         becho "Local repository is behind on branch \"$(git branch --show-current)\""
-        git pull \
+        git -C "$CUSTOM_BASHRC_FOLDER" pull \
             && becho "Your project should be up-to-date now. The current script might no longer be the same, so it'll exit now. Rerun the script, preferably on a new terminal." \
             || errcho "Something went wrong with the pull command; resolve it"
         exit
