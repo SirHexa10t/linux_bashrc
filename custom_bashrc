@@ -236,6 +236,9 @@ alias run_docker_desktop='systemctl --user start docker-desktop'
 # System management
 # =================
 
+# shortcut for the interactive setup script
+alias interactive_bashrc_setup="$CUSTOM_BASHRC_FOLDER/interactive_setup.sh"
+
 # reset terminal (includs bashrc reload)
 alias anew='exec bash'
 
@@ -1854,10 +1857,10 @@ function symlink_mountpoints () {
 
         becho "Done creating shortened accesses (\"mountpoints\"). Now re-sourcing this bashrc file to update some variables accordingly"
         source "$CUSTOM_BASHRC_FILE"
-    else 
+    else
         errcho "can't find file $SUBDIR_MOUNTS_FILE , exiting."
         return 1
-    fi  
+    fi
 }
 
 # link a subfolder within a device (by uuid) to a directory in root
@@ -1906,7 +1909,7 @@ function _shortaccess_folder () {
     # if device is not mounted, and we're not told to avoid mounting it: mount it
     ! findmnt -S UUID="$uuid" >/dev/null && [ -z "$nomount" ] && mount_media_by_uuid "$uuid" >/dev/null
 
-    local dev_mountpoint=$(udisksctl info -b "/dev/disk/by-uuid/$uuid" | grep MountPoints | awk '{print $2}')  # print mount location
+    local dev_mountpoint=$(udisksctl info -b "/dev/disk/by-uuid/$uuid" | grep MountPoints | sed -e 's/^[^:]*: *//' )  # print mount location
     if [ -z "$dev_mountpoint" ]; then
         # if was supposed to mount
         if [ -z "$nomount" ]; then errcho "Failed to mount device uuid: \"$uuid\"!!!";
@@ -1915,7 +1918,7 @@ function _shortaccess_folder () {
         return 1
     fi
 
-    becho "Device (name label UUID) '$(lsblk -no NAME,LABEL,UUID "/dev/disk/by-uuid/$uuid")' is mounted."  # at this point the device is mounted.
+    becho -p "Device $(yecho "$(lsblk -no NAME,LABEL,UUID "/dev/disk/by-uuid/$uuid")") (<- name label UUID) is mounted at $(yecho "$dev_mountpoint")."  # at this point the device is mounted.
 
     # iterate on couples (inner-paths , mountpoint) 
     local i

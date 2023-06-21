@@ -240,6 +240,7 @@ function setup_utility () {
         'CREDENTIALS_OPENAI')
             becho "Feature: Ask ChatGPT using a simple terminal command."
             prompt_input_to_file "$(becho -p "This feature requires your API key (something like: sk-3wUxEyevvnEf9fP2xDn7T3BAbkFJmAOjhKEgH0t1ngXCP7c0). You can get it at: $(buecho https://platform.openai.com/account/api-keys)")"
+            chmod 600 "$directory_value"  # ony user is allowed to read/write
         ;;
         'DISPLAY_ARRANGEMENT')
             becho "Easily restore display layout from saved configuration. Convinient in case your OS messes it up."
