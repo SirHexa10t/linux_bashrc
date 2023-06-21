@@ -20,7 +20,7 @@ $title_prnt_cmd "# ==================================="
 
 function update_with_git () {
     if [ -e "$CUSTOM_BASHRC_FOLDER/.git" ]; then
-        dagecho "Detected that a git setup exists." 
+        dagecho "Detected that a git setup exists."
     else  # no git directory
         recho "git setup not detected."
         
@@ -40,7 +40,7 @@ function update_with_git () {
     fi
 
     git fetch  # update git setup's metadata so it'll know the status of remote
-    if git status -uno | grep 'Your branch is behind' | grep -q 'can be fast-forwarded'; then
+    if git status -uno | grep 'Your branch is behind' | grep -q 'can be fast-forwarded'; then  # TODO - improve upon this. This might break once git would change its feedback messages.
         becho "Local repository is behind on branch \"$(git branch --show-current)\""
         git pull \
             && becho "Your project should be up-to-date now. The current script might no longer be the same, so it'll exit now. Rerun the script, preferably on a new terminal." \
@@ -62,8 +62,8 @@ fi
 
 
 
-$title_prnt_cmd "# setting up bashrc for the user"
-$title_prnt_cmd "# =============================="
+$title_prnt_cmd "# adding the sourcing of custom_bashrc"
+$title_prnt_cmd "# ===================================="
 
 locations=(
     "$HOME/.bashrc"

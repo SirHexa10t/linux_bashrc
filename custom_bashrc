@@ -715,7 +715,7 @@ function multiping () {
     local num_of_pings=3
     # random_lan_device=$(ip neigh | cut -f 1 -d ' ' | grep -v '127.0.0.1' | shuf -n 1)
     local user_choice=($@)
-    local big_domains="wikipedia.org youtube.com discord.com google.com cloudflare.com github.com bitbucket.org"
+    local big_domains="wikipedia.org youtube.com discord.com google.com cloudflare.com github.com bitbucket.org www.linode.com"
     local dns_addresses="8.8.8.8 1.1.1.1"  # google and cloudflare
     local aws_endpoints="$(curl -s "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html" | sed -n 's|\(rds.[[:alpha:]]\+-[[:alpha:]]\+-[[:digit:]]\+.amazonaws.com\)|\1|p')"
 

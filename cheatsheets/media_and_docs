@@ -2,5 +2,5 @@
 * pdftk <file.pdf> input_pw <password> output <fileout.pdf>  # save pdf copy without password
 * pdftk <file1.pdf> <file2.pdf> <file3.pdf> cat output <merged_name.pdf>  # create a unified pdf file
 * xournal <pdf_filepath>  # edit a pdf file with option to add signatures
-* ffmpeg  # general media (audio / video) handling package, you can find some usages in this bashrc file
+* ffmpeg  # general media (audio / video) handling package, you can find some usages/examples in the custom_bashrc script
 
