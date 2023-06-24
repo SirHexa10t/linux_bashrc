@@ -348,9 +348,18 @@ alias autoclick_toggle_100cps='py_clicker --cps 100 --toggle'
 function _sudo_if_necessary () {
     [ $# -ge 1 ] || { errcho "WTF are you expecting me to sudo? Give me a command-string as argument" ; return ; }
     (  # can't make the output-catch var local - you'd get no root password prompt. So we put it in its own enclosed env.
-        command_output=$(eval "$@" 2>/dev/null)
-        if [ $? -ne 0 ]; then sudo "$@";
-        else echo "$command_output";
+        local command_maybe_sudo=("$@")  # preseve strings with spaces as individual strings
+        if [ -t 0 ]; then  # no input piped in
+            command_output=$( "${command_maybe_sudo[@]}" 2>/dev/null )
+            if [ $? -ne 0 ]; then sudo "${command_maybe_sudo[@]}";
+            else echo "$command_output";
+            fi
+        else  # input is being piped in
+            local output=$(cat)
+            command_output=$( echo "$output" | "${command_maybe_sudo[@]}" 2>/dev/null )
+            if [ $? -ne 0 ]; then echo "$output" | sudo "${command_maybe_sudo[@]}";
+            else echo "$command_output";
+            fi
         fi
     )
 }
