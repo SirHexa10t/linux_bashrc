@@ -82,9 +82,9 @@ declare -A location_suggestions=(
     ["/etc/profile.d/bashrc"]=$([ ! -f "/etc/profile.d/bashrc" ] && echo "(NOT recommended - file doesn't exist)")
     ["skip"]="(if you already set-up the project's sourcing previously)"
 )
+
 location_chosen=''
 while [ -z "$location_chosen" ]; do
-
     buffered_prompt=$(
     becho "Where should the bashrc file be sourced? (pick number)"
     index=''
@@ -103,18 +103,20 @@ done
 function write_sourcing_into_file () {
     [ ! -f "$location_chosen" ] && { errcho "The file \"$location_chosen\" doesn't exist. Set it up and then re-run this script."; exit ;}
 
-    q_ch="'"
-    appended_sourcing='
+    local q_ch="'"
+    local appended_sourcing='
 CUSTOM_BASHRC_FILE='"$CUSTOM_BASHRC_FILE"'
 if [ -f "$CUSTOM_BASHRC_FILE" ]; then source "$CUSTOM_BASHRC_FILE" 
 else echo "couldn'$q_ch't find custom_bashrc file at \"$CUSTOM_BASHRC_FILE\" , fix the file'$q_ch's permission-modifiers or fix the sourcing at \"$(readlink -f -- "$BASH_SOURCE")\"";  # print faulty file-dir, and this (current) file'$q_ch's location
 fi
 '
-    if ! grep -q "$appended_sourcing" "$location_chosen"; then
-        becho "appending sourcing code to $(wecho $location_chosen)"
-        echo "$appended_sourcing" >> "$location_chosen" ||  { echo "$appended_sourcing" | sudo tee -a "$location_chosen" >/dev/null; }
+    local sourcing_check="CUSTOM_BASHRC_FILE=$CUSTOM_BASHRC_FILE"  # comparing multiple lines with special characters is a problem. This should do...
 
-        if grep -q "$appended_sourcing" "$location_chosen"; then
+    if ! grep -q "$sourcing_check" "$location_chosen"; then
+        becho "appending sourcing code to $(wecho $location_chosen)"
+        echo "$appended_sourcing" | _sudo_if_necessary tee -a "$location_chosen" >/dev/null;  # add with sudo if permission is needed
+
+        if grep -q "$sourcing_check" "$location_chosen"; then
             dagecho "Done."
         else
             errcho "Didn't manage to write the sourcing."
@@ -146,12 +148,14 @@ utility_vars+=("$var_pick_quit")
 declare -A vars_explanation=(
     ['TESTS_FILE']="A file that gets sourced after bashrc finishes loading, so any tests you write in it will execute ASAP. For $(wecho "development") of this project."
     ['GARBAGE_OUTPUTS']="Default text-dump. There are aliases for tailing or writing into it. Mostly for $(wecho "development") of this project."
+    ['TERMINAL_DIMS']="Sets the size of terminal (number of chars in height/width)."
     ['SUBDIR_MOUNTS_FILE']="Defines custom shortcuts for media-drives, like /music, or /projects"
     ['CREDENTIALS_OPENAI']="API key for OpenAI's ChatGPT 3.5 (paid-subscription). Used to query $(wecho "A.I.") through simple terminal commands."
     ['DISPLAY_ARRANGEMENT']="Screen rearrangement through a keybind. Useful if your OS messes up your screen layout at times."
     ['CUSTOM_TMPDIR']="Changes the tmp-files target-location from root (/) to your folder of choice (possibly on a large drive)"
     ['VM_IMG_PARTITION_UUID']="Partition auto-mounting, in case you use $(wecho "Virtual Machines"), and the VMs' storage is on a separate mountable partition"
     ['LOOKING_GLASS_CLIENT']="Enables custom_bashrc's usage looking-glass (a $(wecho "Virtual Machine") tool)"
+    ['MONERO_MINER']="Privacy/secrecy-oriented crypto-currency CPU miner"
 )
 
 function choose_utility_var () {
@@ -186,23 +190,6 @@ function setup_utility () {
         _prompt_yn "Would you the file to be created?" && mktouch "$directory_value"
     }
 
-    function prompt_input_to_file () {
-        [ -n "$1" ] && echo "$1" || becho -p "This feature requires writing into file: \"$(wecho "$directory_value")\"."
-        if [ -f "$directory_value" ]; then
-            local buffered_prompt=$(
-                dagecho -p "The file \"$(wecho "$directory_value")\" already exists, and has these contents:"
-                becho "-----------------file-start-----------------"
-                cat "$directory_value"
-                becho "------------------file-end------------------"
-            )
-            echo "$buffered_prompt"
-            _prompt_yn "Writing a into this file would overwrite the existing contents! Are you sure?" || return  # return if the user doesn't want to overwrite
-        fi
-        local user_input
-        read -r -p "File contents: " user_input 
-        mktouch "$directory_value" && echo "$user_input" > "$directory_value"
-    }
-
     function prompt_rootdir_shortcut () {
         [ -n "$1" ] && echo "$1" || becho -p "This feature uses the symlink: \"$(wecho "$directory_value")\"."
         if [ -L "$directory_value" ]; then
@@ -223,6 +210,120 @@ function setup_utility () {
         sudo rm "$directory_value" 2>/dev/null ; sudo ln -s "$user_input" "$directory_value"
     }
 
+    function install_monero_miner () {
+        [ -n "$(_nonempty_folder_or_nothing "$directory_value")" ] && { _prompt_yn "Monero Miner is already installed, re-install?" || return 0; }
+
+        local monero_pick_skip='skip'
+        local url_chosen=''
+        while [ -z "$url_chosen" ]; do
+            local latest_release_page=$(curl -s "https://api.github.com/repos/xmrig/xmrig/releases/latest")  # latest release data
+            local download_urls=($(echo "$latest_release_page" | jq -r '.assets[].browser_download_url'))
+
+            declare -A xmrig_urls xmrig_filenames sha256_contents
+            local index=1 index2=1 durl
+            for durl in "${download_urls[@]}"; do
+                local dfile=$(basename "$durl")
+                [[ "$dfile" == SHA* ]] && {
+                    [[ "$dfile" == "SHA256SUMS" ]] && sha256_contents="$(curl -sSL "$durl")"  # it's the file we want - get it.
+                    continue;  # not a program, just SHA checksum
+                }
+
+                xmrig_filenames["$index"]="$dfile"
+                xmrig_urls["$index"]="$durl"
+                index=$((index+1))
+            done
+            # add skipping option at the end
+            xmrig_filenames["$index"]="$monero_pick_skip"
+            xmrig_urls["$index"]="$monero_pick_skip"
+
+            local choices_dialog="$(
+                becho "Which miner would you like to download? (pick number)"
+                dabecho "Reminder: \"bionic\" is Ubuntu18.04 , \"focal\" is Ubuntu20.04 ; \"static\" means it has self-contained dependencies (recommended over non-static)"
+                for ((index2=1; index2<=index; index2++)) do echo "$index2 ${xmrig_filenames[$index2]}"; done
+                becho "============================================="
+            )"
+            echo "$choices_dialog"
+            local number_picked
+            read -p "choice-index: " number_picked  # Read the user's input
+            [[ "$number_picked" =~ ^[0-9]+$ ]] && url_chosen="${xmrig_urls[$number_picked]}"  # if picked a number, set the pick
+
+            local checksum_string="$(echo "$sha256_contents" | grep "${xmrig_filenames[$number_picked]}")"  # the appropriate entry out of the checksum text
+        done
+
+        # if isn't installed and user skipped anyway
+        [[ -n "$(_nonempty_folder_or_nothing "$directory_value")" && "$url_chosen" = "$monero_pick_skip" ]] && { errcho "There's no existing installation and you don't want to download it now, so there's no way to proceed with the setup" ; return 1;}
+
+        install_targz_from_url --url "$url_chosen" --app_name monero_miner --install_folder "$CRYPTO_PROGRAMS_DIR" --checksum256 "$checksum_string"  # --alias xmrig  # --alias is not necessary - a bashrc alias can replace it 
+
+        # check that the files are alright
+        becho -p "Final checks for files' hash ($(recho "if there's no match, you should QUIT IMMEDIATELY! (ctrl+c)"))"
+        checksum_sha256_entry "$directory_value/config.json" "$directory_value/SHA256SUMS"
+        checksum_sha256_entry "$directory_value/xmrig" "$directory_value/SHA256SUMS"
+    }
+
+    function configure_monero_miner () {
+        local config_file="$directory_value/config.json"
+
+        # arg 1: field_name , arg 2: value_name
+        function field_match_expression () {
+            echo "\"$1\": $2,"
+        }
+
+        # arg 1: field_name , arg 2: replacement_value
+        function replace_json_field () {
+            local dq='"'  # double quotes
+            [[ "$2" =~ ^[0-9]+$ ]] && dq=''  # value is a number - no quotes needed
+
+            local before="$(field_match_expression "$1" "${dq}.*${dq}")"
+            local after="$(field_match_expression "$1" "${dq}$2${dq}")"
+            sed -i "s|$before|$after|1" "$config_file"  # replace first occurence
+        } 
+
+        dabecho -p "You need a wallet-address, unless you plan to do charity-mining. If you don't have one, go download from: $(wecho "https://www.getmonero.org/downloads/#cli") or $(wecho "https://web.getmonero.org/downloads/#gui")."
+        echo "Notice: $(dabecho "You have an option to download the blockchain to your computer - it takes many hours, but you should do it at some point. You could start without it.")"
+        hang
+
+        becho -p "Choose a pool address. You can browse $(wecho "https://miningpoolstats.stream/monero") to see available offers and stats."
+        dabecho -p "Recommended: $(wecho "p2pool.io"), But it requires extra setup (not covered here, yet). These are also solid choices: $(wecho "nanopool.org") , $(wecho "hashvault.pro") , $(wecho "supportxmr.com")"
+        dagecho "Current mining address (domain+port) is: $(recho "$(jq -r '.pools[0].url' "$MONERO_MINER/config.json")")"
+        local domain_name
+        read -p "Domain (leave empty to skip change): " domain_name  # Read the user's input
+        if [ -n "$domain_name" ]; then
+            becho "Choose a port number. Notice that starting difficulty is temporary, and doesn't matter much for long workloads"
+            dabecho -p "Options: $(wecho "3333")/$(wecho "5555")/$(wecho "7777") : low/mid/high starting difficulty. $(wecho "9000") : SSL/TLS. $(wecho "8080") or $(wecho "80") or $(wecho "443") : http ports, could help bypass firewall."
+            local port
+            read -p "Port: " port  # Read the user's input
+            replace_json_field 'url' "$domain_name:$port"
+            dagecho "Done replacing URL"
+        fi
+
+        becho "Choose a reception wallet address. It's a public address, i.e. isn't sensitive information."
+        dabecho "In the GUI wallet it's in tab \"Receive\"; you might need to click \"Create new address\" there."
+        dagecho "Current reception address is: $(recho "$(jq -r '.pools[0].user' "$MONERO_MINER/config.json")")"
+        local wallet_address
+        read -p "Receipt address (leave empty to skip change): " wallet_address  # Read the user's input
+        if [ -n "$wallet_address" ]; then
+            replace_json_field 'user' "$wallet_address"
+            dagecho "Done replacing reception address"
+        fi
+
+
+        becho "Would you like to donate to XMRig? (set to 0 if not)"
+        dagecho "Current donation amount is: $(recho "$(jq -r '.["donate-level"]' "$MONERO_MINER/config.json")%")"
+        local donation_p
+        read -p "Donation percentage (leave empty to skip change): " donation_p  # Read the user's input
+        if [ -n "$donation_p" ]; then
+            replace_json_field 'donate-level' "$donation_p"
+            replace_json_field 'donate-over-proxy' "$donation_p"
+            dagecho "Done replacing donation amount"
+        fi
+
+        # TODO - setup proxy?
+        # TODO - setup default number of cores?
+
+    }
+
+
     local executable_file_warning=$(recho "This file's contents are executable - don't make it permissible for others to write into it.")
 
     case "$var_chosen" in
@@ -235,6 +336,10 @@ function setup_utility () {
             becho "Feature: A default text-dump. Tied to several aliases that make it accessible. Useful for debugging or temporarily storing the output of a long-time operation."
             prompt_create_file
         ;;
+        'TERMINAL_DIMS')
+            becho "Feature: set your terminal-window size on launch. Alternatively you can be also set through (but gets overriden by this feature): toolbar menu -> Edit > Preferences"
+            _prompt_input_to_file "$directory_value" "$(becho -p "This feature requires 2 inputs that'll be saved into $directory_value. First is number of rows (height), second is number of columns (width). 36 on 120 is a decent choice.")" '2'
+        ;;
         'SUBDIR_MOUNTS_FILE')
             becho "Feature: Create convenient shortcuts into various directories in media partitions, for portability/access/order."
             becho 'Manually write command lines like these into the file: _shortaccess_folder --uuid b25fb935-b252-466f-8e45-63c8e7f62acf --subfolder "test/cache folder" --mountpoint "/temp_cache" --subfolder "logfiles" --mountpoint "/logs" --nomount'
@@ -243,12 +348,12 @@ function setup_utility () {
         ;;
         'CREDENTIALS_OPENAI')
             becho "Feature: Ask ChatGPT using a simple terminal command."
-            prompt_input_to_file "$(becho -p "This feature requires your API key (something like: sk-3wUxEyevvnEf9fP2xDn7T3BAbkFJmAOjhKEgH0t1ngXCP7c0). You can get it at: $(buecho https://platform.openai.com/account/api-keys)")"
+            _prompt_input_to_file "$directory_value" "$(becho -p "This feature requires your API key (something like: sk-3wUxEyevvnEf9fP2xDn7T3BAbkFJmAOjhKEgH0t1ngXCP7c0). You can get it at: $(buecho https://platform.openai.com/account/api-keys)")"
             chmod 600 "$directory_value"  # ony user is allowed to read/write
         ;;
         'DISPLAY_ARRANGEMENT')
             becho "Easily restore display layout from saved configuration. Convinient in case your OS messes it up."
-            prompt_input_to_file "$(becho -p 'This feature requires screen-layout (example: HDMI-0: nvidia-auto-select +1920+1080, DP-0: nvidia-auto-select +1920+0, DP-2: nvidia-auto-select +3840+1080, DP-4: 1920x1080_240 +0+1080" ), which gets fed into an nvidia-settings command. Get this info through: '"$(dabecho 'NVIDIA Settings > X Server Display Configuration -> click on "Save to X Configuration File" -> click on "Show preview..."')"'. I don'"'"'t know how to configure for AMD or Intel, nor whether the display issue occurs on their cards')"
+            _prompt_input_to_file "$directory_value" "$(becho -p 'This feature requires screen-layout (example: HDMI-0: nvidia-auto-select +1920+1080, DP-0: nvidia-auto-select +1920+0, DP-2: nvidia-auto-select +3840+1080, DP-4: 1920x1080_240 +0+1080" ), which gets fed into an nvidia-settings command. Get this info through: '"$(dabecho 'NVIDIA Settings > X Server Display Configuration -> click on "Save to X Configuration File" -> click on "Show preview..."')"'. I don'"'"'t know how to configure for AMD or Intel, nor whether the display issue occurs on their cards')"
         ;;
         'CUSTOM_TMPDIR')
             becho "Feature: Replace the temp-files dir (default is /tmp), using a symlink that points to a folder. It can improve available cache-writing space (could be critical for some tools/commands) or faster cache-read/write. custom_bashrc evaluates the symlink each time it's sourced, so it won't default to given folder unless it's available."
@@ -256,11 +361,16 @@ function setup_utility () {
         ;;
         'VM_IMG_PARTITION_UUID')
             becho "Feature: auto-mount the VMs' storage (usually .qcow2 files) partition when starting a VM through custom_bashrc's functions. If you have no such partition, don't set this."
-            prompt_input_to_file "$(becho -p "This feature requires writing the partition's UUID into: \"$directory_value\". You can find the UUID of your partition by running the cusrom command \"devs\"")"
+            _prompt_input_to_file "$directory_value" "$(becho -p "This feature requires writing the partition's UUID into: \"$directory_value\". You can find the UUID of your partition by running the cusrom command \"devs\"")"
         ;;
         'LOOKING_GLASS_CLIENT')
             becho "Feature: Utilize looking-glass host-client (passthrough of image-stream from a VM-dedicated GPU), using the path to its binaries-file."
-            prompt_input_to_file "$(becho -p "This feature requires writing the LG-host-client's path into \"$directory_value\". If you don't have such a client and need one, there's a guide in one of my other git repositories. You can also follow the official guide: $(buecho "https://looking-glass.io/docs/B6/install/")")"
+            _prompt_input_to_file "$directory_value" "$(becho -p "This feature requires writing the LG-host-client's path into \"$directory_value\". If you don't have such a client and need one, there's a guide in one of my other git repositories. You can also follow the official guide: $(buecho "https://looking-glass.io/docs/B6/install/")")"
+        ;;
+        'MONERO_MINER')
+            becho "Feature: Manage your monero mining operations conveniently via Terminal. The miner works on CPU; there's a GPU version too, but as of the time of this writing, it's not worth considering."
+            install_monero_miner
+            configure_monero_miner
         ;;
     	*)
             errcho "unable to handle choice: $var_chosen"

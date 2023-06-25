@@ -35,6 +35,9 @@
 # TODO - how to use proxychains
 # also, look into github.com/Und3rf10w/kali-anonsurf
 
+# TODO - make a spreadsheets command that lets you lookup a string in their names, their "tags" (folders they're in), and contents
+
+
 
 #---------------------------------------------------------------------------------------------
 #----CUSTOM-----------------------------------------------------------------------------------
@@ -50,6 +53,10 @@ function _function_names () { declare -F | awk '{print $3}' ; }  # not as comple
 # Returns true if pacakge is installed, false + user-message if not.
 # arg 1: package name
 function _announce_pkg_installed () { [ -n "$(which "$1")" ] && return 0 || { echo "Can't use package '$1', consider installing it." ; return 1 ; }  } 
+
+# if the folder exists and isn't empty, print it, otherwise place an empty string
+# arg 1: potential foldername
+function _nonempty_folder_or_nothing () { [[ -d "$1" && -n $(ls -A "$1") ]] && echo "$1" || echo '' ; }
 
 # if the file (any kind, including dir) exists, print it, otherwise place an empty string
 # arg 1: potential filename
@@ -90,28 +97,34 @@ CRYPTO_PROGRAMS_DIR="$UTILITY_FOLDER_PERSONAL/external_programs/crypto"  # your 
 declare -A _UTILITY_FILE_MAP=(
     ['TESTS_FILE']="$UTILITY_FOLDER_PERSONAL/run_tests.sh"  # Convenient debugging; automatically runs when this bashrc file finishes loading. The contents (and address) are up to you.
     ['GARBAGE_OUTPUTS']="$UTILITY_FOLDER_PERSONAL/outputs.txt"  # default location to dump data into
+    ['TERMINAL_DIMS']="$UTILITY_FOLDER_PERSONAL/terminal_dims"  # dimensions of terminal-window (number of rows, number of cols)
     ['SUBDIR_MOUNTS_FILE']="$UTILITY_FOLDER_PERSONAL/symlink_folder_mounts.sh"  # mount/symlink media-drives's internal directories
     ['CREDENTIALS_OPENAI']="$UTILITY_FOLDER_PERSONAL/openai_api_key"  # API key for ChatGPT 3.5
     ['DISPLAY_ARRANGEMENT']="$UTILITY_FOLDER_PERSONAL/screen_arrangement"  # will map to a keybind to re-sort your screen outputs in case your OS scrambles them
     ['CUSTOM_TMPDIR']="/temp_cache"  # use a different space (folder) for tmp-files, pointed to by this symlink 
     ['VM_IMG_PARTITION_UUID']="$UTILITY_FOLDER_PERSONAL/vm_images_partition"  # the drive that contains VMs' disk data; must be mounted when running a VM
     ['LOOKING_GLASS_CLIENT']="$UTILITY_FOLDER_PERSONAL/looking_glass_host_client"  # location of the program (binaries file) that 
+    ['MONERO_MINER']="$CRYPTO_PROGRAMS_DIR/monero_miner"  # folder that holds the monro miner program
 )
 
 function _remap_utility_files () {
-    local filepath filecontent link value
+    local filepath filecontent link folder value
 
     for filepath in "TESTS_FILE" "GARBAGE_OUTPUTS" "SUBDIR_MOUNTS_FILE"; do
         value=$(_filename_or_nothing "${_UTILITY_FILE_MAP[$filepath]}")
         eval "$filepath=\"$value\""
     done
-    for filecontent in "CREDENTIALS_OPENAI" "DISPLAY_ARRANGEMENT" "VM_IMG_PARTITION_UUID" "LOOKING_GLASS_CLIENT"; do
+    for filecontent in "TERMINAL_DIMS" "CREDENTIALS_OPENAI" "DISPLAY_ARRANGEMENT" "VM_IMG_PARTITION_UUID" "LOOKING_GLASS_CLIENT"; do
         value=$(_file_content_or_nothing "${_UTILITY_FILE_MAP[$filecontent]}")
         eval "$filecontent=\"$value\""
     done
     for link in "CUSTOM_TMPDIR"; do
         value=$(_symlink_or_nothing "${_UTILITY_FILE_MAP[$link]}")
         eval "$link=\"$value\""
+    done
+    for folder in "MONERO_MINER"; do
+        value=$(_nonempty_folder_or_nothing "${_UTILITY_FILE_MAP[$folder]}")
+        eval "$folder=\"$value\""
     done
 }
 _remap_utility_files
@@ -122,6 +135,9 @@ export TMPDIR=${CUSTOM_TMPDIR:-"$TMPDIR"}
 
 export HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
 
+# determine terminal-window size (num_of_rows , num_of_cols)
+[[ -n "$TERMINAL_DIMS" && -z "$SCRIPTED_SOURCING" ]] && \
+    printf '\e[8;%s;%st' "$(echo "$TERMINAL_DIMS" | head -n 1)" "$(echo "$TERMINAL_DIMS" | head -n 2 | tail -n 1)"
 
 
 # ---------- BINDS ----------
@@ -231,6 +247,10 @@ alias valueof='declare -p'
 alias run_docker_desktop='systemctl --user start docker-desktop'
 
 # TODO - define "sudocker" - run docker desktop as sudo so that it'll find all containers
+
+# monero mining start
+[ -n "$MONERO_MINER" ] && \
+    alias monero_miner="$MONERO_MINER/xmrig"
 
 
 # System management
@@ -346,7 +366,7 @@ alias autoclick_toggle_100cps='py_clicker --cps 100 --toggle'
 
 # attempt to run command given command (args) - if it fails, run with sudo
 function _sudo_if_necessary () {
-    [ $# -ge 1 ] || { errcho "WTF are you expecting me to sudo? Give me a command-string as argument" ; return ; }
+    [ $# -ge 1 ] || { errcho "WTF are you expecting me to sudo? Give me the command you want to run as string arguments" ; return ; }
     (  # can't make the output-catch var local - you'd get no root password prompt. So we put it in its own enclosed env.
         local command_maybe_sudo=("$@")  # preseve strings with spaces as individual strings
         if [ -t 0 ]; then  # no input piped in
@@ -546,6 +566,45 @@ function _prompt_yn () {
             *) echo "just type y or n" ;;  # if the response is anything else, print an error message and continue prompting
         esac
     done
+}
+
+# interactively guide user when writing into (a script-predetermined) file
+# arg 1: dir of input , arg 2: specific prompt to display (optional) , arg 3: how many inputs (optional; default is 1)
+function _prompt_input_to_file () {
+    local file_to_write="$1"
+    local specific_prompt="$2"
+    local iterations=${3:-'1'}
+    [ -z "$file_to_write" ] && { errcho "No directory specified! Exiting."; return 1; }
+
+    # announce something, then pring the file's contents
+    # arg 1: what to announce
+    function _print_the_file_contents () {
+        local buffered_prompt=$(
+            dagecho -p "$1"
+            becho "-----------------file-start-----------------"
+            cat "$file_to_write"
+            becho "------------------file-end------------------"
+        )
+        echo "$buffered_prompt"
+    }
+
+    [ -n "$specific_prompt" ] && echo "$specific_prompt" || becho -p "Writing into file: \"$(wecho "$file_to_write")\"."
+    if [ -f "$file_to_write" ]; then
+        _print_the_file_contents "The file \"$(wecho "$file_to_write")\" already exists, and has these contents:"
+        _prompt_yn "Writing a into this file would overwrite the existing contents! Are you sure?" || return  # return if the user doesn't want to overwrite
+    fi
+    local user_input iteration
+    for ((iteration=0; iteration<iterations; iteration++)); do
+        read -r -p "File contents: " user_input
+        if [ -n "$user_input" ]; then
+            [[ "$iteration" == 0 && -f "$file_to_write" ]] && _sudo_if_necessary truncate -s 0 "$file_to_write"  # if first iteration and file exists, clear it
+            _sudo_if_necessary mktouch "$file_to_write" && { echo "$user_input" | _sudo_if_necessary tee -a "$file_to_write" >/dev/null; }
+        else
+            errcho "No input detected, so no writing"
+        fi
+    done
+
+    _print_the_file_contents "Finished. File contents now are:"
 }
 
 
@@ -1056,13 +1115,6 @@ function find_proc () {
 # Administration - env and packages
 # =================================
 
-# install from given (deb file's) URL
-function install_deb_from_url () {
-    local pkg_name=$(echo "$1" | awk -F/ '{print $NF}')  # get the string after last '/'
-    local installation_msg="Installed debian (.deb) package: $pkg_name. If you want to remove it, run: 'sudo dpkg -r $pkg_name'"
-    wget "$1" && sudo gdebi -n "./$pkg_name" && echo "$installation_msg"  # download and install
-    rm "$pkg_name"  # remove .deb file
-}
 
 # Permanently append a string to PATH.
 # Add directories like "/home/<you>/.local/bin"
@@ -1076,6 +1128,101 @@ function add_to_path () {
 	# change the line where "PATH=" appears
     sudo sed -i "/PATH=/c\PATH=$PATH" /etc/environment
     printf "From now on:\n`sudo cat /etc/environment`\n"
+}
+
+# install from given (deb file's) URL
+# arg 1: URL
+function install_deb_from_url () {
+    local pkg_name=$(echo "$1" | awk -F/ '{print $NF}')  # get the string after last '/'
+    local installation_msg="$(becho -p "Installed debian (.deb) package: \"$pkg_name\". If you want to remove it, run: $(wecho "sudo dpkg -r $pkg_name").")"
+    # TODO - set a proper download location in wget, not just current dir
+    wget "$1" && sudo gdebi -n "./$pkg_name" && echo "$installation_msg"  # download and install
+    rm "$pkg_name"  # remove .deb file
+}
+
+# install from given .tar.gz url
+# --url <URL> (downloadable .tar.gz URL), --app_name <application_name>, --install_folder <path_to_extract_into>, --inner_executable <file> (optional; within installation - run to install), --alias <file_to_run> (optional; alias application_name as runnable file) --checksum256 <string> (optional, though recommended)
+function install_targz_from_url () {
+    local url app_name install_folder inner_executable alias_path checksum256
+    while [[ $# -gt 0 ]]; do
+		case "$1" in
+		'--url')
+			url="$2"
+			shift 2
+			continue
+		;;
+		'--app_name')
+			app_name="$2"
+			shift 2
+			continue
+		;;
+		'--install_folder')
+			install_folder="$2"
+			shift 2
+			continue
+		;;
+		'--checksum256')
+			checksum256="$2"
+			shift 2
+			continue
+		;;
+		'--inner_executable')
+			inner_executable="$2"
+			shift 2
+			continue
+		;;
+		'--alias')
+			alias_path="$2"
+			shift 2
+			continue
+		;;
+		*)
+			recho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
+			return
+		;;
+		esac
+	done
+
+    [ -z "$url" ] && { errcho "Download-url wasn't provided. Example: \"$(wecho "https://download.jetbrains.com/python/pycharm-professional-2023.1.3.tar.gz")\". Quitting."; return 1; }
+    [[ "$url" != *.tar.gz ]] && { errcho "This url doesn't seem to point to a .tar.gz file. Quitting."; return 1; }
+    [ -z "$app_name" ] && { errcho "app-name wasn't provided. Example: \"$(wecho "pycharm")\". Quitting."; return 1; }
+    [ -z "$install_folder" ] && { errcho "installation-path wasn't provided. Example: \"$(wecho "/opt/jetbrains")\". Quitting."; return 1; }
+
+    local dir_for_download="${TMPDIR:-'/tmp'}"
+    local downloaded_file="$(readlink -f -- "$dir_for_download/$app_name.tar.gz")"
+    becho "Downloading: \"$url\" to: \"$downloaded_file\""
+    wget -O "$downloaded_file" "$url"
+
+    [ ! -f "$downloaded_file" ] && { errcho "Something went wrong, I can't find the downloaded file: \"$downloaded_file\". Quitting."; return 1; }
+
+
+    if [ -n "$checksum256" ]; then  # if using sha256 for checksum
+        checksum_sha256 "$downloaded_file" <(echo "$checksum256") || return 1
+    fi
+
+    local extract_contents_folder=$(readlink -f -- "$install_folder/$app_name")
+    # becho "Cleaning up (if ncessary): \"$extract_contents_folder\""  # not doing that, too dangerous
+    becho "Extracting into: \"$extract_contents_folder\""
+    _sudo_if_necessary mkdir -p "$extract_contents_folder"
+    _sudo_if_necessary tar xvzf "$downloaded_file" -C "$extract_contents_folder" --strip-components=1  # strip out the folder that contains the data
+
+
+	becho "Cleaning up downloaded tar file"
+	_sudo_if_necessary rm "$downloaded_file"  # clean up the tar.gz file
+
+
+    if [ -n "$inner_executable" ]; then  # if chose to run an installation file from within the extracted folder
+        local runme=$(readlink -f -- "$extract_contents_folder/$inner_executable")  # file to run post-extraction
+        becho "installing by running file: $runme"
+        _sudo_if_necessary "$runme"
+    fi
+
+    if [ -n "$alias_path" ]; then  # if chose to alias the application's name to an inner file
+        local linkme=$(readlink -f -- "$extract_contents_folder/$alias_path")  # file to symlink to
+        becho "creating command \"$app_name\" that would run file: \"$linkme\""
+        _sudo_if_necessary ln -sfn "$linkme" "/usr/local/bin/$app_name"
+    fi
+
 }
 
 # TODO
@@ -1510,16 +1657,48 @@ function explore () {
 function revoke_exe_mod () {
     local location=${1:-"$(pwd)"}  # use given address, default to current location
     local format=${2:-'txt'}  # use given format, default to txt
-    local files=$(find "$location" -type f -name "*.$format")  # get txt (or specified) files recursively
+    local files=("$(find "$location" -type f -name "*.$format")")  # get txt (or specified) files recursively
     local file
-    for file in ${files[@]}; do
+    while read file; do
         # if file is executable
         if [ -x "$file" ]; then
             # revoke exe permission (run as sudo IF necessary)
             _sudo_if_necessary chmod -x "$file" && echo "file no longer executable: $file"
         fi
-    done
+    done <<< "$files"
 }
+
+
+# perform checksum operation on file
+# arg 1: <file_to_checksum> , arg 2: <file_with_expected_checksum>
+function checksum_sha256 () {
+    local dl_file_checksum="$(sha256sum "$1")"
+    local expected_checksum="$(cat "$2")"
+    local print_comparison="$(
+        echo "comparing checksum for file: \"$1\""
+        echo "calculated: $(dagecho "$dl_file_checksum")"
+        echo "expected: $(dabecho "$expected_checksum")"
+    )"
+    echo "$print_comparison"
+
+    # comparing only first string, not beyond the spacing
+    if [[ "$(echo "$dl_file_checksum" | awk '{print $1}')" == "$(echo "$expected_checksum" | awk '{print $1}')" ]]; then
+        gecho "checksums match!"
+        return 0
+    else
+        errcho "checksums don't seem to match!"
+        return 1
+    fi
+}
+
+# perform checksum operation on file and check against the correct line in checksum file
+# arg 1: <file_to_checksum> , arg 2: <file_with_expected_checksum>
+function checksum_sha256_entry () {
+    local checkme_filename="$(basename $(readlink -f -- "$1"))"
+    local appropriate_line="$(grep "$checkme_filename" "$2")"
+    checksum_sha256 "$1" <(echo "$appropriate_line")
+}
+
 
 # TODO - archive multiple (support archiving multiple files at once, and a whole folder's contents indivisually)
 
@@ -2069,36 +2248,11 @@ function chatgpt_ask () {
 # Crypto
 # ======
 
-# function mine_monero () {
-#     local miner_proj="$CRYPTO_PROGRAMS_DIR/monero_miner"
-#     if [ ! -d "$miner_proj" ]; then
-#         if _prompt_yn "$(recho "Miner not found.") Would you like me to download it?"; then
-#             mkdir "$miner_proj"  # making sure
-#         else
-#             echo "TODO"
-#         fi 
-
-#         # https://xmrig.com/download
-#     fi
-
-#     # you need a recipient address - if you don't plan on doing mining as a donation, you'd need a wallet:
-#         # https://www.getmonero.org/downloads/#cli
-#         # or https://web.getmonero.org/downloads/#gui
-
-#     # pools: https://miningpoolstats.stream/monero
-#         # recommended: p2pool.io  (but it requires extra setup)
-#         # you can just pick nanopool.org / hashvault.pro / support.xmr.com
-#     # ports:
-#         # 3333 - low starting diff
-#         # 5555 - medium starting diff
-#         # 7777 - high starting diff
-#         # 9000 - SSL/TLS
-#         # 8080 / 80 / 443 - might help bypass firewall
-
-#     # donate-level / donate-over-proxy can be set to 0 instead of 1 (it's in percentages)
-
-
-# }
+# Start CPU-mining Monero
+[ -n "$MONERO_MINER" ] && \
+function mine_monero () {
+    "$MONERO_MINER/xmrig"
+}
 
 
 # Virtual Machines
@@ -2315,7 +2469,7 @@ function wuecho () { wecho "<=uline=>" "$@" ; }
 
 
 # echo into error output
-function errcho () { recho "$@" >&2 ; }
+function errcho () { recho -p "$@" >&2 ; }
 
 # print string with a similarly-lengthed line
 # arg 1: string , arg 2 (optional): line-char (default is '-')
