@@ -2,7 +2,7 @@
 
 """
 recolors text by replacing color tags with their appropriate color-codes
-arg 1: tagged text
+arg 1: tagged text ; unless it's "--print_available_colors" (print available tags)
 """
 
 import sys
@@ -34,7 +34,6 @@ colors_map = {
 reset_tag = '<=reset=>'
 processed_reset = colors_map[reset_tag].replace('\033', '\x1b')  # resets placed in previous runs
 reset_either_regex = f'({reset_tag}|\x1b\[0m)'
-
 
 def draw_formatted(text: str, is_testing=False):
 
@@ -89,9 +88,12 @@ def draw_formatted(text: str, is_testing=False):
         return f'{text}'
 
 
-if len(sys.argv) >= 2 and sys.argv[1]:  # arg 1 is this file, so having 1 input arg means
-    draw_formatted(sys.argv[1])
-else:
+if len(sys.argv) >= 2 and sys.argv[1]:  # arg 1 is this file
+    if sys.argv[1] == '--print_available_colors':
+        print(*colors_map.keys())
+    else:   # regular run
+        draw_formatted(sys.argv[1])
+else:  # having just 1 input arg means there's nothing to draw, so it's a test-run
     pass
 
     # def run_tests():

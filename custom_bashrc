@@ -47,7 +47,9 @@
 
 ## please ignore - stuff that's needed early in this file; not meant for the user 
 #################################################################################
+# find existing aliases at the time this is run
 function _alias_names () { alias | grep -E "^alias" | sed "s/^alias \([^=]*\)=.*/\1/" ; }  # this is needed very early (and very late) for lookup of existing aliases
+# find existing functions at the time this is run
 function _function_names () { declare -F | awk '{print $3}' ; }  # not as complex as aliases, but if aliases are here, so should this be.
 
 # Returns true if pacakge is installed, false + user-message if not.
@@ -150,8 +152,9 @@ export HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the tim
 # To define it only if the shortcut doesn't exist, run a command like this:   if ! bind -q "\C-w"; then bind '"\C-w": "exit\n"'; fi
 
 if [[ -z "$SCRIPTED_SOURCING" && "$EUID" -ne 0 ]]; then  # no binding keys when running as root or from a script.
-    # Bash terminal related 
-    # =====================
+
+# Bash terminal related 
+# =====================
 
     # CTRL+H : basically "help"
     bind -x '"\C-h": "remindme"$\r$\n'
@@ -170,8 +173,8 @@ if [[ -z "$SCRIPTED_SOURCING" && "$EUID" -ne 0 ]]; then  # no binding keys when 
     # bind -x '"\C-\I": "echo something"$\r$\n'  # TODO
 
 
-    # Custom environment 
-    # ==================
+# Custom environment (#requires-configuration)
+# ==================
 
     # CTRL+X : (let's pretend X is for X-Server...) arrange monitors when the nvidia settings won't keep them arranged
     [ -n "$DISPLAY_ARRANGEMENT" ] && \
@@ -186,8 +189,8 @@ fi
 # Be aware that including several commands in an alias won't allow you to run all of it under "sudo"
 
 
-# Custom files
-# =============
+# Custom files (#requires-configuration)
+# ============
 
 if [ -n "$GARBAGE_OUTPUTS" ]; then
     # tail (follow/real-time) the garbage-outputs file
@@ -198,13 +201,18 @@ if [ -n "$GARBAGE_OUTPUTS" ]; then
     function garbage_print () { echo "$1" >> "$GARBAGE_OUTPUTS" ; }
 fi
 
+if [ -n "$SUBDIR_MOUNTS_FILE" ]; then
+    # edit the drive-subdirs symlink-mountpoints file (with xed)
+    alias subdir_mounts_edit='xed "$SUBDIR_MOUNTS_FILE"'
+fi
+
 if [ -n "$DISPLAY_ARRANGEMENT" ]; then
     # Ad-Hoc screen layout rearrangement (sometimes they get messed up; maybe it's an Nvidia-Linux problem)
     alias arrange_monitors="nvidia-settings --load-config-only && nvidia-settings --assign CurrentMetaMode=\"$DISPLAY_ARRANGEMENT\""
 fi
 
 ## Basic functionalitiy override !
-# ===============================
+# ================================
 
 # The space at the end makes bash auto-complete the next word as well. 'sudo ' alone makes aliases work in sudo, but not functions.
 alias sudo='sudo '
@@ -247,10 +255,6 @@ alias valueof='declare -p'
 alias run_docker_desktop='systemctl --user start docker-desktop'
 
 # TODO - define "sudocker" - run docker desktop as sudo so that it'll find all containers
-
-# monero mining start
-[ -n "$MONERO_MINER" ] && \
-    alias monero_miner="$MONERO_MINER/xmrig"
 
 
 # System management
@@ -318,8 +322,8 @@ alias whatsmynetwork="buecho 'LAN devices:' ; arp -a  ;  buecho 'Connections:' ;
 alias whosmyisp='curl -s ipinfo.io/org'
 
 
-# function aliases (alternative names)
-# ====================================
+# function aliases - alternative names for other aliases and functions
+# ====================================================================
 
 # Synonymous to "remindme" with extra information (less useful to user).
 alias list_cmds='remindme --show_hidden --include_line_num'
@@ -661,7 +665,7 @@ function remindme () {
         local match_results="$(
             local name  # iteration variables
             for name in "${cmd_names[@]}"; do
-                if [ -z "$show_hidden" ] && [[ "${name:0:1}" == '_' ]]; then continue; fi  # if not showing hidden functions and current function starts with '_', skip it
+                if [[ -z "$show_hidden" && "${name:0:1}" == '_' ]]; then continue; fi  # if not showing hidden functions and current function starts with '_', skip it
                 if [ -n "${unoriginal_map[$name]}" ]; then continue; fi  # if it's an override of a known command (user already knows what it does), don't mention it - skip
             {
                 # we already have the names, we need the documentation. And maybe also line number.
@@ -671,11 +675,11 @@ function remindme () {
                 [ "$(echo "$this_file_text" | grep -B 1 -E "$expression" | head -n 1 | grep "^\s*\[")" ] && num_of_rows_above=$((num_of_rows_above+1))  # get 1 line above line; if it starts with '[', it's a condition for the existence of the function/alias, which takes a line. So compensate by getting +1 lines above
                 local matched_comment=$( echo "$this_file_text" | grep -B "$num_of_rows_above" -E "$expression" )  # match declaration and some rows above for documentation
                 # keep only comments, but not if they start with "##" (those are for the maintaining of the function rather than understanding how it works) and not if # is followed up by TODO or =====
-                matched_comment=$(echo "$matched_comment" | grep -E '^\s*#[^#]' |  grep -vE '^\s*#[[:space:]]*TODO' |  grep -vE '^\s*#[[:space:]]*===' )
-                matched_comment=$(echo "$matched_comment" | sed -e 's/^[[:space:]]*//')  # trim away possible leading whitespaces before the comment
+                matched_comment=$(echo "$matched_comment" | grep -E '^\s*#[^#]' |  grep -vE '^\s*#\s*TODO' |  grep -vE '^\s*#\s*===' )
+                matched_comment=$(echo "$matched_comment" | sed -e 's/^\s*//')  # trim away possible leading whitespaces before the comment
                 matched_comment=$(echo "${matched_comment}"| paste -s -d ' ')  # unify all results into one row (if any). Separate with space
                 echo "$line_num${delimiter}$name  $matched_comment"
-            } &  # no need for wait (hopefully), as all the results are collected into a var
+            } &  # no need for a "wait" (hopefully), as all the results are collected into a var
             done
         )"
 
@@ -697,7 +701,7 @@ function remindme () {
     local commands_external="$(_list_script_calls)"
     if [ -n "$commands_external" ]; then
         local line_num_past_file="$(($(cat $CUSTOM_BASHRC_FILE | wc -l)+1))"  # get row count of this file and start adding "virtual" lines for loaded scripts
-        line_to_cmd["$line_num_past_file"]="# ---------- EXTERNAL (sourced non-bash) ----------"
+        line_to_cmd["$line_num_past_file"]="# ---------- EXTERNAL (sourced non-bash) ----------"  # this gets displayed in the printed output, it doesn't exist on its own in-code
         local cmde
         while IFS= read -r cmde; do
             if [ -z "$show_hidden" ] && [[ "${cmde:0:1}" == '_' ]]; then continue; fi
@@ -708,7 +712,7 @@ function remindme () {
 
     # categories (comments, not callable)
     if [ -z "$sort" ]; then  # if not sorting by name (so, sorting by line number - categories are relevant)
-        local topic_comments="$(echo "$this_file_text" | grep -n -B 1 "^# ===" | sed -E '/^[0-9]+\-# .*/!d')"  # get also one line above the underline matches, and throw away the actual matched (underline) lines
+        local topic_comments="$(echo "$this_file_text" | grep -n -B 1 "^\s*# ===" | sed -E '/^[0-9]+\-\s*# .*/!d' | sed 's/(#[^()]*)//g')"  # get one line above the underline matches, and throw away the actual matched (underline) lines, and get rid of parentheses with sharp-sign, as they're meant for tags
         topic_comments+="$(echo ; echo "$this_file_text" | grep -n -B 1 "^#####" | sed -E '/^[0-9]+\-# .*/!d')"  # add titles (binds/aliases/functions), after a newline
         local number comment  # iteration variables
         while IFS=- read -r number comment; do line_to_cmd["$number"]="$comment" ; done <<< "$topic_comments"
@@ -723,6 +727,39 @@ function remindme () {
     echo "$(becho The following commands were overridden, but retain their original functionality:)  $(printf "%s, " "${unoriginal[@]}" | sed 's/, $//')"
     echo "$cmd_list"
 }
+
+# # TODO
+# # cmd lookup by name or tags
+# function search_commands () {
+#     # find tags
+#     local tags_found=$(grep -oP '(?<=###tags:'' ).*' "$CUSTOM_BASHRC_FILE")  # notice we're looking for "###tags:" (with an extra space after, I can't write it.) in this file. The pointless string-stop/resume ('') is just to make sure this line isn't caught in the lookup
+    
+#     local title_tags="$(cat "$CUSTOM_BASHRC_FILE" | grep -n -B 1 "^\s*# ===" | sed -E '/^[0-9]+\-\s*# .*/!d' | grep -o -P '(?<=\().*?(?=\))')"
+#     recho "$title_tags"
+    
+#     declare -A tags_counter  # hashmap that counts how many times each tag is shown
+#     local tag
+#     for tag in ${tags_found[@]}; do tags_counter["$tag"]=$((${tags_counter["$tag"]}+1)); done
+#     local sorted_by_cmd_count=($(for tag in "${!tags_counter[@]}"; do echo "$tag ${tags_counter[$tag]}"; done | sort -rn -k2 | awk '{print $1}'))
+
+#     gecho "${sorted_by_cmd_count[@]}"
+
+
+#     local printed_output="$(
+#         becho "These are all the tags you can filter through (alongside the number of commands they apply to)"
+#         echo "Notice: $(recho "not all commands are tagged")"
+#         for tag in ${sorted_by_cmd_count[@]}; do echo "$(dagecho "#")$tag (${tags_counter[$tag]})"; done
+#     )"
+#     local tagname
+#     while [ -z "$tagname" ]; do 
+#         echo "$printed_output"
+#         read -p "Which tag applies to the command you're looking for? " tagname
+#         tagname="${tagname/#\#/}"  # removing possibly-added '#' in user's input
+#         [ -z "${tags_counter[$tagname]}" ] && { errcho "This tag doesn't exist, choose one from the list (just the name, nothing else)"; tagname=''; }
+#     done
+
+#     # TODO
+# }
 
 # Check if you spelled given word correctly. Get definition to make sure, or suggestions if it's misspelled 
 function spellcheck () {
@@ -2033,7 +2070,7 @@ function benchmark_archiving () {
 # run file that binds mountdirs to folders
 # to delete the dirs added to root, 'sudo umount' them first (to solve the "resource busy" problem)
 [ -n "$SUBDIR_MOUNTS_FILE" ] && \
-function symlink_mountpoints () {
+function symlink_mountpoints () {  ###tags: requires-configuration
     # # The sought file would typically include calls to _bindmount_folder, like so:
     # _shortaccess_folder --uuid b25fb935-b252-466f-8e45-63c8e7f62acf \
         # --subfolder "test/cache folder" --mountpoint "/temp_cache" \
@@ -2218,13 +2255,13 @@ function playlist_file_fix () {
 # TODO - create a function that uses youtube-dl and other website downloaders; have it accept any download-link. 
 
 
-# Artificial Idiocy (the "intelligence" part isn't done in this project. But it's still "A.I.")
+# Artificial Idiocy ; the "intelligent" part isn't done in this project"
 # =================
 
 # ask ChatGPT
 # args: content of message sent to ChatGPT
 [ -n "$CREDENTIALS_OPENAI" ] && \
-function chatgpt_ask () {
+function chatgpt_ask () {  ###tags: requires-configuration
     curl --request POST 'https://api.openai.com/v1/chat/completions' \
 --header "Authorization: Bearer $CREDENTIALS_OPENAI" \
 --header 'Content-Type: application/json' \
@@ -2248,9 +2285,10 @@ function chatgpt_ask () {
 # Crypto
 # ======
 
+# TODO - figure out how to specify how many cores can be dedicated
 # Start CPU-mining Monero
 [ -n "$MONERO_MINER" ] && \
-function mine_monero () {
+function mine_monero () {  ###tags: requires-configuration
     "$MONERO_MINER/xmrig"
 }
 
@@ -2262,7 +2300,7 @@ function mine_monero () {
 # TODO - offer to add USB (and other?) devices by ID (from displayed list). Filter out devices already in XML.
 # interactively launch looking-glass session and VM (if not running). 
 [ -n "$LOOKING_GLASS_CLIENT" ] && \
-function launch_vm_w_lookingglass () {
+function launch_vm_w_lookingglass () {  ###tags: requires-configuration
     local is_vm_chosen vm_name
     while [ -z "$is_vm_chosen" ]
     do
@@ -2431,41 +2469,41 @@ function rm_leading_whitespaces () {
 
 
 # echo in red
-function recho () { _colored_echo "<=bold=><=red=>" "$@"; }
+function recho () { _colored_echo "<=bold=><=red=>" "$@"; }  ###tags: text-coloring
 # echo in dark red
-function darecho () { recho "<=dark=>" "$@" ; }
+function darecho () { recho "<=dark=>" "$@" ; }  ###tags: text-coloring
 # echo in green
-function gecho () { _colored_echo "<=bold=><=green=>" "$@" ; }
+function gecho () { _colored_echo "<=bold=><=green=>" "$@" ; }  ###tags: text-coloring
 # echo in dark green
-function dagecho () { gecho "<=dark=>" "$@" ; }
+function dagecho () { gecho "<=dark=>" "$@" ; }  ###tags: text-coloring
 # echo in blue
-function becho () { _colored_echo "<=bold=><=blue=>" "$@" ; }
+function becho () { _colored_echo "<=bold=><=blue=>" "$@" ; }  ###tags: text-coloring
 # echo in dark blue
-function dabecho () { becho "<=dark=>" "$@" ; }
+function dabecho () { becho "<=dark=>" "$@" ; }  ###tags: text-coloring
 # echo in cyan
-function cecho () { _colored_echo "<=bold=><=cyan=>" "$@" ; }
+function cecho () { _colored_echo "<=bold=><=cyan=>" "$@" ; }  ###tags: text-coloring
 # echo in yellow
-function yecho () { _colored_echo "<=bold=><=yellow=>" "$@" ; }
+function yecho () { _colored_echo "<=bold=><=yellow=>" "$@" ; }  ###tags: text-coloring
 # echo in orange
-function orecho () { _colored_echo "<=bold=><=orange=>" "$@" ; }
+function orecho () { _colored_echo "<=bold=><=orange=>" "$@" ; }  ###tags: text-coloring
 # echo in white, bold
-function wecho () { _colored_echo "<=bold=><=grey=>" "$@" ; }
+function wecho () { _colored_echo "<=bold=><=grey=>" "$@" ; }  ###tags: text-coloring
 
 
 # underlined echo
-function uecho () { _colored_echo "<=bold=><=uline=>" "$@" ; }
+function uecho () { _colored_echo "<=bold=><=uline=>" "$@" ; }  ###tags: text-coloring
 # underlined echo in red
-function ruecho () { recho "<=uline=>" "$@" ; }
+function ruecho () { recho "<=uline=>" "$@" ; }  ###tags: text-coloring
 # underlined echo in green
-function guecho () { gecho "<=uline=>" "$@" ; }
+function guecho () { gecho "<=uline=>" "$@" ; }  ###tags: text-coloring
 # underlined echo in blue
-function buecho () { becho "<=uline=>" "$@" ; }
+function buecho () { becho "<=uline=>" "$@" ; }  ###tags: text-coloring
 # underlined echo in yellow
-function yuecho () { yecho "<=uline=>" "$@" ; }
+function yuecho () { yecho "<=uline=>" "$@" ; }  ###tags: text-coloring
 # underlined echo in orange
-function oruecho () { orecho "<=uline=>" "$@" ; }
+function oruecho () { orecho "<=uline=>" "$@" ; }  ###tags: text-coloring
 # underlined echo in white
-function wuecho () { wecho "<=uline=>" "$@" ; }
+function wuecho () { wecho "<=uline=>" "$@" ; }  ###tags: text-coloring
 
 
 # echo into error output
@@ -2485,7 +2523,7 @@ function _underline () {
 
 # colors a specified substring within given text, like grep without line filtering
 # -t/--text <text> (specify text to color, if it's not piped-in) ; -w/--word <word> (substring to color, no option needed if it's the only arg and text is piped-in) ; -c/--color <color-string> (see available colors in "_draw_formatted", default is red)
-function color_word () {
+function color_word () {  ###tags: text-coloring
     local text word color='<=bold=><=red=>'
     if [ $# -eq 1 ] && ! [ -t 0 ]; then  # only 1 arg + streamed input. Given arg is the word that needs to be colored.
         word="$1"
@@ -2529,14 +2567,14 @@ function color_word () {
 # ============
 
 # make given tag persistant
-function _tag_persist () {
+function _tag_persist () {  ###tags: text-coloring
     echo "<=persist${@}this=>"
 }
 
 # TODO - detect if the terminal is bright instead of dark? If it's white, the colored prints should be darker; so you should remove the "\033[1m" prefix
 # recolors all lines with specified color
 # any early arg: color (see available colors in "_draw_formatted") , any early arg: -p (optional - turn tag to persistant) , any early arg: -n (optional - no coloring, just tagging) , any early arg: -t (optional - just return the tag itself) , last arg: text to color
-function _colored_echo () {
+function _colored_echo () {  ###tags: text-coloring
     local no_drawing persist tag only_tag
     while [[ $# -gt 0 ]]; do
         if [ "$1" == '-n' ]; then  # just put in the tags, don't draw
@@ -2574,7 +2612,7 @@ function _colored_echo () {
 
 # comment-colorized echo
 # -l (optional: include legend)
-function commecho () {
+function commecho () {  ###tags: text-coloring
     local bullet_point_color='<=green=>'
     local double_cat_line_color=$(_tag_persist '<=bold=><=blue=>')
     local single_cat_line_color=$(_tag_persist '<=blue=>')
@@ -2854,10 +2892,27 @@ function animate_lets_go () {
 ## Script-files dependent functions
 ###################################
 
-# alias _draw_formatted='_py_draw_formatted' (recolors text by replacing color tags with their appropriate color-codes)
-function _draw_formatted () {
+# recolors text by replacing color tags with their appropriate color-codes. Calls '_py_draw_formatted' to do that 
+function _draw_formatted () {  ###tags: text-coloring
     if type -t _py_draw_formatted &> /dev/null ; then echo -e "$(_py_draw_formatted "$@")";
     else echo -e "$@"; fi
+}
+
+# Lists available colors (tags), and associated functions. Calls '_py_draw_formatted' for the list of colors 
+function _colors_available () {  ###tags: text-coloring
+    local color_tags=$(_py_draw_formatted --print_available_colors)
+    local tags=$(
+        local tag
+        local reset_tag='<=reset=>'
+        for tag in ${color_tags[@]}; do
+            local c_tag="$tag"
+            echo "$tag" | sed "s/<=\([^=]*\)=>/<=${c_tag}\1${reset_tag}=>/"
+            # echo "tag: $tag";
+        done
+    )
+    _draw_formatted "$tags"
+
+    # TODO - list coloring commands
 }
 
 

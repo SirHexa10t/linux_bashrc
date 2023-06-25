@@ -11,7 +11,7 @@ alias _scripts_loaded_comfirmation='_py_confirm_loaded'  # a call to a script ad
 # Reloads script-files into bash-calls. No need to manually call this, it's done automatically
 # --declare_commands (create aliases/functions to call scripts) , --output_commands (list found files and their appropriate calls)
 function _reload_scriptfiles () {
-    local declare_commands='' output_commands=''
+    local declare_commands output_commands
     [[ "$@" =~ ^"--declare_commands"$ ]] && declare_commands='true'
     [[ "$@" =~ ^"--output_commands"$ ]] && output_commands='true'
 
@@ -43,13 +43,13 @@ function _reload_scriptfiles () {
 }
 _reload_scriptfiles --declare_commands
 
-# just like "remindme" - lists this file's introduced aliases and functions
+# used by "remindme" - lists this file's introduced aliases and functions
 function _list_script_calls () {
     local commands=$(_reload_scriptfiles --output_commands)
     local cmds_to_text=()
     local name file  # keep iteration vars from polluting your env
     while IFS=: read -r name file; do 
-        local documentation=''
+        local documentation
         if [[ "$file" == *.py ]]; then
             documentation=$(sed -n '/"""/, /"""/{ /"""/! { /"""/! p } }' "$file")  # get the documentation between 2 """ strings
         else  # default (no extension)

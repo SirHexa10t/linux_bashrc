@@ -290,11 +290,16 @@ function setup_utility () {
         local domain_name
         read -p "Domain (leave empty to skip change): " domain_name  # Read the user's input
         if [ -n "$domain_name" ]; then
-            becho "Choose a port number. Notice that starting difficulty is temporary, and doesn't matter much for long workloads"
-            dabecho -p "Options: $(cecho "3333")/$(cecho "5555")/$(cecho "7777") : low/mid/high starting difficulty. $(cecho "9000") : SSL/TLS. $(cecho "8080") or $(cecho "80") or $(cecho "443") : http ports, could help bypass firewall."
-            local port
-            read -p "Port: " port  # Read the user's input
-            replace_json_field 'url' "$domain_name:$port"
+            if [[ "$domain_name" =~ :[0-9] ]]; then
+                dagecho "I was about to ask about the port number, but it seems to already be provided."
+                replace_json_field 'url' "$domain_name"
+            else
+                becho "Choose a port number. Notice that starting difficulty is temporary, and doesn't matter much for long workloads"
+                dabecho -p "Options: $(cecho "3333")/$(cecho "5555")/$(cecho "7777") : low/mid/high starting difficulty. $(cecho "9000") : SSL/TLS. $(cecho "8080") or $(cecho "80") or $(cecho "443") : http ports, could help bypass firewall."
+                local port
+                read -p "Port: " port  # Read the user's input
+                replace_json_field 'url' "$domain_name:$port"
+            fi
             dagecho "Done replacing URL"
         fi
 
@@ -399,4 +404,3 @@ echo TODO  # TODO
 
 becho "All done."
 becho "As stated before, you can rerun this script anytime."
-becho "This terminal session is old by now. You should open a new terminal or renew it to use the sourced bashrc."
