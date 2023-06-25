@@ -1606,7 +1606,7 @@ args:
 
     becho "matching filenames:"
     becho "==================="
-    _sudo_if_necessary "find \"$dir\" -iname \"*$exp*\"" | color_word --word "$exp"
+    _sudo_if_necessary find "$dir" -iname "*$exp*" | color_word --word "$exp"
 
     becho "matching file contents:"
     becho "======================="

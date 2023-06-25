@@ -284,7 +284,7 @@ function setup_utility () {
         hang
 
         becho -p "Choose a pool address. You can browse $(wecho "https://miningpoolstats.stream/monero") to see available offers and stats."
-        dabecho -p "Recommended: $(wecho "p2pool.io"), But it requires extra setup (not covered here, yet). These are also solid choices: $(wecho "nanopool.org") , $(wecho "hashvault.pro") , $(wecho "supportxmr.com")"
+        dabecho -p "Recommended: $(wecho "p2pool.io") ; it has no pool fees, frequent pays, very low min-payout, but it requires extra setup (not covered here, yet). These are also solid choices: $(wecho "nanopool.org") , $(wecho "hashvault.pro") , $(wecho "supportxmr.com")"
         dagecho "Current mining address (domain+port) is: $(recho "$(jq -r '.pools[0].url' "$MONERO_MINER/config.json")")"
         local domain_name
         read -p "Domain (leave empty to skip change): " domain_name  # Read the user's input
