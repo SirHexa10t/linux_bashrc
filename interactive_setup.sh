@@ -214,11 +214,12 @@ function setup_utility () {
         [ -n "$(_nonempty_folder_or_nothing "$directory_value")" ] && { _prompt_yn "Monero Miner is already installed, re-install?" || return 0; }
 
         local monero_pick_skip='skip'
-        local url_chosen=''
-        while [ -z "$url_chosen" ]; do
-            local latest_release_page=$(curl -s "https://api.github.com/repos/xmrig/xmrig/releases/latest")  # latest release data
-            local download_urls=($(echo "$latest_release_page" | jq -r '.assets[].browser_download_url'))
+        local latest_release_page=$(curl -s "https://api.github.com/repos/xmrig/xmrig/releases/latest")  # latest release data
+        local download_urls=($(echo "$latest_release_page" | jq -r '.assets[].browser_download_url'))
+        [ -z "$download_urls" ] && { errcho "Seems like the miner's webpage wasn't retrieved properly. Please try again later, in case it's a momentary internet connectivity issue"; return 1; }
 
+        local url_chosen
+        while [ -z "$url_chosen" ]; do
             declare -A xmrig_urls xmrig_filenames sha256_contents
             local index=1 index2=1 durl
             for durl in "${download_urls[@]}"; do
@@ -284,13 +285,13 @@ function setup_utility () {
         hang
 
         becho -p "Choose a pool address. You can browse $(wecho "https://miningpoolstats.stream/monero") to see available offers and stats."
-        dabecho -p "Recommended: $(wecho "p2pool.io") ; it has no pool fees, frequent pays, very low min-payout, but it requires extra setup (not covered here, yet). These are also solid choices: $(wecho "nanopool.org") , $(wecho "hashvault.pro") , $(wecho "supportxmr.com")"
+        dabecho -p "Recommended: $(cecho "p2pool.io") ; it has no pool fees, frequent pays, very low min-payout, but it requires extra setup (not covered here, yet). These are also solid choices: $(cecho "nanopool.org") , $(cecho "hashvault.pro") , $(cecho "supportxmr.com")"
         dagecho "Current mining address (domain+port) is: $(recho "$(jq -r '.pools[0].url' "$MONERO_MINER/config.json")")"
         local domain_name
         read -p "Domain (leave empty to skip change): " domain_name  # Read the user's input
         if [ -n "$domain_name" ]; then
             becho "Choose a port number. Notice that starting difficulty is temporary, and doesn't matter much for long workloads"
-            dabecho -p "Options: $(wecho "3333")/$(wecho "5555")/$(wecho "7777") : low/mid/high starting difficulty. $(wecho "9000") : SSL/TLS. $(wecho "8080") or $(wecho "80") or $(wecho "443") : http ports, could help bypass firewall."
+            dabecho -p "Options: $(cecho "3333")/$(cecho "5555")/$(cecho "7777") : low/mid/high starting difficulty. $(cecho "9000") : SSL/TLS. $(cecho "8080") or $(cecho "80") or $(cecho "443") : http ports, could help bypass firewall."
             local port
             read -p "Port: " port  # Read the user's input
             replace_json_field 'url' "$domain_name:$port"
@@ -369,8 +370,7 @@ function setup_utility () {
         ;;
         'MONERO_MINER')
             becho "Feature: Manage your monero mining operations conveniently via Terminal. The miner works on CPU; there's a GPU version too, but as of the time of this writing, it's not worth considering."
-            install_monero_miner
-            configure_monero_miner
+            install_monero_miner && configure_monero_miner
         ;;
     	*)
             errcho "unable to handle choice: $var_chosen"
