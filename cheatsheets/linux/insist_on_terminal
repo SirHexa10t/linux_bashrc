@@ -1,0 +1,6 @@
+# Various things you can forcefully do in terminal
+* btop  # htop-like, but with slightly less focus on processes; an overview of the system, including CPU-core temps, and network-usage
+* curl ""wttr.in"  # get an ascii weather report
+* furtune  # get a "fortune". needs package: fortune-mod
+*   watch fortune  # get new fortune text every 2 seconds
+

@@ -37,6 +37,7 @@
 
 # TODO - make a spreadsheets command that lets you lookup a string in their names, their "tags" (folders they're in), and contents
 
+# TODO - an alias for sending email/sms with own sender details? (probably not. Unless some functions here would benefit from having notifications)
 
 
 #---------------------------------------------------------------------------------------------
@@ -78,7 +79,7 @@ function _symlink_or_nothing () { [[ -L "$1" && -e $(readlink -f "$1") ]] && ech
 SUDO_FILE="$(which sudo)"
 CUSTOM_BASHRC_FILE="$(readlink -f -- "$BASH_SOURCE")"  # this file  TODO - check how it's different from using "realpath"
 CUSTOM_BASHRC_FOLDER="$(dirname "$CUSTOM_BASHRC_FILE")"  # this file's folder-path
-SCRIPTS_BASHRC_FILE="$CUSTOM_BASHRC_FOLDER/script_calls_bashrc"  # optional extention file
+SCRIPTS_BASHRC_FILE="$CUSTOM_BASHRC_FOLDER/script_calls_bashrc"  # external (not this file) content loader  # TODO - put in utility files?
 IS_FIRST_SOURCING=$([ ! -v CUSTOM_ALIASES_INITIAL ] && echo 'true' || echo 'false')
 
 if [ "$IS_FIRST_SOURCING" = true ]; then  # only do if not defined already (can happen if you source this file again), in which case, previous iteration's values are the right ones
@@ -133,9 +134,10 @@ _remap_utility_files
 
 
 # env variables that influence built-ins
-export TMPDIR=${CUSTOM_TMPDIR:-"$TMPDIR"}
+[ -n "$CUSTOM_TMPDIR" ] && export TMPDIR="$CUSTOM_TMPDIR"
 
 export HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
+# you can find more history settings in your own .bashrc
 
 # determine terminal-window size (num_of_rows , num_of_cols)
 [[ -n "$TERMINAL_DIMS" && -z "$SCRIPTED_SOURCING" ]] && \
@@ -260,6 +262,7 @@ alias run_docker_desktop='systemctl --user start docker-desktop'
 # System management
 # =================
 
+# TODO - put under the condition that the file exists (it most definitely should); probably should put this in utility files too
 # shortcut for the interactive setup script
 alias interactive_bashrc_setup="$CUSTOM_BASHRC_FOLDER/interactive_setup.sh"
 
@@ -362,8 +365,6 @@ alias autoclick_toggle_100cps='py_clicker --cps 100 --toggle'
 # ---------- FUNCTIONS ----------
 #################################################################################
 
-# TODO - a "checksum" function that gets both file to checksum and the checksum-result file, determines which is which, runs the appropriate checksum on the file and compares with the result file; prints the match result 
-
 
 # Command and mechanics override
 # ==============================
@@ -426,11 +427,16 @@ function mkdir () {
 
 # make date output in a specific format by default
 function date () {
-    if [ $# -eq 0 ]; then /usr/bin/date "+%Y-%m-%d_%T";  # no args provided, so default to this time format
+    if [ $# -eq 0 ]; then /usr/bin/date "+%F_%T";  # no args provided, so default to this time format
     else /usr/bin/date "$@";  # user provided args - leave the command alone
     fi
 }
 
+# "backwards move". Undoes a mv command that has 2 args (both have to be files, or both dirs). Revert a move command by going to the start of it, and add 'b'
+# arg 1: destination-file , arg 2: source-file
+function bmv () {
+    mv "$2" "$1"
+}
 
 
 # Common basic functionalities
@@ -659,7 +665,7 @@ function remindme () {
         local num_of_rows_above="$2"
         local cmd_names=(${@:3})  # args 3 and onwards
 
-        [ -z "$cmd_names" ] && errcho 'No commands given to search!' && return
+        [ -z "$cmd_names" ] && { errcho 'No commands given to search!'; return 1; }
 
         local delimiter='->->->'  # separator between 2 different strings; it needs to be unlikely to be there "naturally"
         local match_results="$(
@@ -1225,7 +1231,9 @@ function install_targz_from_url () {
     [ -z "$app_name" ] && { errcho "app-name wasn't provided. Example: \"$(wecho "pycharm")\". Quitting."; return 1; }
     [ -z "$install_folder" ] && { errcho "installation-path wasn't provided. Example: \"$(wecho "/opt/jetbrains")\". Quitting."; return 1; }
 
-    local dir_for_download="${TMPDIR:-'/tmp'}"
+
+    # TODO - check if these temp-dirs clear up on their own
+    local dir_for_download=$(TMPDIR="$TMPDIR" mktemp -d)
     local downloaded_file="$(readlink -f -- "$dir_for_download/$app_name.tar.gz")"
     becho "Downloading: \"$url\" to: \"$downloaded_file\""
     wget -O "$downloaded_file" "$url"
@@ -1237,7 +1245,8 @@ function install_targz_from_url () {
         checksum_sha256 "$downloaded_file" <(echo "$checksum256") || return 1
     fi
 
-    local extract_contents_folder=$(readlink -f -- "$install_folder/$app_name")
+
+    local extract_contents_folder="$install_folder/$app_name"
     # becho "Cleaning up (if ncessary): \"$extract_contents_folder\""  # not doing that, too dangerous
     becho "Extracting into: \"$extract_contents_folder\""
     _sudo_if_necessary mkdir -p "$extract_contents_folder"
@@ -1533,7 +1542,7 @@ function gui () {
 function lll () {
     # need condition to check return code so we'll only print headers if this is successful
     local cmd_result
-    if cmd_result=$(ls -tarlushFN --color=always --time-style="+%Y-%m-%d_%T" --group-directories-first "$@") && [ $? -eq 0 ]; then
+    if cmd_result=$(ls -tarlushFN --color=always --time-style="+%F_%T" --group-directories-first "$@") && [ $? -eq 0 ]; then
         becho "Blocks Permissions Hard-Links Owner Group Size Date_Modified Filename"  # headers, not aligned, but still helpful
         echo "$cmd_result"
     fi
@@ -2021,7 +2030,7 @@ function benchmark_archiving () {
     [ -e "$1" ] || { errcho "you didn't specify anything to archive; quitting"; return 1; }
 
     local archive_me_full_path="$(realpath "$1")"  # get full path
-    local targer_tar="$(dirname "$archive_me_full_path")/benchmark_$(date +%Y_%m_%d_T%H%M%S)/$(basename "$archive_me_full_path").tar"
+    local targer_tar="$(dirname "$archive_me_full_path")/benchmark_$(date +%F_T%H%M%S)/$(basename "$archive_me_full_path").tar"
     local target_folder="$(realpath "$(dirname "$targer_tar")")"
     mkdir "$target_folder"  # make sure that the folder exists
 
@@ -2285,11 +2294,53 @@ function chatgpt_ask () {  ###tags: requires-configuration
 # Crypto
 # ======
 
-# TODO - figure out how to specify how many cores can be dedicated
-# Start CPU-mining Monero
+# Start Monero mining (CPU workload)
+# arg 1: how many threads (optional; defaults to number of exec-cores. You can set 9999, it won't assign more than it can run in parallel)
 [ -n "$MONERO_MINER" ] && \
 function mine_monero () {  ###tags: requires-configuration
-    "$MONERO_MINER/xmrig"
+    # the args in the help menu don't work, so we'll set things through the config file each run.
+    local monero_config_file="$MONERO_MINER/config.json"
+    local miner_executable="$MONERO_MINER/xmrig"
+
+    # arg 1: field-name , arg 2: value (may or may not include double-quotes)
+    function replace_field_in_config () {
+        local replaced="$(sed -n "s|.*\(\"$1\":.*,\)|\1|p" "$monero_config_file")"
+        local replacement="\"$1\": $2,"
+
+        [[ "$replaced" = "$replacement" ]] && return;  # existing value is the same as replacement - don't replace.
+
+        sed -i "s|\"$1\": .*,|$replacement|1" "$monero_config_file"  # |1 means: replace first occurence
+    }
+
+    # xmrig's original configs lay-out the array of core indexes as the first half in uneven numbered indexes, and the second half in even numbered indexes.
+    # like so: [0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15]
+    local num_of_threads=${1:-$(nproc)}
+    num_of_threads=$(min "$num_of_threads" $(nproc))  # never use more thread than number of execution-cores (or vCores)
+    local half=$((num_of_threads / 2))
+    local threads_indexes=($(for ((i=0; i<$num_of_threads; i++)); do echo "$(((i/2 + (i%2)*half)))"; done))
+    local array_for_json="[$(printf "%s, " "${threads_indexes[@]}" | sed 's/..$//')]"  # separated by ", " and trimming 2 chars at the end to remove the last ", "
+    replace_field_in_config 'rx' "$array_for_json"
+    replace_field_in_config 'rx/wow' "$array_for_json"
+
+    local port_used="$(grep "\"url\":" "$monero_config_file" | sed 's/.*://' | sed 's/".*//')"  # get what's after the last ':' and before the next '"', in the line with "url":
+    local worker_name="xmrig-brc-c${num_of_threads}-p${port_used}"
+    replace_field_in_config 'pass' "\"$worker_name\""
+
+    
+    becho "Running $num_of_threads threads"
+    becho "Worker name: $(gecho "$worker_name")"
+
+    pgrep -f "xmrig" >/dev/null && { errcho "xmrig is already running; settings were adjusted for current instance, but no new process will be launched."; return 0; }
+
+
+
+    local sudo_decision_timeout=10  # in seconds
+    local input
+    read -t "$sudo_decision_timeout" -p "$(buecho "Run as sudo") (for MSR: $(buecho "~12% boost"))? Default is \"no\" in ${sudo_decision_timeout}s. (y/yes to approve) " input
+
+    [[ "$input" = 'y' || "$input" = 'Y' || "$input" = 'yes' ]] \
+    && sudo "$miner_executable" \
+    || "$miner_executable"
 }
 
 

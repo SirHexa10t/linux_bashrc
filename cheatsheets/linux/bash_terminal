@@ -67,6 +67,9 @@
 * diff <file1> <file2>  # get the text difference between 2 files
 * espeak <text>  # read-out (audio) the given text. A bit of a gimmick, sounds very robotic
 >> shortcuts
+* Terminal CTRL+C : terminate current thread
+* Terminal CTRL+A : Jump to start of line
+*   Terminal CTRL+E : Jump to end of line 
 * Terminal CTRL+L : clear screen
 * Terminal CTRL+Z : send to background (leave any interactive UI for a while).
 *   fg  # return process to foreground (resume the UI of the process). If you have several stuff in the background stack, this pops the last one

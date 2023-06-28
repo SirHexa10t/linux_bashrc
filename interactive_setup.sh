@@ -257,6 +257,7 @@ function setup_utility () {
         install_targz_from_url --url "$url_chosen" --app_name monero_miner --install_folder "$CRYPTO_PROGRAMS_DIR" --checksum256 "$checksum_string"  # --alias xmrig  # --alias is not necessary - a bashrc alias can replace it 
 
         # check that the files are alright
+        [ ! -f "$directory_value/xmrig" ] && { errcho "Can't find the miner executable! Quitting."; return 1; }
         becho -p "Final checks for files' hash ($(recho "if there's no match, you should QUIT IMMEDIATELY! (ctrl+c)"))"
         checksum_sha256_entry "$directory_value/config.json" "$directory_value/SHA256SUMS"
         checksum_sha256_entry "$directory_value/xmrig" "$directory_value/SHA256SUMS"
@@ -273,12 +274,23 @@ function setup_utility () {
         # arg 1: field_name , arg 2: replacement_value
         function replace_json_field () {
             local dq='"'  # double quotes
-            [[ "$2" =~ ^[0-9]+$ ]] && dq=''  # value is a number - no quotes needed
+            [[ "$2" =~ ^-?[0-9]+$ || "$2" = 'true' || "$2" = 'false' ]] && dq=''  # value is a number or "true"/"false"- no quotes needed
 
             local before="$(field_match_expression "$1" "${dq}.*${dq}")"
             local after="$(field_match_expression "$1" "${dq}$2${dq}")"
             sed -i "s|$before|$after|1" "$config_file"  # replace first occurence
-        } 
+        }
+
+        # arg 1: how we call the replaced term, arg 2: jquery, arg3: json_field_name
+        function prompt_changing_field () {
+            dagecho "Current $1: $(recho "$(jq -r "$2" "$config_file")")"
+            local user_input
+            read -p "Input $1 (leave empty to skip change): " user_input  # Read the user's input
+            if [ -n "$user_input" ]; then
+                replace_json_field "$3" "$user_input"
+                dagecho "Done replacing $1"
+            fi
+        }
 
         dabecho -p "You need a wallet-address, unless you plan to do charity-mining. If you don't have one, go download from: $(wecho "https://www.getmonero.org/downloads/#cli") or $(wecho "https://web.getmonero.org/downloads/#gui")."
         echo "Notice: $(dabecho "You have an option to download the blockchain to your computer - it takes many hours, but you should do it at some point. You could start without it.")"
@@ -286,43 +298,51 @@ function setup_utility () {
 
         becho -p "Choose a pool address. You can browse $(wecho "https://miningpoolstats.stream/monero") to see available offers and stats."
         dabecho -p "Recommended: $(cecho "p2pool.io") ; it has no pool fees, frequent pays, very low min-payout, but it requires extra setup (not covered here, yet). These are also solid choices: $(cecho "nanopool.org") , $(cecho "hashvault.pro") , $(cecho "supportxmr.com")"
-        dagecho "Current mining address (domain+port) is: $(recho "$(jq -r '.pools[0].url' "$MONERO_MINER/config.json")")"
-        local domain_name
-        read -p "Domain (leave empty to skip change): " domain_name  # Read the user's input
-        if [ -n "$domain_name" ]; then
-            if [[ "$domain_name" =~ :[0-9] ]]; then
+        dagecho "Current pool mining address (domain+port): $(recho "$(jq -r '.pools[0].url' "$config_file")")"
+        local pool_address
+        read -p "Pool address; prepend your input with \"pool.\" (leave empty to skip change): " pool_address  # Read the user's input
+        if [ -n "$pool_address" ]; then
+            if [[ "$pool_address" =~ :[0-9] ]]; then
                 dagecho "I was about to ask about the port number, but it seems to already be provided."
-                replace_json_field 'url' "$domain_name"
+                replace_json_field 'url' "$pool_address"
             else
                 becho "Choose a port number. Notice that starting difficulty is temporary, and doesn't matter much for long workloads"
                 dabecho -p "Options: $(cecho "3333")/$(cecho "5555")/$(cecho "7777") : low/mid/high starting difficulty. $(cecho "9000") : SSL/TLS. $(cecho "8080") or $(cecho "80") or $(cecho "443") : http ports, could help bypass firewall."
                 local port
                 read -p "Port: " port  # Read the user's input
-                replace_json_field 'url' "$domain_name:$port"
+                replace_json_field 'url' "$pool_address:$port"
             fi
             dagecho "Done replacing URL"
         fi
 
-        becho "Choose a reception wallet address. It's a public address, i.e. isn't sensitive information."
+        becho "Choose a payment address. It's a public address, i.e. isn't sensitive information."
         dabecho "In the GUI wallet it's in tab \"Receive\"; you might need to click \"Create new address\" there."
-        dagecho "Current reception address is: $(recho "$(jq -r '.pools[0].user' "$MONERO_MINER/config.json")")"
-        local wallet_address
-        read -p "Receipt address (leave empty to skip change): " wallet_address  # Read the user's input
-        if [ -n "$wallet_address" ]; then
-            replace_json_field 'user' "$wallet_address"
-            dagecho "Done replacing reception address"
-        fi
+        prompt_changing_field 'payment address' '.pools[0].user' 'user'
 
 
-        becho "Would you like to donate to XMRig? (set to 0 if not)"
-        dagecho "Current donation amount is: $(recho "$(jq -r '.["donate-level"]' "$MONERO_MINER/config.json")%")"
+        becho "Would you like to donate to XMRig? (note: XMRIG might set a minimum donation percentage regardless of your choice)"
+        dagecho "Current donation amount: $(recho "$(jq -r '.["donate-level"]' "$config_file")%")"
         local donation_p
         read -p "Donation percentage (leave empty to skip change): " donation_p  # Read the user's input
         if [ -n "$donation_p" ]; then
+            donation_p="${donation_p/%\%/}"  # make sure there's no '%' that the user may have added in.
             replace_json_field 'donate-level' "$donation_p"
             replace_json_field 'donate-over-proxy' "$donation_p"
             dagecho "Done replacing donation amount"
         fi
+
+        becho "Would you like to name your worker? (easier to keep track if you mine with more than one machine)"
+        prompt_changing_field 'worker name' '.pools[0].pass' 'pass'
+
+        becho "Would you the UI to use colors? (true/false)"
+        prompt_changing_field 'coloring' '.["colors"]' 'colors'
+
+        becho "Use 1gb-pages? (true/false)"
+        dabecho -p "If not enabled already by your OS, put this in grub ($(cecho "/etc/default/grub")): $(wecho 'GRUB_CMDLINE_LINUX="default_hugepagesz=2M hugepagesz=1GB hugepages=3"') , then run \`sudo update-grub\`, and reboot"
+        prompt_changing_field '1GB-pages' '.randomx."1gb-pages"' '1gb-pages'
+
+
+        becho "You manually can configure further (like defining more workers, or changing other fields), in this file: $config_file"
 
         # TODO - setup proxy?
         # TODO - setup default number of cores?

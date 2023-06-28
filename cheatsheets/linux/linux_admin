@@ -17,9 +17,14 @@
 >> configurations (Nemo file-manager)
 * ~/.local/share/nemo/scripts/  :  anything you put in this folder will be an executable-script available when you right-click in nemo
 >> logs (to tail a logfile in real-time run: "tail -f <logfile>", or to get last 100 lines: "tail -100 <logfile>" )
-* log-file: /var/log/boot.log  :  System boot log
-* log-file: /var/log/dmesg  :  log for kernel ring buffer
-*   dmesg -k | grep -E "warn|error"  # the command dmesg displays kernel logs buffer
-* log-file: /var/log/kern.log  :  log for kernel ring buffer
+* /var/log/boot.log  :  System boot log
+* /var/log/syslog  :  System-events log (like connection of a USB device)
+* /var/log/auth.log  :  Login-attempts log
+* /var/log/dmesg  :  log for kernel ring buffer
+*   dmesg -k | grep -E "warn|error"  # dmesg displays kernel logs buffer
+* /var/log/kern.log  :  log for kernel ring buffer
+* /var/log/btmp  :  also could be "wtmp"; it's a binary file for login/logout events, and it can't be read directly
+*   last  # read binary log of login/logout events. Use "lastb" (like so: `sudo lastb -adF` ) to only read bad events.
+* journalctl  # inspect systemd logs (like so: `journalctl -u <service-name>`, you can add -f to follow)
 >> working with devices (disks/volumes)
 * wipefs -a /dev/<sd??>  # remove filesystem data; removes RAID metadata
