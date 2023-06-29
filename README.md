@@ -2,9 +2,13 @@
 
 ## About
 
-A bashrc file with various gimmicks I found or came up with
+A bashrc file with various gimmicks and frequently-needed tools that I came up with
 
-It's still a work in progress; some features are commented out until they'll be finished
+This project was created as an excuse to practice Bash, and as a one-place-collection of common procedures. If you find it lacking in content or quality, please do make a pull-request or contact me at sirhexal@gmail.com (fast response isn't guaranteed)
+
+If you'd like to share this repository, here's a QR code for it:
+
+![project_github_qr](md_imgs/git_project_link.png)
 
 
 ## Compatibility
