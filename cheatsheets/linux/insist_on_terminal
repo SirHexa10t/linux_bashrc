@@ -1,6 +1,7 @@
-# Various things you can forcefully do in terminal
+# Various things you can do in terminal to replace graphical user interfaces or just stave-off boredom
 * btop  # htop-like, but with slightly less focus on processes; an overview of the system, including CPU-core temps, and network-usage
 * curl ""wttr.in"  # get an ascii weather report
 * furtune  # get a "fortune". needs package: fortune-mod
 *   watch fortune  # get new fortune text every 2 seconds
+* oneko &  # Summon a small cat that chases after your mouse. You can get many of those concurrently, and there's also a version with a dog (read the man page).
 

@@ -13,10 +13,12 @@ buecho "From here-on, you may quit at any point during a prompt by pressing CTRL
 buecho "If any update breaks your configurations, try rerunning this script (it'll be updated accordingly)"
 
 
-title_prnt_cmd='yecho'
+function title_prnt_cmd () { yecho "$(_underline "$1" '=')"; }
 
-$title_prnt_cmd "# git handling (for updates and such)"
-$title_prnt_cmd "# ==================================="
+
+title_prnt_cmd "# git handling (for updates and such)"
+# ================================================================================================================================================
+
 
 function update_with_git () {
     if [ -e "$CUSTOM_BASHRC_FOLDER/.git" ]; then
@@ -62,8 +64,9 @@ fi
 
 
 
-$title_prnt_cmd "# adding the sourcing of custom_bashrc"
-$title_prnt_cmd "# ===================================="
+title_prnt_cmd "# adding the sourcing of custom_bashrc"
+# ================================================================================================================================================
+
 
 locations=(
     "$HOME/.bashrc"
@@ -138,8 +141,9 @@ fi
 
 
 
-$title_prnt_cmd "# setting up utility files"
-$title_prnt_cmd "# ========================"
+title_prnt_cmd "# setting up utility files"
+# ================================================================================================================================================
+
 
 var_pick_quit='done'
 utility_vars=($(printf '%s\n' "${!_UTILITY_FILE_MAP[@]}" | sort))
@@ -154,7 +158,8 @@ declare -A vars_explanation=(
     ['DISPLAY_ARRANGEMENT']="Screen rearrangement through a keybind. Useful if your OS messes up your screen layout at times."
     ['CUSTOM_TMPDIR']="Changes the tmp-files target-location from root (/) to your folder of choice (possibly on a large drive)"
     ['VM_IMG_PARTITION_UUID']="Partition auto-mounting, in case you use $(wecho "Virtual Machines"), and the VMs' storage is on a separate mountable partition"
-    ['LOOKING_GLASS_CLIENT']="Enables custom_bashrc's usage looking-glass (a $(wecho "Virtual Machine") tool)"
+    ['LOOKING_GLASS_CLIENT']="Enables custom_bashrc's usage of looking-glass (a $(wecho "Virtual Machine") tool)"
+    ['STOCKS_FILE']="Used for stock-data querying (graphs)"
     ['MONERO_MINER']="Privacy/secrecy-oriented crypto-currency CPU miner"
 )
 
@@ -364,7 +369,8 @@ function setup_utility () {
         ;;
         'TERMINAL_DIMS')
             becho "Feature: set your terminal-window size on launch. Alternatively you can be also set through (but gets overriden by this feature): toolbar menu -> Edit > Preferences"
-            _prompt_input_to_file "$directory_value" "$(becho -p "This feature requires 2 inputs that'll be saved into $directory_value. First is number of rows (height), second is number of columns (width). 36 on 120 is a decent choice.")" '2'
+            local prompt_file_input="$(becho -p "This feature requires 2 inputs that'll be saved into $directory_value. First is number of rows (height), second is number of columns (width). 36 on 120 is a decent choice.")" 
+            _prompt_input_to_file "$directory_value" "$prompt_file_input" '2'
         ;;
         'SUBDIR_MOUNTS_FILE')
             becho "Feature: Create convenient shortcuts into various directories in media partitions, for portability/access/order."
@@ -374,12 +380,14 @@ function setup_utility () {
         ;;
         'CREDENTIALS_OPENAI')
             becho "Feature: Ask ChatGPT using a simple terminal command."
-            _prompt_input_to_file "$directory_value" "$(becho -p "This feature requires your API key (something like: sk-3wUxEyevvnEf9fP2xDn7T3BAbkFJmAOjhKEgH0t1ngXCP7c0). You can get it at: $(buecho https://platform.openai.com/account/api-keys)")"
-            chmod 600 "$directory_value"  # ony user is allowed to read/write
+            local prompt_file_input="$(becho -p "This feature requires your API key (something like: sk-3wUxEyevvnEf9fP2xDn7T3BAbkFJmAOjhKEgH0t1ngXCP7c0). You can get it at: $(buecho https://platform.openai.com/account/api-keys)")"
+            _prompt_input_to_file "$directory_value" "$prompt_file_input"
+            chmod 600 "$directory_value"  # only user is allowed to read/write
         ;;
         'DISPLAY_ARRANGEMENT')
             becho "Easily restore display layout from saved configuration. Convinient in case your OS messes it up."
-            _prompt_input_to_file "$directory_value" "$(becho -p 'This feature requires screen-layout (example: HDMI-0: nvidia-auto-select +1920+1080, DP-0: nvidia-auto-select +1920+0, DP-2: nvidia-auto-select +3840+1080, DP-4: 1920x1080_240 +0+1080" ), which gets fed into an nvidia-settings command. Get this info through: '"$(dabecho 'NVIDIA Settings > X Server Display Configuration -> click on "Save to X Configuration File" -> click on "Show preview..."')"'. I don'"'"'t know how to configure for AMD or Intel, nor whether the display issue occurs on their cards')"
+            local prompt_file_input="$(becho -p 'This feature requires screen-layout (example: HDMI-0: nvidia-auto-select +1920+1080, DP-0: nvidia-auto-select +1920+0, DP-2: nvidia-auto-select +3840+1080, DP-4: 1920x1080_240 +0+1080" ), which gets fed into an nvidia-settings command. Get this info through: '"$(dabecho 'NVIDIA Settings > X Server Display Configuration -> click on "Save to X Configuration File" -> click on "Show preview..."')"'. I don'"'"'t know how to configure for AMD or Intel, nor whether the display issue occurs on their cards')"
+            _prompt_input_to_file "$directory_value" "$prompt_file_input"
         ;;
         'CUSTOM_TMPDIR')
             becho "Feature: Replace the temp-files dir (default is /tmp), using a symlink that points to a folder. It can improve available cache-writing space (could be critical for some tools/commands) or faster cache-read/write. custom_bashrc evaluates the symlink each time it's sourced, so it won't default to given folder unless it's available."
@@ -387,11 +395,19 @@ function setup_utility () {
         ;;
         'VM_IMG_PARTITION_UUID')
             becho "Feature: auto-mount the VMs' storage (usually .qcow2 files) partition when starting a VM through custom_bashrc's functions. If you have no such partition, don't set this."
-            _prompt_input_to_file "$directory_value" "$(becho -p "This feature requires writing the partition's UUID into: \"$directory_value\". You can find the UUID of your partition by running the cusrom command \"devs\"")"
+            local prompt_file_input="$(becho -p "This feature requires writing the partition's UUID into: \"$directory_value\". You can find the UUID of your partition by running the cusrom command \"devs\"")"
+            _prompt_input_to_file "$directory_value" "$prompt_file_input"
         ;;
         'LOOKING_GLASS_CLIENT')
             becho "Feature: Utilize looking-glass host-client (passthrough of image-stream from a VM-dedicated GPU), using the path to its binaries-file."
-            _prompt_input_to_file "$directory_value" "$(becho -p "This feature requires writing the LG-host-client's path into \"$directory_value\". If you don't have such a client and need one, there's a guide in one of my other git repositories. You can also follow the official guide: $(buecho "https://looking-glass.io/docs/B6/install/")")"
+            local prompt_file_input="$(becho -p "This feature requires writing the LG-host-client's path into \"$directory_value\". If you don't have such a client and need one, there's a guide in one of my other git repositories. You can also follow the official guide: $(buecho "https://looking-glass.io/docs/B6/install/")")"
+            _prompt_input_to_file "$directory_value" "$prompt_file_input"
+        ;;
+        'STOCKS_FILE')
+            becho "Feature: keep track of selected stocks (get graphs in real-time)."
+            local stop_str="thats_all"
+            local prompt_file_input="Write stock symbols (and optionally price-point), one per line. Example: \"AMD\", or \"AMD 76.50\". When you're done, type: $(becho "$stop_str")"
+            _prompt_input_to_file "$directory_value" "$prompt_file_input" '1000' "$stop_str"
         ;;
         'MONERO_MINER')
             becho "Feature: Manage your monero mining operations conveniently via Terminal. The miner works on CPU; there's a GPU version too, but as of the time of this writing, it's not worth considering."
@@ -415,8 +431,14 @@ done
 
 
 
-$title_prnt_cmd "# bringing in external tools and binaries"
-$title_prnt_cmd "# ======================================="
+title_prnt_cmd "# compiling local projects into binaries"
+# ================================================================================================================================================
+
+echo TODO  # TODO
+
+
+title_prnt_cmd "# bringing in external tools and binaries"
+# ================================================================================================================================================
 
 echo TODO  # TODO
 
