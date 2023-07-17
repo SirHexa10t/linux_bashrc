@@ -2607,7 +2607,7 @@ def draw_graph(title, df, pricepoint, save_as):
     import mplfinance as mpf
     
     # "figsize" forces large output image, for a lot of detail (width inches, height inches)
-    kwargs_draw = dict(title=title, data=df, savefig=save_as, type='candle', style='yahoo', volume=True, figsize=(24, 16))
+    kwargs_draw = dict(title=title, data=df, savefig=save_as, type='candle', style='nightclouds', volume=True, figsize=(24, 16))
     kwargs_draw.update({'hlines': dict(hlines=[pricepoint])} if pricepoint else {})  # if provided with a value to draw line at, add it
     
     return mpf.plot(**kwargs_draw)
