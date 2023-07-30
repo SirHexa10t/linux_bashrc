@@ -1,0 +1,104 @@
+# Reminders for relevant specs and priorities when buying computer hardware
+>> PC Desktop Screen/Monitor
++ If you only want another screen for a TTY prompt or to display a playlist or a git manager or such, only resolution/size should concern you. 
+# Not discussing how things work; only the effects of used technologies
+> Type of LCD panel; Almost all monitors are made of LCD, lit by LEDs. The LCD is arranged in one of the following 3 configurations
+* IPS (In-Plane Switching): Good colors and angles, most common type as of this writing
+* VA (Vertical alignment; basically IPS but different crystal orientation): Similar to IPS, slightly better in some aspects
+* TN (Twisted Nematic): Worst at most (especially at color display), but has better refresh/response time (though the gap has been largely narrowed). Often the cheapest option.
++ There's also OLED, which has "true black" and is growing in popularity over LCD types.
+> Response time
+* 5 ms response should be the most you accept at this point
+* 1 ms is the high standard and is becoming very common
+> Frequency
+* 60Hz is the standard garbage-extra-monitor. You can easily see which frames your monitor couldn't draw your mouse at.
+* 120Hz / 144Hz is a noticeable improvement over 60
+* 240 is about the best you can find but is still largely a TN-screen niche
+> Resolution
++ You should already know what resolution you're after (and remember that your computer requires a certain amount of power to drive the according amount of pixels)
++ There's 720p and 1366x768 ("WXGA HD"), but they're not worth looking into. 1080p is already a low bar at this age.
+* "1080p": 1920x1080 ("Full HD"). You can call it "1K".
+*  see also the taller: 1920x1200 ("WUXGA"), and the x2 wider: 2560x1080
+* "1440p": 2560x1440 ("QHD" / "WQHD"). You can call it "2K"
+*  see also 3440x1440 ("Ultra Wide QHD"/"UWQHD"), and the x2 wider: 5120x1440 ("Dual QHD")
+* "4K": 3840x2160 ("4K UHD")
+*  see also the wider: 5120x2160
+* "5K": 5120x2880 ("5K UHD")
+* "8K": 7680x4320 ("8K UHD")
+> HDR (color vibrance adjustment/improvement)
+* HDR 400: 400 nits of brightness; 8-bit colors (sRGB). Considered garbage quality, but it's still HDR...
+* HDR 10: 10-bit colors (Wide color gamut). A group of types that forms the vast majority of displays. If a monitor is just mentioned as "HDR 10", assume it's of the lowest quality of this group.
+* HDR 600: 600 nits of brightness; 10-bit colors
+* HDR 1000: 1000 nits of brightness; 10-bit colors. The high-standard of quality HDR with noticable improvement over the lesser options
+* HDR 1600: 1600 nits of brightness; 10-bit colors.
+> Freesync/G-sync
+* G-SYNC ("True GSYNC", NOT "GSYNC-Compatible") means that unlike Freesync, there's an actual processor within the screen that does 2-way communication with the video card 
+* Some great monitors don't have G-SYNC, but having G-SYNC is an assurance of a great monitor 
+> Brands
+* LG's highest-quality line of products: "UltraGear"
+* Acer's highest-quality line of products: "Predator"
+* ASUS's highest-quality line of products: "ROG Strix"
+
+>> SSD (flash)
++ No notes about Intel Optane (non-flash SSD), because as of the time of writing, it's discontinued
++ No comparison with HDDs, it's a slowly-dying technology. Longer waiting time, no tolerance to movement, bit-rot (magnetic flip of some bits after some time), higher electricity consumption and heat, larger physical space taken... Do yourself a favor and avoid those whenever you can. Get a QVO SSD if you want cheaper bulk-storage.
+> NVMe is better than SATA
++ Notice, on M.2 connections (or the SSD sticks) you can identify the supported protocol: 1 notch (hole, no bus) means it's NVMe, 2 notches means it's SATA
+* SATA is both the physical interface and the protocol. SATA III's bandwidth caps at 600 GB/s
+*  Notice that because of this, a USB 3.0 port (or better) can properly substitute a SATA port (with a proper adapter)
+* NVMe is a protocol optimized for SSDs, and requires a PCIe connection (M.2 is most common; there's also U.2)
+*  Throughput of NVMe on PCI gen.3: each lane supports 985 MB/s -- x1: 985 MB/s , x2: 1970 MB/s , x4: 3940 MB/s , x8: 7880 MB/s , x16: 15800 MB/s
+*  Throughput of NVMe on PCI gen.4: each lane supports 1970 MB/s -- x1: 1970 MB/s , x2: 3940 MB/s , x4: 7880 MB/s , x8: 15800 MB/s , x16: 31600 MB/s
+> NAND type
++ The number of bits in a cell determine how long it has to live. If any of the bits burns out, the whole cell is unusable.
+* SLC (1 bit) single-level cell; will have the longest lifespan. No longer used for entire disks, only as cache
+* MLC (2 bits) multi-level cell; no longer made.
+* TLC (3 bits) tri-level cell; a common configuration for flash-SSDs, associated with V-NAND (3D-stacking) manufacturing
+* QLC (4 bits) quad-level cell; these cells die more frequently, but the higher density fits well for storage (write once, read as many times as you want)
+> DRAM and cache
+* DRAM Buffer - space dedicated for a lookup-table (~0.1% of disk volume). Having a dedicated DRAM chip improves performance by a lot. You should buy only SSDs that have it. There are 2 types of dedicated DRAM buffers: a DRAM module on the drive (best), or SLC-cache storage. Without a dedicate DRAM buffer, the memorization of addresses within the SSD becomes the responsibility of your system's RAM (which creates accessibility and bandwidth issues, especially during concurrent disk usages) or the SSD's storage space.
+* Cache - a fast-retrieve space that accelerates read/write - you read from it faster, or make a fast write which gets transferred (slower) to the main storage. Make sure it's SLC (single cell), i.e. dedicated. Not a direct write to the TLC. Also, if you want to read/write large files, make sure that the buffer is large enough.
+*  If the device is the SSD's storage space for DRAM/Cache, it'd degrade the storage space faster, require more free space on disk, and anyway the data there is slower-access which is counter-productive to the purpose of DRAM/Cache
+> Speeds
+* For PCI 3, expect 3.5 to 4 GB/s
+* For PCI 4, you should have ~7 GB/s
+> Brand
++ Notice that some prands add a "plus" to their models' names, and the throughput difference there could be multiple times more than non-plus version while only costing 10% more.
++ Note: There are 3 companies (not counting subsidiaries) that create DRAM: Samsung, Micron, SK Hynix. They also make NAND. It factors into the price and quality control.
+* You should pick from a known reputable brand, they're not much more expensive than their smaller competitors, and they have better support (drivers/software)
+*  Samsung - possibly the strongest SSD vendor, they have a lot of great products with good software
+*  Micron - a maker of flash hardware, sells to other companies. Mostly sells B-to-B; the SSDs you can buy from them are at huge volumes (and accordingly expensive)
+*  WD - a known company, but uses deceptive naming to sometimes sell inferior products using model names that sound more advanced; you need to check the specs carefully
+*  Crucial (a subsidiary of Micron; mostly budget-oriented) - Should be mentioned that they allegedly "pulled an ADATA" trick, by stealthily downgrading the controller of their MX500 models 
+*  SK Hynix (has some high-end drives)
+*  Sabrent
+*  ADATA - be careful of them (buy only if there's a really good deal), as they quietly downgraded the quality of one of their models once, and also declared having a DRAM buffer on some models that didn't. Also some of their drives terribly underperformed despite having great specs listed.
+*  Sandisk (bought out by WD) - mediocre at best. Did the same shady parts-swap trick as ADATA.
+
+>> USB drive
++ USB 4 (any gen) is only provided by USB-C
++ Some USB-C cables are merely supporting USB 2.0
++ When a USB-device supports a protocol, it's not inferred that it runs on it at full speed; it's just above the speed of previous tier.
+* The confusing terminology:
+*  USB 1.0: 187 kB/s
+*  USB 1.1 (aka Full-Speed): 1.5 MB/s
+*  USB 2.0 (aka High-Speed): 60 MB/s
+*  USB 3.x Gen 1 (aka SuperSpeed) (previously "USB 3.0"): 625 MB/s
+*  USB 3.x Gen 2 (aka SuperSpeed+) (previously "USB 3.1"): 1.25 GB/s
+*  USB 3.2 Gen 2x2: 2.5 GB/s
+*  USB 4 Gen 3x2: 5 GB/s
+*  USB 4 Gen 4 (aka "USB 4 V2.0"): 10 GB/s
+
+>> GPU
+* As of the time of writing, AMD (Radeon) cards are the budget-oriented options; better overall performance/price. Maybe Intel would become as relevant in the future.
+* If you want to use CUDA for AI, you'd have to pick NVIDIA
+* If you want NVIDIA's "Ray Tracing" feature, you'd have to pick NVIDIA (AMD have their own, but it's not as developed)
+* If you have a G-SYNC monitor, you can't make use of that feature (G-SYNC) unless you use an NVIDIA GPU
+
+>> CPU
+* As of the time of writing, AMD makes the best CPUs in both performance and efficiency.
+* AMD's CPUs are (ironically) the more expensive option, especially when factoring in the much higher motherboard prices over Intel's
+
+
+
+

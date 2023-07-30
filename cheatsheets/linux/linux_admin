@@ -6,6 +6,8 @@
 *   udisksctl mount --block-device=/dev/<device-name> 2> /dev/null
 >> configurations
 * /etc/default/grub  :  boot configurations
+*   update-grub2  # updates grub for you (comments out old grub configurations).
+#   if you want to setup a new boot partition for (U)EFI, you can just create at the start of your disk a new FAT32 partition with 300MB-1GB storage and boot-flag, using "gparted" (recommended through a live-boot usb-stick). Then run boot-repair (installation: `sudo apt install -y boot-repair`) and update-grub2. Rerun update-grub2 on your actual OS to overwrite the resulting listed "Ubuntu" grub.
 * /etc/modprobe.d/blacklist.conf  :  blacklist modules, such as firmware
 * /etc/fstab  :  mounting configurations, including for dir /
 * /etc/environment  :  OS environment variables

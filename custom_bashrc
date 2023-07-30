@@ -41,6 +41,8 @@
 
 #  TODO - add a flatpak installation command? Something that simplifies: `flatpak search brave` and then `flatpak install flathub com.brave.Browser`
 
+# TODO - find a way to add an extra output of stderr to a log file (without it causing shell-replacement problems, specifically when: 1) running "exec shell" , 2) re-reading the log-file's contents like so: "cat $ERR_LOGS_FILE" ). This specifically didn't work:   exec 2> >(tee -a "$ERR_LOGS_FILE" >&2)
+
 
 #---------------------------------------------------------------------------------------------
 #----CUSTOM-----------------------------------------------------------------------------------
@@ -73,13 +75,13 @@ function _file_content_or_nothing () { [ -f "$1" ] && cat "$1" || echo '' ; }
 
 # If symlink exists and its target is valid, print symlink. Otherwise place an empty string.
 # arg 1: symlink file
-function _symlink_or_nothing () { [[ -L "$1" && -e $(readlink -f "$1") ]] && echo "$1" || echo '' ; }
+function _symlink_or_nothing () { [[ -L "$1" && -e $(readlink -f -- "$1") ]] && echo "$1" || echo '' ; }
 
 
 ## Session data
 #################################################################################
 SUDO_FILE="$(which sudo)"
-CUSTOM_BASHRC_FILE="$(readlink -f -- "$BASH_SOURCE")"  # this file  TODO - check how it's different from using "realpath"
+CUSTOM_BASHRC_FILE="$(realpath "$BASH_SOURCE")"  # this file
 CUSTOM_BASHRC_FOLDER="$(dirname "$CUSTOM_BASHRC_FILE")"  # this file's folder-path
 SCRIPTS_BASHRC_FILE="$CUSTOM_BASHRC_FOLDER/script_calls_bashrc"  # external (not this file) content loader  # TODO - put in utility files?
 IS_FIRST_SOURCING=$([ ! -v CUSTOM_ALIASES_INITIAL ] && echo 'true' || echo 'false')
@@ -138,10 +140,11 @@ _remap_utility_files
 
 
 # env variables that influence built-ins
+# --------------------------------------
 [ -n "$CUSTOM_TMPDIR" ] && export TMPDIR="$CUSTOM_TMPDIR"
 
-export HISTTIMEFORMAT="%Y-%m-%d_%T  "  # makes "history" command display the time the command ran at
-# you can find more history settings in your own .bashrc
+export HISTTIMEFORMAT="%F_%T  "  # makes "history" command display the time the command ran at
+# you can find more history settings in your own .bashrc file
 
 # determine terminal-window size (num_of_rows , num_of_cols)
 [[ -n "$TERMINAL_DIMS" && -z "$SCRIPTED_SOURCING" ]] && \
@@ -631,6 +634,7 @@ function _prompt_input_to_file () {
 # ========================
 
 # TODO - command grep. "command_like <expression>"
+# TODO - color commands in cyan if they only exist conditionally (require definition of some args by user). The detection of this case already exists in this function. commecho's legend should call this "personalized-commands"
 # list custom commands.
 # --show_hidden (list inner-workings commands) ; --sort (sort alphabetically) ; --include_line_num (print definition line-num)
 function remindme () {
@@ -837,7 +841,7 @@ function multiping () {
     # random_lan_device=$(ip neigh | cut -f 1 -d ' ' | grep -v '127.0.0.1' | shuf -n 1)
     local user_choice=($@)
     local dns_addresses="8.8.8.8 1.1.1.1"  # google and cloudflare
-    local big_domains="wikipedia.org youtube.com discord.com google.com cloudflare.com github.com bitbucket.org www.linode.com"
+    local common_domains="speedtest.net wikipedia.org youtube.com discord.com google.com cloudflare.com github.com bitbucket.org www.linode.com"
     local mining_pools="pool.hashvault.pro pool.nanopool.org"
     local aws_endpoints="$(curl -s "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html" | sed -n 's|\(rds.[[:alpha:]]\+-[[:alpha:]]\+-[[:digit:]]\+.amazonaws.com\)|\1|p')"
 
@@ -853,7 +857,7 @@ function multiping () {
         fi
     }
     (  # The parentheses provide a subshell, so that shell job-control wouldn't bother us
-    for address in localhost $user_choice $dns_addresses $big_domains $mining_pools $aws_endpoints; do
+    for address in localhost $user_choice $dns_addresses $common_domains $mining_pools $aws_endpoints; do
         for protocol in 4 6; do
             local running_processes=$(pgrep -c ping)
             (( running_processes >= max_ping_threads )) && wait -n  # don't start another thread while too many ping threads are under-way
@@ -1271,13 +1275,13 @@ function install_targz_from_url () {
 
 
     if [ -n "$inner_executable" ]; then  # if chose to run an installation file from within the extracted folder
-        local runme=$(readlink -f -- "$extract_contents_folder/$inner_executable")  # file to run post-extraction
+        local runme=$(realpath "$extract_contents_folder/$inner_executable")  # file to run post-extraction
         becho "installing by running file: $runme"
         _sudo_if_necessary "$runme"
     fi
 
     if [ -n "$alias_path" ]; then  # if chose to alias the application's name to an inner file
-        local linkme=$(readlink -f -- "$extract_contents_folder/$alias_path")  # file to symlink to
+        local linkme=$(realpath "$extract_contents_folder/$alias_path")  # file to symlink to
         becho "creating command \"$app_name\" that would run file: \"$linkme\""
         _sudo_if_necessary ln -sfn "$linkme" "/usr/local/bin/$app_name"
     fi
@@ -1681,6 +1685,7 @@ args:
 
     becho "matching file contents:"
     becho "======================="
+    # TODO - fix this. When grep finds no matches, it returns non-0, and that causes it to rerun with sudo. The 0-matches case shouldn't require sudo and rerun. 
     local all_results=$(_sudo_if_necessary grep -e "$exp" -Inir "$dir" --color=never)  # No colors. Coloring is done at this stage because otherwise it'll add to the string's length
     if [ $(expr "$text_limit" + 0) -gt 0 ]; then  # if there's a limit for result length
         [ -n "$verbose" ] && becho "filtering with maximum result length: $text_limit" 
@@ -1694,7 +1699,7 @@ args:
 # arg1: dir to explore , -s (optional: sort by size)
 function explore () {
     local location=${1:-.}  # use given address, default to current location
-    location=$(readlink -f "$location")  # use absolute path (and use no '/' at the end)
+    location=$(realpath "$location")  # use absolute path (and use no '/' at the end)
 
     local total_files=0  # Files (recursive) counter. Can technically just recount current dir, but the results might not be cached
 
@@ -1765,7 +1770,7 @@ function checksum_sha256 () {
 # perform checksum operation on file and check against the correct line in checksum file
 # arg 1: <file_to_checksum> , arg 2: <file_with_expected_checksum>
 function checksum_sha256_entry () {
-    local checkme_filename="$(basename $(readlink -f -- "$1"))"
+    local checkme_filename="$(basename "$1")"
     local appropriate_line="$(grep "$checkme_filename" "$2")"
     checksum_sha256 "$1" <(echo "$appropriate_line")
 }
@@ -1806,7 +1811,7 @@ function tarchive () {
     		;;
     	esac
     done
-
+    
     [ -n "$files_to_archive" ] || { errcho "You need to specify files (or folders) to archive" ; return 1; }
     [ -n "$comp" ] || { errcho "You need to specify compression algorithm" ; return 1; }
 
@@ -1826,13 +1831,12 @@ function tarchive () {
         [ -e "$full_path" ] || { errcho "There's no \"$f\" (full: \"$full_path\") in filesystem. Skipping it." ; return 1; }
 
         local folderpath="$(dirname "$full_path")"
-        local filename="${predetermined_name:-"$(basename "$full_path")"}"
+        local archive_name="${predetermined_name:-"$(basename "$full_path")"}.tar.$comp"
         
         # if archive already exists and we don't overwrite, save archive with timestamp (unless the name is predetermined)
-        local archive_name="$(_add_str_before_filetype "$filename.tar.$comp" "$([ -n "$password" ] && echo "_encrypted" || echo '')")"
-        if [[ -f "$archive_name" && -n "$no_overwrite" && -z "$predetermined_name" ]]; then
+        [ -z "$predetermined_name" ] && archive_name="$(_add_str_before_filetype "$archive_name" "$([ -n "$password" ] && echo "_encrypted" || echo '')")"
+        [[ -f "$archive_name" && -n "$no_overwrite" && -z "$predetermined_name" ]] && \
             archive_name="$(_add_str_before_filetype "$archive_name" "_$(date +%Y_%m_%d_T%H%M%S)")"
-        fi
 
         becho -p "Archiving: $(wecho "$(du -sh $full_path)") into: $(wecho "$archive_name")"
         # write the file
@@ -2026,7 +2030,7 @@ function unencrypt () {
 
     local remove_ext=$([ -n "$ext" ] && echo ".$ext" )  # make sure we don't try to remove a dot in case ext is empty
     local file_mod_ext=${file_to_decrypt%$remove_ext}
-    local folder_of_extraction=$([ -n "$output_folder" ] && realpath "$output_folder" || echo $(dirname "$file_mod_ext") )
+    local folder_of_extraction=$(realpath "$output_folder" 2>/dev/null || echo $(dirname "$file_mod_ext") )  # use output folder if specified
     local file_unencrypted_output="$( realpath "$folder_of_extraction/decrypted_$(basename "$file_mod_ext")" )"
 
     becho -p "Identified $encryption_name encryption, attempting to unencrypt and save as $(gecho "$file_unencrypted_output") . $(buecho "Sort out the naming on your own")."  # let user know what's going on
@@ -2056,7 +2060,7 @@ function benchmark_archiving () {
 
     local archive_me_full_path="$(realpath "$1")"  # get full path
     local targer_tar="$(dirname "$archive_me_full_path")/benchmark_$(date +%F_T%H%M%S)/$(basename "$archive_me_full_path").tar"
-    local target_folder="$(realpath "$(dirname "$targer_tar")")"
+    local target_folder="$(dirname "$targer_tar")"
     mkdir "$target_folder"  # make sure that the folder exists
 
     local password="kldsjfbn1ilugdfblgibfdusaVCsdvsderghtnr"
@@ -2182,7 +2186,7 @@ function _shortaccess_folder () {
     # iterate on couples (inner-paths , mountpoint) 
     local i
     for i in "${!mountpoints[@]}"; do
-        local folder_fullpath="$(readlink -f "$dev_mountpoint/${folders[i]}")"  # get supposed full path based on provided subdir (in a way that prevents possible // instead of / after concatenation)
+        local folder_fullpath="$(readlink -f -- "$dev_mountpoint/${folders[i]}")"  # get supposed full path based on provided subdir (in a way that prevents possible // instead of / after concatenation)
         local mountpoint="${mountpoints[i]}"
         
         # check subdir validity
@@ -2271,7 +2275,9 @@ function media_compare () {
     _side_by_side --lined "${md_results[@]}" 
 }
 
+# TODO - alias sanitize_playlist
 # TODO - add args that allow changing the music-lib's root (replace leading part of string)
+# TODO - add a check for paths within playlist (print them if they don't exist)
 # perform various fixes to playlist file
 # arg 1: playlist-file (accepts m3u and m3u8 formats)
 function playlist_file_fix () {
@@ -2281,9 +2287,10 @@ function playlist_file_fix () {
     local file_text="$(cat "$1")"
 
     # remove image (picture) files
-    local picture_formats=(png jpg jpeg)
+    local picture_formats=(png jpg jpeg)  # TODO - add more non-playable formats
     local pformat
     for pformat in "${picture_formats[@]}"; do
+        # TODO - do those without the 2-cases (1 line for both)
         lc_pformat="${pformat,,}"  # lower case
         uc_pformat="${pformat^^}"  # upper case
         # delete lines that end with .$pformat
@@ -2414,23 +2421,27 @@ function launch_vm_w_lookingglass () {  ###tags: requires-configuration
     # look up info within the vm's definitions file
     local xml_file="/etc/libvirt/qemu/${vm_name}.xml"
 
+    local q_qq="\"'"  # single quote and double quotes
+    local sq="'"  # single-quote
     # get the shmem name:
-    local shmem_name=$(sudo awk -F 'name=' '/shmem/ {gsub("'\''", "", $2); print $2}' "$xml_file" | sed 's/^"\([^"]*\)".*/\1/' | sed 's/>$//')  # extract the string between the quotes, remove the quotes, remove the closing '>'
+    # TODO maybe - make shmem_name and shmem_size query with either single or double quotes
+    local shmem_name=$(sudo awk -F 'name=' '/shmem/ {gsub("'$sq'", "", $2); print $2}' "$xml_file" | sed 's/^"\([^"]*\)".*/\1/' | sed 's/>$//')  # extract the string between the quotes, remove the quotes, remove the closing '>'
     [ -z "$shmem_name" ] && { errcho "Couldn't find shmem name (shared-memory for looking glass). If there's no GPU sharing its memory, Looking-Glass can't be used. Exiting."; return 1; }
     local lg_file="/dev/shm/$shmem_name"
     local shmem_size=$(sudo awk '/<\/shmem>/ {exit} {print}' "$xml_file" | tac | sed -n -E "s/.*<size unit='([^']*)'>([^<]*)<\/size>.*/\2 \1/p")  # get first size match above closing tag
-
-    # get the vnc port number from xml
-    local portnum=$(sudo grep -oP "<graphics type=[\"']spice[\"'] port=[\"']\K\d+" "$xml_file")  # works for either single or double quotes
+    local portnum=$(sudo grep -oP "<graphics type=[$q_qq]spice[$q_qq] port=[$q_qq]\K\d+" "$xml_file")  # works for either single or double quotes
     portnum=${portnum:=5900}  # default if empty
-
+    # get first slot-match after the pci subsystem tag, then convert the matched number within from hex to dec (works with either quote or double quotes)
+    local gpu_index=$(sudo grep -A 999999 "<hostdev mode=[$q_qq]subsystem[$q_qq] type=[$q_qq]pci[$q_qq] managed=[$q_qq]yes[$q_qq]>" "$xml_file" | grep -o "slot=[$q_qq]0x[0-9a-fA-F]\+[$q_qq]" | head -1 | sed "s/slot=[$q_qq]\(0x[0-9a-fA-F]\+\)[$q_qq]/\1/" | xargs printf "%d")
+    local inxi_index=$((gpu_index+2))
+    
     # Show user the parameters and ask for approval (quit if disapproved)
-    becho "Please authorize the following."
-    dabecho -p "$(wecho "Note:") no two running VMs may have the same looking-glass session-file or VNC-port at the same time"
-    dabecho -p "$(wecho "Note:") shmem size should suffice for your resolution. Rough estimates (according to \"https://looking-glass.io/docs/B6/install/#client-determining-memory\"): \
-$(becho "1080p:") 32M, $(becho "1200p:") 32M, $(becho "1440p:") 32M, $(becho "4K:") 128M ; if you want to support $(becho "HDR mode:") $(wecho "DOUBLE") the stated amount."
-    if _prompt_yn "$(becho -p "VM: $(wecho "$vm_name"), looking-glass/shmem name: $(wecho "$shmem_name") (size: $(wecho "$shmem_size")), VNC-port: $(wecho "$portnum"). Launch with these parameters?")"; then
-    # if _prompt_yn "$(becho "VM:") $vm_name, $(becho "looking-glass/shmem name:") $shmem_name ($(becho "size:") $shmem_size), $(becho "VNC-port:") $portnum. Launch with these parameters?"; then
+    becho -p "$(wecho "Note:") no two running VMs may have the same looking-glass $(cecho "session-file") or $(cecho "VNC-port") or $(cecho "GPU") at the same time"
+    becho -p "$(wecho "Note:") shmem size needs to be enough for your resolution. Rough estimates (according to \"$(buecho "https://looking-glass.io/docs/B6/install/#client-determining-memory")\"): \
+$(cecho "1080p:") 32M, $(cecho "1200p:") 32M, $(cecho "1440p:") 32M, $(cecho "4K:") 128M ; if you want to support $(cecho "HDR mode:") $(wecho "DOUBLE") the previously stated amount."
+    recho "Please authorize the following."
+    echo "$(becho "I think the VM uses this GPU:") $(inxi -G | awk "NR==$inxi_index")"
+    if _prompt_yn "$(becho -p "$(cecho "VM"): $(wecho "$vm_name"), $(cecho "looking-glass/shmem name"): $(wecho "$shmem_name") ($(cecho "shmem size"): $(wecho "$shmem_size")), $(cecho "VNC-port"): $(wecho "$portnum"), $(cecho "index of used GPU"): $(wecho "$gpu_index"). Launch with these parameters?")"; then
         echo "Starting..." 
     else 
         echo "Quitting. If the details were off, modify your VM's xml file (easiest through VM Manager, but you can also run: \"virsh edit $vm_name\")" 
@@ -2447,7 +2458,7 @@ $(becho "1080p:") 32M, $(becho "1200p:") 32M, $(becho "1440p:") 32M, $(becho "4K
     [ -f "$lg_file" ] && dagecho $(ls -alF "$lg_file")
     
     # run the vm (if needed)
-    becho "Starting/resuming VM. This might take a minue."
+    becho "Starting/resuming VM. This might take a minute."
     local vm_state=$(virsh domstate "$vm_name")
     if [ "$vm_state" == "running" ]; then
         gecho "$vm_name is already running."
@@ -2812,10 +2823,12 @@ function _colored_echo () {  ###tags: text-coloring
 # comment-colorized echo
 # -l (optional: include legend)
 function commecho () {  ###tags: text-coloring
-    local bullet_point_color='<=green=>'
-    local double_cat_line_color=$(_tag_persist '<=bold=><=blue=>')
-    local single_cat_line_color=$(_tag_persist '<=blue=>')
-    local plus_line_color=$(_tag_persist '<=bold=><=yellow=>')
+    local bullet_point_color='<=cyan=>'
+    local bullet_point_sub_color='<=green=>'
+    local upper_line_continuing_arrow='<=green=>'
+    local double_cat_line_color=$(_tag_persist '<=bold=><=yellow=>')
+    local single_cat_line_color=$(_tag_persist '<=bold=><=blue=>')
+    local plus_line_color=$(_tag_persist '<=bold=><=cyan=>')
     local sharp_comment_color=$(_tag_persist '<=yellow=>')
     local colon_comment_color=$(_tag_persist '<=yellow=>')
     local sharp_documentation_color=$(_tag_persist '<=green=>')
@@ -2853,9 +2866,10 @@ function commecho () {  ###tags: text-coloring
     [ -z "$formatted" ] && formatted=$(cat)  # if text wasn't in args, get it from redirected input (or pipe)
     # formatted=$(echo "$formatted" | sed -E "s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-input). Needs to run first, to not modify the color tags
     formatted=$(echo "$formatted" | sed -E "s/(\"[^\"]*\")/$double_quotes_color\1$reset/g")  # recolor within " " (specifics)
+    formatted=$(echo "$formatted" | sed "s/^*  /${bullet_point_sub_color}*${reset} ${upper_line_continuing_arrow}↳${reset}/g")  # replace beginning '*  ' with a colored asterisk, a space, and a mildly colored arrow referencing line above (sub-bullet-points)
     formatted=$(echo "$formatted" | sed "s/^* /${bullet_point_color}*${reset} /g")  # replace beginning '* ' with a colored asterisk and space  (bullet-points)
-    formatted=$(echo "$formatted" | sed "s/^>>.*$/${double_cat_line_color}&/g")  # recolor lines beginning '>>'  (topics)
-    formatted=$(echo "$formatted" | sed "s/^>.*$/${single_cat_line_color}&/g")  # recolor lines beginning '>'  (sub-topics)
+    formatted=$(echo "$formatted" | sed "s/^>>\(.*$\)/${double_cat_line_color}➤\1/g")  # recolor lines beginning '>>', and replace with a nice ascii char  (topics)
+    formatted=$(echo "$formatted" | sed "s/^>\(.*$\)/${single_cat_line_color}⇾\1/g")  # recolor lines beginning '>', and replace with a nice ascii char  (sub-topics)
     formatted=$(echo "$formatted" | sed "s/^+.*$/${plus_line_color}&/g")  # recolor lines beginning '+'  (notes)
     formatted=$(echo "$formatted" | sed "s/  \(#.*\)$/  ${sharp_comment_color}\1/g")  # recolor starting from '  #'  (code-comments)
     formatted=$(echo "$formatted" | sed "s/^# /${sharp_documentation_color}&/g")  # recolor starting from '# '  (page's documentation)
@@ -3091,6 +3105,7 @@ function animate_lets_go () {
 ## Script-files dependent functions
 ###################################
 
+# TODO - pass the args in a temp (RAM-only) file, so it won't complain about too many args (that's what python does...)
 # recolors text by replacing color tags with their appropriate color-codes. Calls '_py_draw_formatted' to do that 
 function _draw_formatted () {  ###tags: text-coloring
     if type -t _py_draw_formatted &> /dev/null ; then echo -e "$(_py_draw_formatted "$@")";
@@ -3134,7 +3149,7 @@ fi
 
 # End-message (finished sourcing)
 if [[ -z "$SCRIPTED_SOURCING" && $EUID -ne 0 ]]; then   # don't output messages if user is root (sudo running) or if accessed through a script
-    echo "$(gecho "Finished loading") \"$CUSTOM_BASHRC_FILE\" for: \"`readlink -f $0`\". To view added commands, run: $(becho remindme)"  # announce done
+    echo "$(gecho "Finished loading") \"$CUSTOM_BASHRC_FILE\" for: \"$(realpath "$0")\". To view added commands, run: $(becho remindme)"  # announce done
     [ -f "$TESTS_FILE" ] && source "$TESTS_FILE"  # run the tests file if it exists and we're not in sudo mode
 fi
 
