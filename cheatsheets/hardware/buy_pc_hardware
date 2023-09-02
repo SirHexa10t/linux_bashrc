@@ -63,7 +63,7 @@
 * For PCI 3, expect 3.5 to 4 GB/s
 * For PCI 4, you should have ~7 GB/s
 > Brand
-+ Notice that some prands add a "plus" to their models' names, and the throughput difference there could be multiple times more than non-plus version while only costing 10% more.
++ Notice that some brands add a "plus" to their models' names, and the throughput difference there could be multiple times more than non-plus version while only costing 10% more.
 + Note: There are 3 companies (not counting subsidiaries) that create DRAM: Samsung, Micron, SK Hynix. They also make NAND. It factors into the price and quality control.
 * You should pick from a known reputable brand, they're not much more expensive than their smaller competitors, and they have better support (drivers/software)
 *  Samsung - possibly the strongest SSD vendor, they have a lot of great products with good software

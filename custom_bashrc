@@ -141,14 +141,20 @@ _remap_utility_files
 
 # env variables that influence built-ins
 # --------------------------------------
+
 [ -n "$CUSTOM_TMPDIR" ] && export TMPDIR="$CUSTOM_TMPDIR"
 
-export HISTTIMEFORMAT="%F_%T  "  # makes "history" command display the time the command ran at
-# you can find more history settings in your own .bashrc file
+# display tweaks (only change at launch, don't force on re-source)
+if [ "$IS_FIRST_SOURCING" = true ]; then 
+    export HISTTIMEFORMAT="%F_%T  "  # Makes "history" command display the time the command ran at. You can find more history settings in your own .bashrc file
 
-# determine terminal-window size (num_of_rows , num_of_cols)
-[[ -n "$TERMINAL_DIMS" && -z "$SCRIPTED_SOURCING" ]] && \
-    printf '\e[8;%s;%st' "$(echo "$TERMINAL_DIMS" | head -n 1)" "$(echo "$TERMINAL_DIMS" | head -n 2 | tail -n 1)"
+    export PS1="\[\033[01;31m\][\$(date -u +%T)(UTC)]$PS1"  # prepends UTC-time to prompt, colored in red
+    
+    # determine terminal-window size (num_of_rows , num_of_cols)
+    [[ -n "$TERMINAL_DIMS" && -z "$SCRIPTED_SOURCING" ]] && \
+        printf '\e[8;%s;%st' "$(echo "$TERMINAL_DIMS" | head -n 1)" "$(echo "$TERMINAL_DIMS" | head -n 2 | tail -n 1)"
+fi
+
 
 
 # ---------- BINDS ----------
@@ -425,7 +431,11 @@ function sudo () {
 # TODO - do about the same for chmod and chown - print the directory/files with the changed data (maybe cancel that, getting the filenames in every case isn't simple)
 # add a print of local files after changing directory
 function cd () {
-    builtin cd "$@" && \
+    # if provided file, cd to the file's directory
+    local dir_to_cd="$@"
+    [[ $# -eq 1 && -f "$1" ]] && dir_to_cd="$(dirname "$1")"
+    
+    builtin cd "${dir_to_cd[@]}" && \
         ls -AF --color=always --group-directories-first 
 }
 
@@ -884,6 +894,10 @@ function multiping () {
 
     wait  # wait for threads to finish (otherwise the prompt won't show back automatically)
     )
+    
+    buecho "Checking current internet speed:"
+    speedtest-cli --secure
+
 }
 
 # find where a shortened link leads to
@@ -992,12 +1006,12 @@ function resources_used () {
     echo "Computing units count: $(becho $thread_count)"
     echo "If your overall CPU usage reaches $(becho $bottleneck_threshold%), your CPU is possibly bottlenecked on a single thread."
 
-    echo "$(uecho 'Resources currently taken by users:') *verified human users are colored **results are subject to slight shifts over runtime, partially due to this very script's running."
+    echo "$(uecho 'Resources currently taken by users:') $(dabecho -p "$(cecho "*") verified human users are colored. $(cecho "**") results are subject to slight shifts over runtime, partially due to this very script's running.")"
     echo -e "$usage_summary" | column -t -s $'\t' -N "$headers"
 
     echo "$(uecho 'Total CPU usage:') $total_cpu_usage"
     echo "$(uecho 'Total RAM usage:') $total_ram_usage"
-    echo "$(uecho 'Total Disk usage:') $total_disk_usage  *For '/' only. Run devs function to see more."  
+    echo "$(uecho 'Total Disk usage:') $total_disk_usage  $(dabecho -p "$(cecho "*") For '/' only. Run \"devs\" command to see more.")"  
     # TODO - check if there is a GPU at all, and support AMD (or Intel) drivers (need to detect)
     [ -n "$show_gpu" ] && ( uecho "GPU utilization info:" ; nvidia-smi -q -d MEMORY,COMPUTE,UTILIZATION ) # if flag --gpu is specified    
 }
@@ -1753,10 +1767,11 @@ function checksum_sha256 () {
     local print_comparison="$(
         echo "comparing checksum for file: \"$1\""
         echo "calculated: $(dagecho "$dl_file_checksum")"
-        echo "expected: $(dabecho "$expected_checksum")"
+        echo "expected:   $(dabecho "$expected_checksum")"
     )"
     echo "$print_comparison"
 
+    # TODO - grep the result out of the checksums file instead (require line start and then space). Or maybe remove asterisks, as they can ruin the result comparison
     # comparing only first string, not beyond the spacing
     if [[ "$(echo "$dl_file_checksum" | awk '{print $1}')" == "$(echo "$expected_checksum" | awk '{print $1}')" ]]; then
         gecho "checksums match!"
@@ -2231,6 +2246,18 @@ function media_hmerge_imgs () {
     || errcho "failed saving merged-file: $filesav"
 }
 
+# shrink a file by a factor of 2, both horizontally and vertically
+# arg 1: media file
+function media_shrink_by_2 () {
+    [ -f "$1" ] || { errcho "you must provide a file to shrink"; return 1; }
+    
+    function _declare_dims () { becho "$2: $(ffmpeg -i "$1" 2>&1 | perl -lane 'print $1 if /(\d+x\d+)/')";}
+    
+    _declare_dims "$1" "Size before"
+    ffmpeg -hide_banner -y -i "$1" -vf "scale=iw/2:ih/2" -q:v 1 "$1"
+    _declare_dims "$1" "Size after"
+}
+
 # arg 1: media_file
 function media_remove_audio () {
     local output="$(_add_str_before_filetype "$1" '_noaudio')"  # add "_noaudio" before the file's .<format>
@@ -2483,7 +2510,7 @@ $(cecho "1080p:") 32M, $(cecho "1200p:") 32M, $(cecho "1440p:") 32M, $(cecho "4K
     # experimental -S : Prevent the screensaver from starting  , win:size=1920x1080 : Initial window size at startup (default is 1024x768)
     becho "Starting host-side looking-glass client"
     "$LOOKING_GLASS_CLIENT" -f "$lg_file" -p $portnum -k -S & disown # -k : enable FPS & UPS display  ; -S : prevent host going to sleep
-
+    
 }
 
 
@@ -3113,7 +3140,7 @@ function _draw_formatted () {  ###tags: text-coloring
 }
 
 # Lists available colors (tags), and associated functions. Calls '_py_draw_formatted' for the list of colors 
-function _colors_available () {  ###tags: text-coloring
+function list_colors_available () {  ###tags: text-coloring
     local color_tags=$(_py_draw_formatted --print_available_colors)
     local tags=$(
         local tag
