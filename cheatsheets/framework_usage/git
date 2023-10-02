@@ -1,5 +1,5 @@
 # Reminders for git, and advanced tricks
 + You can delete files or lines from code retroactively using the tool from here: https://rtyley.github.io/bfg-repo-cleaner/
 *    java -jar bfg-1.14.0.jar --delete-files <file_to_delete.sh>  # after running this, you would be asked to run another command; do that too and push your modified branch to overwrite remote branch.
-* Theres a lot to say about managing git through CLI, but Im a proponent for using a graphical tool. Get GitKraken or GitFork or some other tool like that.
+* There's a lot to say about managing git through CLI, but I'm a proponent for using a graphical tool. Get GitKraken or GitFork or some other tool like that.
 

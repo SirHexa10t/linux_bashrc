@@ -11,8 +11,8 @@ tmux offers split-panes and sessions for terminals.
 * tmux  # create a new tmux session
 * CTRL+B, D  : leave (detach) current session
 * tmux ls  # view all existing tmux sessions (+ info about creation date and number of windows)
-* tmux rename-session -t <0/1/2/3/.../past_name> <name>  # rename session (using number/name from "tmux ls")
-* tmux attach -t <0/1/2/3/.../name>  # connect (attach) to an existing tmux session (using number/name from "tmux ls")
+* tmux rename-session -t <0/1/2/3/.../past_name> <name>  # rename session (using number/name from `tmux ls`)
+* tmux attach -t <0/1/2/3/.../name>  # connect (attach) to an existing tmux session (using number/name from `tmux ls`)
 * tmux kill-session -t <0/1/2/3/.../name>  # kill specified session
 > Windows:
 * CTRL+B, <0/1/2/3/...>  : go to window number

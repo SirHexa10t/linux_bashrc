@@ -4,9 +4,10 @@
 * man <command>  # read the manual of the command
 *   help  # list built-in Bash commands
 * sudo !!  # rerun last command with sudo permissions
+
 >> Packages (Debian)
 * sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
-* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the -n is for "no prompt")
+* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the `-n` is for "no prompt")
 * dpkg -l  # show all installed packages in table format
 * sudo dpkg -r <package>  # remove a package installed from a .deb file
 * sudo dpkg --purge <package>  # purge a package installed from a .deb file
@@ -14,35 +15,40 @@
 * apt list  # list all packages in followed repositories
 *   apt list --installed  # list installed packages
 *   dpkg -l  # show all installed packages in table format
+
 >> filesystem
 * ln -s <existing_file_to_link> <link_name>  # define soft-link. There are 2 symlink types; soft (denoted with -s, which points to a file's address) and hard (points directly to the data of a file. Editing the data in either "original" or hard-link is the same, and deleting either file alone wouldn't delete the data since it's still pointed to)
 +   soft links don't really utilize permissions - they allow everything and rely on the target to determine access. chmodding a symlink would forward the modification to the target. 
 *   ln -sr scripts/*.js target/  # create soft-links for all .js files in "scripts/", in "target/" (target/[filename.js] -> scripts/[filename.js]) 
 * cd  # write no directory to return to home-dir. Equivalent to cd ~
 *   cd -  # go back to previous directory
-* less <file>  # Read file with up/down controls. Newer and more convenient than "more".
+* less <file>  # Read file with up/down controls. Newer and more convenient than `more`.
+
 >> processes
 * htop  # show real-time processes/resource-usage
 * xkill  # after you run this, your mouse cursor would turn into an "x" sign, and the next window youll click would be killed. A bit lazy and silly.
 * visudo  # edit the /etc/sudoers file (only if you know what you are doing)
+
 >> bash basic utility commands (can be used in terminal of-course)
-* Use $ to reference variables
+* compgen -c  # get list of current commands
+> Use $ to reference variables
 *   "$my_var": value of variable my_var
 *   "$1": first arg in current scope (and so on for each num accordingly)
 *   "$@": all args in current scope as separate items ; "$*": all args in current scope concatenated into a unified string ; "$#": args count
 *   "$$": current PID
 *   "$?": the return code of last operation (can be used to check if it ran successfully)
-*    "$(<cmd here>)": run commands within commands (can also be done like so: `<cmd here>`)
-* add "& disown" after a command to have it run in its own thread (thats the "&"), and "disown" it so that it won't be tied to current terminal-run process and thus stop when the terminal closes
+*   "$(<cmd here>)": run commands within commands (can also be done like so: `<cmd here>`)
+* add `& disown` after a command to have it run in its own thread (thats the "&"), disconnected from current terminal-run process (thats the "disown") to prevent termination when the terminal closes
 * Use "<" to redirect a file. Example; to use file-contents as input: "./my_script.sh < input.txt"
 * Use "<<" ("here-document") to specify on what word (alone, not as an internal part of line) to stop reading text.
 * Use "<<<" ("here-string") to input a string as if it came from a file. For example, when running via while-loop on lines stored in a variable
 * Use ">" to truncate and then write output into a file; if file doesn't exist, it's created. Example: echo 'only this line' > file.txt 
 * Use ">" to write output into a file (no truncate); if file doesn't exist, it's created. Example: echo 'add me as last line' >> file.txt 
-* add "<0/1/2> > <filename>" after a command to write input(0)/output(1)/error(2) streams to a file. Specify "&" to write both 1 and 2. You can also use numbers 3 to 9, those are free descriptors for you to use as you like.
+* add "<0/1/2> > <filename>" after a command to write input(0)/output(1)/error(2) streams to a file. Specify `&` to write both 1 and 2. You can also use numbers 3 to 9, those are free descriptors for you to use as you like.
 *   add "2> /dev/null" after a command to throw away warning/error messages it might bring up
 * declare -p <variable>  # Note: no use of $. Print the variable to check data / data-type
-* time <command>  # get time measurement for command runtime. No need for quotes or any encapsulation, just prepend "time". Example: time ls -l
+* time <command>  # get time measurement for command runtime. No need for quotes or any encapsulation, just prepend "time". Example: `time ls -l`
+
 >> conditions
 * The return value of a function (0 is successful, anything else is failure) can be used as a condition
 * You can use brackets (spaced) for simple file/string checks, like so: [ -n "$1" ]
@@ -61,16 +67,20 @@
 *       "=~": pattern matching. Example: check if string starts with h: [[ "hello" =~ ^h.*$ ]]
 *       operators "&&" and "||": AND and OR within the brackets, no parentheses needed for the conditions
 * extra_dist=$(( (a > b) ? (a - b) : 0 ))  # example for ternary in bash (use the "&&", "||" ternary instead when you have a condition in "[]"). The double-parentheses mean you don't need "$" to reference variables and that the math operations get evaluated
+
 >> tools (utilities for usage that isn't about managing the OS)
 * wget <url>  # download files
-* curl <url>  # communicate through HTTP(S)/(S)FTP/SCP - make any request (but if you just want to download something, you should probably use wget)
+* curl <url>  # communicate through HTTP(S)/(S)FTP/SCP - make any request (but if you just want to download something, you should probably use `wget`)
 * diff <file1> <file2>  # get the text difference between 2 files
 * espeak <text>  # read-out (audio) the given text. A bit of a gimmick, sounds very robotic
+
 >> shortcuts
-* Terminal CTRL+C : terminate current thread
-* Terminal CTRL+A : Jump to start of line
-*   Terminal CTRL+E : Jump to end of line 
-* Terminal CTRL+L : clear screen
-* Terminal CTRL+Z : send to background (leave any interactive UI for a while).
+> Terminal
+* CTRL+C : terminate current thread
+* CTRL+A : Jump to start of line
+*   CTRL+E : Jump to end of line 
+* ALT+BACKSPACE : delete cursor's last word (instead of holding backspace for a while)
+* CTRL+L : clear screen
+* CTRL+Z : send to background (leave any interactive UI for a while).
 *   fg  # return process to foreground (resume the UI of the process). If you have several stuff in the background stack, this pops the last one
 

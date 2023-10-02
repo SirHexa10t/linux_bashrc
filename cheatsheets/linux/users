@@ -1,9 +1,0 @@
-# Reminders for user/groups management
-* groups <username>  # display the groups of a user
-* usermod -aG <groupA,groupB,groupC> <username>  # add user to group(s). You can even add to group sudo (makes into superuser in Ubuntu).
-* getent group  # list all groups and their user-members
-* sudo adduser --disabled-password --gecos "" <username>  # adduser is a useradd wrapper (addused is generally better). The --disabled-password and --gecos options are required for no-prompt; gecos fills thumbnail info (cancels interactive). --no-create-home skips homedir creation. --disabled-password skips password creation and disables password login.
-*   sudo adduser <username> --gecos "" --disabled-password && echo "<username>:<password>" | sudo chpasswd  # Add user with password in one line. take care to specify the username twice, as needed here
-* sudo deluser --remove-home <username>  # delete user and associate homedir
-* su - <username>  # Switch to user. Might require sudo.
-

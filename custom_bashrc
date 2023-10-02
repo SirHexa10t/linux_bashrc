@@ -345,7 +345,7 @@ alias whosmyisp='curl -s ipinfo.io/org'
 # Synonymous to "remindme" with extra information (less useful to user).
 alias list_cmds='remindme --show_hidden --include_line_num'
 # displays all cheatsheet commands
-alias cheatsheets='compgen -c | grep --color=never "^$CHEATSHEET_PREFIX" ; echo -e "To manually view the cheatsheet files, you can open your window-manager at their directory with this command:\n gui \"$CHEATSHEETS_PATH\""'
+alias cheatsheets='tree --dirsfirst "$CHEATSHEETS_PATH" ; yecho "Commands:"; echo "$(compgen -c | grep --color=never "^$CHEATSHEET_PREFIX")"'
 # Synonymous to "remindme".
 alias what_commands='remindme'
 ## Mispelled intentionally; don't fix it.
@@ -2860,7 +2860,9 @@ function commecho () {  ###tags: text-coloring
     local colon_comment_color=$(_tag_persist '<=yellow=>')
     local sharp_documentation_color=$(_tag_persist '<=green=>')
     local double_quotes_color='<=bold=><=red=>'
+    local tilted_quote_color='<=bold=><=orange=>'  # TODO - make code-marking persistant, but only until the closing '`', not until EOL
     local warning_color='<=flicker=><=uline=><=bold=><=red=>'
+    local hyperlink_color='<=uline=><=b_cyan=>'
     # angled_brackets_color='<=italic=>'  # problematic when within a color that's already within persisting color  # TODO - fix (improve the coloring function)
     local reset='<=reset=>'
 
@@ -2874,6 +2876,7 @@ function commecho () {  ###tags: text-coloring
                 "$(_draw_formatted "${sharp_comment_color}# comment/explanation")"
                 "$(_draw_formatted "${sharp_documentation_color}# documentation")"
                 "$(_draw_formatted "${double_quotes_color}\"specifics\"")"
+                "$(_draw_formatted "${tilted_quote_color}\`code\`")"
                 "$(_draw_formatted "${warning_color}\"WARNING!!\"")"
                 # "$(_draw_formatted "${angled_brackets_color}<your-choice>")"
                 )
@@ -2891,7 +2894,10 @@ function commecho () {  ###tags: text-coloring
 
     local formatted="$@"  # get all of the input
     [ -z "$formatted" ] && formatted=$(cat)  # if text wasn't in args, get it from redirected input (or pipe)
+    
     # formatted=$(echo "$formatted" | sed -E "s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-input). Needs to run first, to not modify the color tags
+    formatted=$(echo "$formatted" | sed -E "s/(\`[^\`]*\`)/$tilted_quote_color\1$reset/g")  # recolor text that starts with 'http(s)://' (URLs)
+    formatted=$(echo "$formatted" | sed -E "s/(https?:\/\/[^[:space:]]+)/$hyperlink_color\1$reset/g")  # recolor within ` ` (code)
     formatted=$(echo "$formatted" | sed -E "s/(\"[^\"]*\")/$double_quotes_color\1$reset/g")  # recolor within " " (specifics)
     formatted=$(echo "$formatted" | sed "s/^*  /${bullet_point_sub_color}*${reset} ${upper_line_continuing_arrow}↳${reset}/g")  # replace beginning '*  ' with a colored asterisk, a space, and a mildly colored arrow referencing line above (sub-bullet-points)
     formatted=$(echo "$formatted" | sed "s/^* /${bullet_point_color}*${reset} /g")  # replace beginning '* ' with a colored asterisk and space  (bullet-points)

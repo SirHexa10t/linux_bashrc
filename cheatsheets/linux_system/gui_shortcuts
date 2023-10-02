@@ -1,12 +1,16 @@
 # Reminders for some neat time-saving GUI keybind tricks
-* Built-in Nemo [space]  :  select (click) a file/folder, and press [space] to get a summary/preview; press again to close
-* Custom Gnome-Nemo CTRL+SHIT+T  :  open Terminal at current Nemo location
++ browser shortcuts are mentioned in a browser-dedicated cheatsheet
++ terminal shortcuts are mentioned in a terminal-dedicated cheatsheet
+>> nemo
+* Built-in: [space]  :  after selecting a file/folder, press [space] to get a summary/preview; press again to close
+* Custom: CTRL+SHIT+T  :  open Terminal at current Nemo location
+>> common-linux (Debian?)
 * Built-in CTRL+ALT+T  :  open Terminal
 * Built-in CTRL+ALT+[backspace]  :  log out of current session (resets your GUI)
 * Built-in CTRL+ALT+F1  :  enter TTY mode (terminal without anything graphic to lock/interrupt you)
 * Built-in CTRL+ALT+F7  :  exit TTY mode
+>> VM tools
 * Evdev installation LCTRL+RCTRL  :  switch mouse and keyboard (and maybe other things) between guest/host. Won't work if you gave the VM your USB device directly.
-+ browser shortcuts are mentioned in a browser-dedicated cheatsheet
-* in MPV/Celluloid video player:
+>> MPV/Celluloid video player
 *   playback speed: '[' and ']' to increase/decrease, '{' and '}' to multiply/divide by 2, [backspace] to reset
 

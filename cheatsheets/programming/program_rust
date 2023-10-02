@@ -1,0 +1,251 @@
+# A quick overview of how rust works, and how to learn it
+* Interactive exercise: "rustlings" at  https://github.com/rust-lang/rustlings
+* Learn Rust "in half an hour":  https://fasterthanli.me/articles/a-half-hour-to-learn-rust
+* Books
+*  https://doc.rust-lang.org/book/print.html 
+*  https://doc.rust-lang.org/rust-by-example/print.html
+
+
+
+>> DECLARATIONS AND FUNCTIONS
+>> ==========================
+
+> declaration
++ the available types are:
++  integers: `i8`, `i16`, `i32`, `i64`, `i128`, and `isize` which adapts to your architecture (will be i64 if you're on x64)
++    to use unsigned integers, just use 'u' instead of 'i', including `usize`
++    to assign numbers based on different bases:
++      Dec: 1_200_000   (a readable way to write 1.2 million, the underscores '_' are not mandatory)
++      Hex:	0xff
++      Oct:	0o77
++      Bin:	0b1111_0000
++      Byte (u8 only): b'A'
+let x: i32 = 42;  // Assign a variable. The type declaration is optional
+let pair = ('a', 17);  // tuple - a fixed-size list
+pair.0;  // access at index 0 of a tuple. Dots also access fields, as usual
+
+
+> similar to Java's Streams?
+let x = vec![1, 2, 3, 4, 5, 6]
+    .iter()
+    .map(|x| x+3)
+    .fold(0, |x, y| x+y);
+
+    
+> blocks evaluate values
+let x = { 
+    let y = 1;
+    let z = 2;
+    y + z  // the final line is "tail", and it's what the block will evaluate to. It's the same as writing: `return y+z;`
+};  
+
+> function definition
+fn ret_four() -> i32 {
+    4
+}
+
+
+> returning multiple values
+let (_, right) = slice.split_at(middle);  // save tuple return into 2 variables, throw the first one (meaning of underscore)
+
+
+> You can go into namespaces using ::
+let least = std::cmp::min(3, 8); // this is 3
+let x = "amos".len(); // this is 4
+let x = str::len("amos"); // this is also 4
+
+
+> instantiating:
+let v3 = MyStruct {
+    x: 14.0,
+    ..v2  // "all the rest from var v2" - all fiels which haven't been specified yet are copied over. Must be specified in last line, and only once
+};
+
+> creating variables from an object's fields
+let Vec2 { x, y } = v2;  // declare x and y which have the same value as v2 had
+let Vec2 { x, .. } = v2;  // declare x which has the value of v.x , and the rest is ignored
+
+
+> generic function
+fn foobar<L, R>(left: L, right: R) {
+    // do something with `left` and `right`
+}
+fn print<T: Display>(value: T) {
+    println!("value = {}", value);
+}
+fn print<T: Debug>(value: T) {
+    println!("value = {:?}", value);
+}
+fn compare<T>(left: T, right: T)
+where
+    T: Debug + PartialEq,
+{
+    println!("{:?} {} {:?}", left, if left == right { "==" } else { "!=" }, right);
+}
+
+
+
+
+>> CONDITIONAL STATEMENTS
+>> ======================
+
+if let MyStruct { odd: true, value } = n {  // if n.odd is true, this statement returns true. And we declare variable "value" 
+    ...
+}
+
+> performing switch on a statement
+match feeling_lucky {
+    true => 6,
+    false => 4,
+}
+
+
+> "Number" here is a custom struct. 
+fn print_number(n: Number) {
+    match n {
+        Number { value: 1, .. } => println!("One"),
+        Number { value: 2, .. } => println!("Two"),
+        Number { value, .. } => println!("{}", value),
+        // if that last arm didn't exist, we would get a compile-time error
+    }
+}
+
+
+fn print_number(n: Number) {
+    match n.value {
+        1 => println!("One"),
+        2 => println!("Two"),
+        _ => println!("{}", n.value),
+    }
+}
+
+
+>> STRUCTS
+>> =======
+
+> declaring structs:
+struct Number {
+    odd: bool,
+    value: i32,
+}
+
+impl Number {
+    fn is_strictly_positive(self) -> bool {
+        self.value > 0
+    }
+}
+
+
++ interface - you can apply functions to any structure, as long as at least one of the two (interface/structure) is yours
+
+> own interface on own struct
+trait Signed {
+    fn is_strictly_negative(self) -> bool;
+}
+
+impl Signed for Number {
+    fn is_strictly_negative(self) -> bool {
+        self.value < 0
+    }
+}
+
+
+> foreign interface on own struct
+impl std::ops::Neg for Number {
+    type Output = Number;
+
+    fn neg(self) -> Number {  // can also write "-> Self", the impl block would "know" it's referring to Number
+        Number {
+            value: -self.value,
+            odd: self.odd,
+        }        
+    }
+}
+
+fn main() {
+    let n = Number { odd: true, value: 987 };
+    let m = -n; // this is only possible because we implemented `Neg`
+    println!("{}", m.value); // prints "-987"
+}
+
+
+> Some traits are so common, they can be implemented automatically by using derive
+#[derive(Clone, Copy)]  
+struct Number {
+    odd: bool,
+    value: i32,
+}
+
+
+>> VALUE POINT/COPY
+>> ================
+
+> can't transfer the point a non-Copy object's pointer twice based on the first pointer  
+let n = Number { odd: true, value: 51 };
+let m = n; // `n` is moved into `m`
+let o = n; // error: use of moved value: `n`
+
+
++ Rust has a 1-owner rule; every object can have only 1 variable pointing to it.
++   Passing object as arg transfers ownership, unless "&" is added to pass it as "borrowed"
++ Rust has a 1-writer rule; An object can be edited by a function only once
++   Passing an object with "&mut" (within the function-call) allows the modification of the object. You can't do it twice in a row, as stated.
+
+> Use & to pass an object to a function as "borrowed", to prevent moving the pointer permanently
+fn print_number(n: &Number) {
+    println!("{} number {}", if n.odd { "odd" } else { "even" }, n.value);
+}
+
+fn main() {
+    let n = Number { odd: true, value: 51 };
+    print_number(&n); // `n` is borrowed for the time of the call
+    print_number(&n); // `n` is borrowed again
+}
+
+
+> Trait methods can also take self by reference or mutable reference:
+impl std::clone::Clone for Number {
+    fn clone(&self) -> Self {
+        Self { ..*self }
+    }
+}
+
+
+> There's no method for Copy, this is the implementation.
+impl std::marker::Copy for Number {}
+
+fn main() {
+    let n = Number { odd: true, value: 51 };
+    let m = n.clone();
+    let o = n.clone();
+    let m2 = n; // `m2` is a copy of `n`, the pointer isn't moved like for non-Copy structs
+}
+
+
+
+
+
+>> TESTING / ASSERTING
+>> ===================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ten_is_bigger_than_eight() {
+        assert_eq!(10, bigger(10, 8));
+    }
+
+    #[test]
+    fn fortytwo_is_bigger_than_thirtytwo() {
+        assert_eq!(42, bigger(32, 42));
+    }
+
+    #[test]
+    fn equal_numbers() {
+        assert_eq!(42, bigger(42, 42));
+    }
+}
+
+

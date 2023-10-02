@@ -6,5 +6,5 @@
 * jp2a --output=<output.txt> --colors <input.png>  # convert image to ASCII
 * ascii-image-converter <input.png>  # convert image to ASCII
 * <text_output_command> | lolcat  # rainbow-color text
-* <text_output_command> | pv -qL 200  # write text progressively (like being typed, or (if fast) etched by a laser engraver). Try testing with neofetch. Try adding pipe to lolcat.
+* <text_output_command> | pv -qL 200  # write text progressively (like being typed, or (if fast) etched by a laser engraver). Try testing with `neofetch`. Try adding pipe to `lolcat`.
 

@@ -1,5 +1,15 @@
 # linux_bashrc
 
+# Table of Contents
+
+1. [About](#about)
+2. [Compatibility](#compatibility)
+3. [Usage](#usage)
+4. [Use Cases (examples)](#use-cases-examples)
+5. [Dev Guiding principles](#dev-guiding-principles)
+
+
+
 ## About
 
 A bashrc file with various gimmicks and frequently-needed tools that I came up with
@@ -52,6 +62,8 @@ fi
 
 Your personal bashrc should be "$HOME/.bashrc", but you can alternatively source for all users at the "/etc/bash.bashrc" file (requires sudo)
 
+-------------
+-------------
 
 ### Using the custom_bashrc commands:
 
@@ -138,13 +150,13 @@ Lists the bash commands that this project provides - can be used for lookup, rea
 
 
 
-## Dev Guiding principles:
+## Dev Guiding Principles:
 
-+ **Informative** functions should pack of as much *relevant* data into as few user requests as possible.
-+ **Potentially-harmful** functions *always* require bold and clear messages that prompt the user for approval.
++ **Informative** functions should pack of as much *relevant* data, within as few user-requests as possible.
++ **Potentially-harmful** functions *always* require approval via bold and clear prompts.
 + **Overridden** functionalities have the highest potential of improving the user-experience, thus they're fair-game.
   + Dare to replace basic functionalities with ones from better packages, or enforce the usage of 99%-necessary flags
-    + The user doesn't need to be familiar with the alternatives packages or useful flags, just make the same-old commands better.
+    + The user doesn't need to be familiar with the alternatives packages or useful flags, just make the same-old commands "better".
   + Include said replacements only if they're meaningfully-better.
   + It's fine to rely on specific packages.
     + It's up to the user to decide whether to install packages necessary for the bashrc functionality.
