@@ -11,8 +11,8 @@
 >> ==========================
 
 > declaration
-+ the available types are:
-+  integers: `i8`, `i16`, `i32`, `i64`, `i128`, and `isize` which adapts to your architecture (will be i64 if you're on x64)
++ the available scalar types are:
++  integers: `i8`, `i16`, `i32` (default), `i64`, `i128`, and `isize` which adapts to your architecture (will be i64 if you're on x64)
 +    to use unsigned integers, just use 'u' instead of 'i', including `usize`
 +    to assign numbers based on different bases:
 +      Dec: 1_200_000   (a readable way to write 1.2 million, the underscores '_' are not mandatory)
@@ -20,6 +20,8 @@
 +      Oct:	0o77
 +      Bin:	0b1111_0000
 +      Byte (u8 only): b'A'
++  floating points: `f32`, `f64` (default)
++  other types: char, bool
 let x: i32 = 42;  // Assign a variable. The type declaration is optional
 let pair = ('a', 17);  // tuple - a fixed-size list
 pair.0;  // access at index 0 of a tuple. Dots also access fields, as usual

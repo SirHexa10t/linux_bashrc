@@ -81,8 +81,8 @@ locations=(
 declare -A location_suggestions=(
     ["$HOME/.bashrc"]="(recommended; if this setup is meant only for your user)"
     ["/etc/bash.bashrc"]="(ideal for setting up / maintaining for all users at the same time. In this scenario, for security's sake, make the bashrc file unwritable)"
-    ["/etc/profile"]=$([ ! -f "/etc/profile" ] && echo "(NOT recommended - file doesn't exist)")
-    ["/etc/profile.d/bashrc"]=$([ ! -f "/etc/profile.d/bashrc" ] && echo "(NOT recommended - file doesn't exist)")
+    ["/etc/profile"]=$([ ! -f "/etc/profile" ] && echo "(NOT recommended - file doesn't exist in your setup)")
+    ["/etc/profile.d/bashrc"]=$([ ! -f "/etc/profile.d/bashrc" ] && echo "(NOT recommended - file doesn't exist in your setup)")
     ["skip"]="(if you already set-up the project's sourcing previously)"
 )
 
