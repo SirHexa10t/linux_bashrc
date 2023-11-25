@@ -1,6 +1,8 @@
 #!/bin/bash
 
 
+# TODO - move the "bash_terminal" cheatsheet to "programming", and extract some things into the "linux_admin" cheatsheet
+
 # TODO - lookup (grep) within "remindme"
 # TODO - "whatnow" - tag commands (things like "network" or "visual" or "filesystem") and list the tags for (optional) interactive picking 
 # TODO - find all "] &&" and see that they operate fine
@@ -149,10 +151,13 @@ if [ "$IS_FIRST_SOURCING" = true ]; then
     export HISTTIMEFORMAT="%F_%T  "  # Makes "history" command display the time the command ran at. You can find more history settings in your own .bashrc file
 
     export PS1="\[\033[01;31m\][\$(date -u +%T)(UTC)]$PS1"  # prepends UTC-time to prompt, colored in red
+
+    # not a good feature; will probably remove it.
+    # # determine terminal-window size (num_of_rows , num_of_cols)
+    # [[ -n "$TERMINAL_DIMS" && -z "$SCRIPTED_SOURCING" ]] && \
+    #     printf '\e[8;%s;%st' "$(echo "$TERMINAL_DIMS" | head -n 1)" "$(echo "$TERMINAL_DIMS" | head -n 2 | tail -n 1)"
     
-    # determine terminal-window size (num_of_rows , num_of_cols)
-    [[ -n "$TERMINAL_DIMS" && -z "$SCRIPTED_SOURCING" ]] && \
-        printf '\e[8;%s;%st' "$(echo "$TERMINAL_DIMS" | head -n 1)" "$(echo "$TERMINAL_DIMS" | head -n 2 | tail -n 1)"
+    
 fi
 
 
@@ -2862,7 +2867,7 @@ function commecho () {  ###tags: text-coloring
     local sharp_comment_color=$(_tag_persist '<=yellow=>')
     local colon_comment_color=$(_tag_persist '<=yellow=>')
     local sharp_documentation_color=$(_tag_persist '<=green=>')
-    local double_quotes_color='<=bold=><=red=>'
+    local double_quotes_color='<=bold=><=red=>'  # also used for text between bra and ket ( <> )
     local tilted_quote_color='<=bold=><=orange=>'  # TODO - make code-marking persistant, but only until the closing '`', not until EOL
     local warning_color='<=flicker=><=uline=><=bold=><=red=>'
     local hyperlink_color='<=uline=><=b_cyan=>'

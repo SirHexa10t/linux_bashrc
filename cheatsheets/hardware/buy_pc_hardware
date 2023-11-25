@@ -66,11 +66,11 @@
 + Notice that some brands add a "plus" to their models' names, and the throughput difference there could be multiple times more than non-plus version while only costing 10% more.
 + Note: There are 3 companies (not counting subsidiaries) that create DRAM: Samsung, Micron, SK Hynix. They also make NAND. It factors into the price and quality control.
 * You should pick from a known reputable brand, they're not much more expensive than their smaller competitors, and they have better support (drivers/software)
-*  Samsung - possibly the strongest SSD vendor, they have a lot of great products with good software
-*  Micron - a maker of flash hardware, sells to other companies. Mostly sells B-to-B; the SSDs you can buy from them are at huge volumes (and accordingly expensive)
+*  Samsung [Flash/NAND manufacturer] - possibly the strongest SSD vendor, they have a lot of great products with good software
+*  Micron [Flash/NAND manufacturer] - sells to other businesses B-to-B; the SSDs you can buy from them are at huge volumes (and accordingly expensive)
 *  WD - a known company, but uses deceptive naming to sometimes sell inferior products using model names that sound more advanced; you need to check the specs carefully
 *  Crucial (a subsidiary of Micron; mostly budget-oriented) - Should be mentioned that they allegedly "pulled an ADATA" trick, by stealthily downgrading the controller of their MX500 models 
-*  SK Hynix (has some high-end drives)
+*  SK Hynix [Flash/NAND manufacturer] - has some high-end drives
 *  Sabrent
 *  ADATA - be careful of them (buy only if there's a really good deal), as they quietly downgraded the quality of one of their models once, and also declared having a DRAM buffer on some models that didn't. Also some of their drives terribly underperformed despite having great specs listed.
 *  Sandisk (bought out by WD) - mediocre at best. Did the same shady parts-swap trick as ADATA.

@@ -1,4 +1,11 @@
 # Reminders for linux system tools and command options
+>> Firmware updates
+* Using "fwupdmgr" package
+*  fwupdmgr get-devices  # get list of updateable devices
+*  fwupdmgr refresh  # download metadata
+*  fwupdmgr update  # get updates
+* Some vendors don't provide updates through fwupdmgr, you might be able to download an iso-updater, as demonstrated here for Samsung SSDs:
+*  https://blog.quindorian.org/2021/05/firmware-update-samsung-ssd-in-linux.html/
 >> Messing around with the system itself
 * reboot  # reboots the system (gracefully)
 * sudo systemctl start sshd  # start ssh service for external access
@@ -18,6 +25,7 @@
 * ~/Templates/  :  anything you put in this folder will be a new-file template when you right-click in nemo
 >> configurations (Nemo file-manager)
 * ~/.local/share/nemo/scripts/  :  anything you put in this folder will be an executable-script available when you right-click in nemo
+* ~/.local/share/nemo/actions/  :  config files you put in this folder will be available as actions when you right-click in nemo (immediately within the menu, not in a submenu like the scripts)
 >> logs (to tail a logfile in real-time run: "tail -f <logfile>", or to get last 100 lines: "tail -100 <logfile>" )
 * /var/log/boot.log  :  System boot log
 * /var/log/syslog  :  System-events log (like connection of a USB device)

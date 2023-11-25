@@ -4,6 +4,9 @@
 >> nemo
 * Built-in: [space]  :  after selecting a file/folder, press [space] to get a summary/preview; press again to close
 * Custom: CTRL+SHIT+T  :  open Terminal at current Nemo location
+>> GNOME
+* ALT+PRTSCN  :  Screenshot current window
+* SHIFT+PRTSCN  :  Snip selected area of screen(s)
 >> common-linux (Debian?)
 * Built-in CTRL+ALT+T  :  open Terminal
 * Built-in CTRL+ALT+[backspace]  :  log out of current session (resets your GUI)
