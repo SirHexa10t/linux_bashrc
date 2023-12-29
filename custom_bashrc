@@ -1,6 +1,9 @@
 #!/bin/bash
 
 
+# TODO - rewrite a lot of string-parsing functions in a proper language (Rust) and move the current functions to a "deprecated" folder for redundancy.
+    # Some of those are useful as standalones, so put them in a different repository and either make them a submodule or add them via the installation script
+
 # TODO - move the "bash_terminal" cheatsheet to "programming", and extract some things into the "linux_admin" cheatsheet
 
 # TODO - lookup (grep) within "remindme"
@@ -44,6 +47,8 @@
 #  TODO - add a flatpak installation command? Something that simplifies: `flatpak search brave` and then `flatpak install flathub com.brave.Browser`
 
 # TODO - find a way to add an extra output of stderr to a log file (without it causing shell-replacement problems, specifically when: 1) running "exec shell" , 2) re-reading the log-file's contents like so: "cat $ERR_LOGS_FILE" ). This specifically didn't work:   exec 2> >(tee -a "$ERR_LOGS_FILE" >&2)
+
+# TODO - add installation from github "releases" page
 
 
 #---------------------------------------------------------------------------------------------
@@ -118,25 +123,22 @@ declare -A _UTILITY_FILE_MAP=(
     ['MONERO_MINER']="$CRYPTO_PROGRAMS_DIR/monero_miner"  # folder that holds the monro miner program
 )
 
+# define additional vars, if they're relevant
 function _remap_utility_files () {
-    local filepath filecontent link folder value
+    # arg1: filtering command ; arg2: path (key in _UTILITY_FILE_MAP)
+    function check_and_eval () {
+        local existing_path=$("$1" "${_UTILITY_FILE_MAP[$2]}")
+        if [ -n "$existing_path" ]; then  # the condition is not really necessary if just defining variables, but it's good practice
+            eval "$2=\"$existing_path\""
+        fi
+    }
+    
+    local filepath filecontent link folder
 
-    for filepath in "TESTS_FILE" "GARBAGE_OUTPUTS" "SUBDIR_MOUNTS_FILE" "STOCKS_FILE"; do
-        value=$(_filename_or_nothing "${_UTILITY_FILE_MAP[$filepath]}")
-        eval "$filepath=\"$value\""
-    done
-    for filecontent in "TERMINAL_DIMS" "CREDENTIALS_OPENAI" "DISPLAY_ARRANGEMENT" "VM_IMG_PARTITION_UUID" "LOOKING_GLASS_CLIENT"; do
-        value=$(_file_content_or_nothing "${_UTILITY_FILE_MAP[$filecontent]}")
-        eval "$filecontent=\"$value\""
-    done
-    for link in "CUSTOM_TMPDIR"; do
-        value=$(_symlink_or_nothing "${_UTILITY_FILE_MAP[$link]}")
-        eval "$link=\"$value\""
-    done
-    for folder in "MONERO_MINER"; do
-        value=$(_nonempty_folder_or_nothing "${_UTILITY_FILE_MAP[$folder]}")
-        eval "$folder=\"$value\""
-    done
+    for filepath in "TESTS_FILE" "GARBAGE_OUTPUTS" "SUBDIR_MOUNTS_FILE" "STOCKS_FILE"; do check_and_eval _filename_or_nothing "$filepath"; done
+    for filecontent in "TERMINAL_DIMS" "CREDENTIALS_OPENAI" "DISPLAY_ARRANGEMENT" "VM_IMG_PARTITION_UUID" "LOOKING_GLASS_CLIENT"; do check_and_eval _file_content_or_nothing "$filecontent"; done
+    for link in "CUSTOM_TMPDIR"; do check_and_eval _symlink_or_nothing "$link"; done
+    for folder in "MONERO_MINER"; do check_and_eval _nonempty_folder_or_nothing "$folder"; done
 }
 _remap_utility_files
 
@@ -294,7 +296,7 @@ alias updatengrade='\
 [ -n "$(which apt)" ] && { sudo apt update ; sudo apt-get full-upgrade -y && sudo apt-get autoremove -y ; }
 [ -n "$(which dnf)" ] && { sudo dnf check-update ; sudo dnf distro-sync -y && sudo dnf autoremove -y ; }
 [ -n "$(which nix)" ] && { nix-channel --update ; nix-env --upgrade ; }
-[ -n "$(which flatpak)" ] && { flatpak upgrade ; }
+[ -n "$(which flatpak)" ] && { flatpak upgrade --assumeyes ; }
 '
 
 # update all pip3 packages
@@ -2855,7 +2857,7 @@ function _colored_echo () {  ###tags: text-coloring
     fi
 }
 
-# comment-colorized echo
+# comment-colorized echo - Colorize and reorganize in ways that make text easy to read. It's a bit like markdown, but with colors, and better compatibility with code readability
 # -l (optional: include legend)
 function commecho () {  ###tags: text-coloring
     local bullet_point_color='<=cyan=>'
@@ -2865,6 +2867,7 @@ function commecho () {  ###tags: text-coloring
     local single_cat_line_color=$(_tag_persist '<=bold=><=blue=>')
     local plus_line_color=$(_tag_persist '<=bold=><=cyan=>')
     local sharp_comment_color=$(_tag_persist '<=yellow=>')
+    local double_slash_documentation_color="$sharp_comment_color"
     local colon_comment_color=$(_tag_persist '<=yellow=>')
     local sharp_documentation_color=$(_tag_persist '<=green=>')
     local double_quotes_color='<=bold=><=red=>'  # also used for text between bra and ket ( <> )
@@ -2907,12 +2910,14 @@ function commecho () {  ###tags: text-coloring
     formatted=$(echo "$formatted" | sed -E "s/(\`[^\`]*\`)/$tilted_quote_color\1$reset/g")  # recolor text that starts with 'http(s)://' (URLs)
     formatted=$(echo "$formatted" | sed -E "s/(https?:\/\/[^[:space:]]+)/$hyperlink_color\1$reset/g")  # recolor within ` ` (code)
     formatted=$(echo "$formatted" | sed -E "s/(\"[^\"]*\")/$double_quotes_color\1$reset/g")  # recolor within " " (specifics)
+    # formatted=$(echo "$formatted" | sed -E "s/(<[^>]*>)/$double_quotes_color\1$reset/g")  # recolor within < > (specifics)  # TODO - this doesn't work because of tags nested within quotes (or other semi-persistent thing), so the tagging system needs a "stepping down" mechanic which allows a reset to the previous color
     formatted=$(echo "$formatted" | sed "s/^*  /${bullet_point_sub_color}*${reset} ${upper_line_continuing_arrow}↳${reset}/g")  # replace beginning '*  ' with a colored asterisk, a space, and a mildly colored arrow referencing line above (sub-bullet-points)
     formatted=$(echo "$formatted" | sed "s/^* /${bullet_point_color}*${reset} /g")  # replace beginning '* ' with a colored asterisk and space  (bullet-points)
     formatted=$(echo "$formatted" | sed "s/^>>\(.*$\)/${double_cat_line_color}➤\1/g")  # recolor lines beginning '>>', and replace with a nice ascii char  (topics)
     formatted=$(echo "$formatted" | sed "s/^>\(.*$\)/${single_cat_line_color}⇾\1/g")  # recolor lines beginning '>', and replace with a nice ascii char  (sub-topics)
     formatted=$(echo "$formatted" | sed "s/^+.*$/${plus_line_color}&/g")  # recolor lines beginning '+'  (notes)
     formatted=$(echo "$formatted" | sed "s/  \(#.*\)$/  ${sharp_comment_color}\1/g")  # recolor starting from '  #'  (code-comments)
+    formatted=$(echo "$formatted" | sed "s| \(//.*\)$| ${double_slash_documentation_color}\1|g")  # recolor starting from ' //'  (code-comments)
     formatted=$(echo "$formatted" | sed "s/^# /${sharp_documentation_color}&/g")  # recolor starting from '# '  (page's documentation)
     formatted=$(echo "$formatted" | sed "s/  \(:.*\)$/  ${colon_comment_color}\1/g")  # recolor starting from '  :'  (item-comments)
     formatted=$(echo "$formatted" | sed "s/[A-Z]\+![!]\+/${warning_color}&$reset/g")  # recolor capitalized words with at least two '!' exclamation marks
