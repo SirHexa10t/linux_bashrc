@@ -1161,7 +1161,7 @@ function kill_interactively () {
         local display_by=('cpu' 'mem')
 
         recho "You didn't specify what to kill. You might want to consider any of the following;"
-        wecho 'tip/reminder: run `pstree -p <pid>` to investigate tree of a problematic process)'
+        wecho 'tip/reminder: run `pstree -p <pid>` to investigate tree of a problematic process'
         local d
         for d in ${display_by[@]}; do
             becho "Top $num_of_processes processes by $d:"
@@ -1703,19 +1703,37 @@ args:
     
     [ -n "$verbose" ] && becho "running on directory: \"$dir\"  ;  expression: \"$exp\"  ;  including strings up to length: \"$text_limit\""  # print found arguments (if verbose)
 
+
+    local post_cmd="grep -e \"$exp\" -i --color=always"  # colorize the found strings. The coloring is late because it changes the returned string's length.
+    if [ $(expr "$text_limit" + 0) -gt 0 ]; then  # if there's a limit for result length, throw away strings that are too long
+        [ -n "$verbose" ] && becho "filtering with maximum result length: $text_limit"
+        post_cmd="awk 'length(\$0) <= '$text_limit | $post_cmd"
+    fi
+
+    # arg 1: search command, arg2: ret-code for denied-access
+    function _search_maybe_rerun () {
+        eval "$1" | eval "$post_cmd"
+        local cmd_result="${PIPESTATUS[0]}"  # get return status of first item in pipeline
+        
+        [ "$cmd_result" -eq "$2" ] && { 
+            recho "Permission to files denied. Rerunning as root."
+            eval "sudo $1" | eval "$post_cmd"
+            cmd_result="${PIPESTATUS[0]}"  # update the returned value (same search, but without permission hindrance)
+        }
+        
+        return "$cmd_result"
+    }
+
     becho "matching filenames:"
     becho "==================="
-    _sudo_if_necessary find "$dir" -iname "*$exp*" | color_word --word "$exp"
+    _search_maybe_rerun "find \"$dir\" -iname \"*$exp*\"" '1'  # 0 could mean success, maybe nothing was found. 1 means access was restricted 
 
     becho "matching file contents:"
     becho "======================="
-    # TODO - fix this. When grep finds no matches, it returns non-0, and that causes it to rerun with sudo. The 0-matches case shouldn't require sudo and rerun. 
-    local all_results=$(_sudo_if_necessary grep -e "$exp" -Inir "$dir" --color=never)  # No colors. Coloring is done at this stage because otherwise it'll add to the string's length
-    if [ $(expr "$text_limit" + 0) -gt 0 ]; then  # if there's a limit for result length
-        [ -n "$verbose" ] && becho "filtering with maximum result length: $text_limit" 
-        all_results=$(echo "$all_results" | awk "length(\$0) <= $text_limit")
-    fi
-    echo "$all_results" | color_word --word "$exp"  # print with no filtering by length
+    _search_maybe_rerun "grep -e \"$exp\" -Inir \"$dir\" --color=never" '2'  # 1 means no results found. 2 means access was restricted
+    [ "$?" -eq 1 ] && yecho "NO RESULTS FOUND"
+    
+    # TODO - read media files' embedded subtitles
 }
 
 
