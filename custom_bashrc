@@ -194,6 +194,18 @@ if [[ -z "$SCRIPTED_SOURCING" && "$EUID" -ne 0 ]]; then  # no binding keys when 
     # CTRL+SHIFT+I : get system info
     # bind -x '"\C-\I": "echo something"$\r$\n'  # TODO
 
+# System
+# ======
+
+    # ALT+L : restart system
+    if pgrep -x "cinnamon" > /dev/null; then  # if using Cinnamon flavor (doesn't close windows)
+        bind '"\el": "cinnamon --replace & disown\n"'
+    fi
+        
+    # alternatively, restart the whole user-session
+    # bind '"\el": "sudo systemctl restart display-manager\n"'
+
+
 
 # Custom environment (#requires-configuration)
 # ==================
@@ -514,6 +526,37 @@ function _vars_added_by () {
     rm "$before_file" "$after_file"
 }
 
+
+# Programming
+# ===========
+
+# evaluate (compile and run) rust statements
+# arg1: code you want evaluated
+[ -n "$(which rustc)" ] && \
+function eval_rust () {
+    local compiled_file=$(mktemp)  # We will overwrite this. This is just for the sake of having a unique name for a temporary-file
+    
+    # compile
+    rustc -o "$compiled_file" <(echo "fn main() {
+        $1
+    }")
+    # run (if compilation succeeded)
+    [ $? -eq 0 ] && "$compiled_file"
+    
+    rm "$compiled_file"  # cleanup
+}
+
+# eval_rust, but expects a single expression, which gets printed
+# arg1: expression to print
+[ -n "$(which rustc)" ] && \
+function eval_rust_print () {
+    eval_rust "println!(\"{:?}\", 
+    $1
+    );"
+}
+
+
+# TODO - eval_java ?
 
 # Data structure handling
 # =======================
