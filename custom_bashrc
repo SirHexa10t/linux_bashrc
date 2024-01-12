@@ -3,6 +3,7 @@
 
 # TODO - rewrite a lot of string-parsing functions in a proper language (Rust) and move the current functions to a "deprecated" folder for redundancy.
     # Some of those are useful as standalones, so put them in a different repository and either make them a submodule or add them via the installation script
+    # should include (not limited to): remindme, colorize
 
 # TODO - move the "bash_terminal" cheatsheet to "programming", and extract some things into the "linux_admin" cheatsheet
 
@@ -91,12 +92,19 @@ SUDO_FILE="$(which sudo)"
 CUSTOM_BASHRC_FILE="$(realpath "$BASH_SOURCE")"  # this file
 CUSTOM_BASHRC_FOLDER="$(dirname "$CUSTOM_BASHRC_FILE")"  # this file's folder-path
 SCRIPTS_BASHRC_FILE="$CUSTOM_BASHRC_FOLDER/script_calls_bashrc"  # external (not this file) content loader  # TODO - put in utility files?
-IS_FIRST_SOURCING=$([ ! -v CUSTOM_ALIASES_INITIAL ] && echo 'true' || echo 'false')
 
-if [ "$IS_FIRST_SOURCING" = true ]; then  # only do if not defined already (can happen if you source this file again), in which case, previous iteration's values are the right ones
+if [ -z "$IS_CUSTOM_BASHRC_LOADED_ONCE" ]; then  # only do if not defined already (can happen if you source this file again), in which case, previous iteration's values are the right ones
     CUSTOM_ALIASES_INITIAL=$(_alias_names)
     CUSTOM_FUNCTIONS_INITIAL=$(_function_names)
 fi
+
+
+## Constant data
+#################################################################################
+# Move to a "constants" folder if external scripts/program require it.
+# TODO - improve (lists are likely incomplete)
+VIDEO_FORMATS=(avi flv m4v mkv mp4 mpeg mpg mov webm wmv)
+PICTURE_FORMATS=(png jpg jpeg)
 
 
 ## My settings / constants (customize this to your needs/liking)
@@ -149,7 +157,7 @@ _remap_utility_files
 [ -n "$CUSTOM_TMPDIR" ] && export TMPDIR="$CUSTOM_TMPDIR"
 
 # display tweaks (only change at launch, don't force on re-source)
-if [ "$IS_FIRST_SOURCING" = true ]; then 
+if [ -z "$IS_CUSTOM_BASHRC_LOADED_ONCE" ]; then 
     export HISTTIMEFORMAT="%F_%T  "  # Makes "history" command display the time the command ran at. You can find more history settings in your own .bashrc file
 
     export PS1="\[\033[01;31m\][\$(date -u +%T)(UTC)]$PS1"  # prepends UTC-time to prompt, colored in red
@@ -281,6 +289,9 @@ alias hg='history | grep -iF --color=auto'
 # get parameter's value (use by specifying variable's name, no '$')
 alias valueof='declare -p'
 
+# displays all cheatsheet commands
+alias cheatsheets='tree --dirsfirst "$CHEATSHEETS_PATH" ; yecho "Commands:"; echo "$(compgen -c | grep --color=never "^$CHEATSHEET_PREFIX")"'
+
 
 # Service/Application handling
 # ============================
@@ -300,6 +311,13 @@ alias interactive_bashrc_setup="$CUSTOM_BASHRC_FOLDER/interactive_setup.sh"
 
 # reset terminal (includs bashrc reload)
 alias anew='exec bash'
+
+# relaunch terminal, without custom_bashrc
+alias stfu="\
+orecho \"Sorry, I was just trying to help... I'll reload the terminal without custom_bashrc. If you want it back, just run 'exec bash'\"
+(sleep 2 && chmod +r \"$CUSTOM_BASHRC_FILE\") &  # restore custom_bashrc readability in 2 seconds. A bit janky, but it's short/simple.
+chmod -r \"$CUSTOM_BASHRC_FILE\" && exec bash
+"
 
 # TODO - figure why the official Nix upgrade is aimed at non-latest version: "nix-channel --update; nix-env -iA nixpkgs.nix nixpkgs.cacert"
 # TODO - support more systems
@@ -364,10 +382,12 @@ alias whosmyisp='curl -s ipinfo.io/org'
 # function aliases - alternative names for other aliases and functions
 # ====================================================================
 
+# Synonymous to "stfu".
+alias goaway='stfu'
 # Synonymous to "remindme" with extra information (less useful to user).
 alias list_cmds='remindme --show_hidden --include_line_num'
-# displays all cheatsheet commands
-alias cheatsheets='tree --dirsfirst "$CHEATSHEETS_PATH" ; yecho "Commands:"; echo "$(compgen -c | grep --color=never "^$CHEATSHEET_PREFIX")"'
+# Synonymous to "cheatsheets".
+alias list_cheatsheets='cheatsheets'
 # Synonymous to "remindme".
 alias what_commands='remindme'
 ## Mispelled intentionally; don't fix it.
@@ -2385,9 +2405,8 @@ function playlist_file_fix () {
     local file_text="$(cat "$1")"
 
     # remove image (picture) files
-    local picture_formats=(png jpg jpeg)  # TODO - add more non-playable formats
     local pformat
-    for pformat in "${picture_formats[@]}"; do
+    for pformat in "${PICTURE_FORMATS[@]}"; do
         # TODO - do those without the 2-cases (1 line for both)
         lc_pformat="${pformat,,}"  # lower case
         uc_pformat="${pformat^^}"  # upper case
@@ -3243,7 +3262,7 @@ function list_colors_available () {  ###tags: text-coloring
 #################################################################################
 
 # remember which functions and aliases were added
-if [ "$IS_FIRST_SOURCING" = true ]; then
+if [ -z "$IS_CUSTOM_BASHRC_LOADED_ONCE" ]; then
     # create CUSTOM_ALIASES_MAP and CUSTOM_FUNCTIONS_MAP
     CUSTOM_ALIASES="$(_unique_in_first "$(_alias_names)" "$CUSTOM_ALIASES_INITIAL")" # keep list of (only) aliases that were added between now and the start of the file
     eval $(_hashmap_this_var 'CUSTOM_ALIASES')  # create hashmap: CUSTOM_FUNCTIONS_MAP
@@ -3259,6 +3278,9 @@ if [[ -z "$SCRIPTED_SOURCING" && $EUID -ne 0 ]]; then   # don't output messages 
     echo "$(gecho "Finished loading") \"$CUSTOM_BASHRC_FILE\" for: \"$(realpath "$0")\". To view added commands, run: $(becho remindme)"  # announce done
     [ -f "$TESTS_FILE" ] && source "$TESTS_FILE"  # run the tests file if it exists and we're not in sudo mode
 fi
+
+
+IS_CUSTOM_BASHRC_LOADED_ONCE=true
 
 #  TODO - put as a top pane in tmux window. Needs to be in a different pane because I can't find a way to make it play without interrupting key input or disrupting it and keeping the first char in the input.
 # if running in a visible terminal, and not as root
