@@ -607,8 +607,8 @@ function _hashmap_instructions () {
         esac
     done
 
-    [ -z "$hashmap_name" ] && errcho "no name provided for your hashmap" && return 1
-    [ -z "$the_list" ] && errcho "no list provided" && return 1
+    [ -z "$hashmap_name" ] && { errcho "no name provided for your hashmap" ; return 1 ; }
+    [ -z "$the_list" ] && { errcho "no list provided" ; return 1 ; }
 
     # TODO - see if you can declare with -g -A (global declaration, no need to evaluate printed reply). The difficulty I had was assigning values to the hashmap (since its name was saved in a var)
     local item
@@ -1198,7 +1198,7 @@ EOT
 # removes a given service-name from systemd (including the .service file)
 function remove_systemd_service () {
     local service_name="$1"
-    [ -z "$service_name" ] && errcho "You need to provide (as arg) the service-name to delete" && return 1
+    [ -z "$service_name" ] && { errcho "You need to provide (as arg) the service-name to delete" ; return 1 ; }
 
     becho "Removing service from Systemd"
     sudo systemctl stop "$service_name"
@@ -2357,6 +2357,14 @@ function media_remove_audio () {
     ffmpeg -i "$1" -c copy -an "$output"
 }
 
+# create a converted file, with suffix h264, within the original's directory
+# arg 1: video file
+function media_convert_to_h264 () {
+    [ -n "$(_filename_or_nothing "$1")" ] || { errcho "you need to provide a video file" ; return 1 ; } 
+    
+    ffmpeg -i "$1" -c:v h264 "$(_add_str_before_filetype "$1" '_to_h264')" -y  # -y means auto-confirming override of pre-existing converted file
+}
+
 # usage: -v/--video <video_file>  -a/--audio <audio_file>
 function media_merge_audio_video () {
     local video_file audio_file
@@ -2379,8 +2387,8 @@ function media_merge_audio_video () {
     	esac
     done
 
-    [ -z "$video_file" ] && errcho "no video file specified" && return 1
-    [ -z "$audio_file" ] && errcho "no audio file specified" && return 1
+    [ -z "$video_file" ] && { errcho "no video file specified" ; return 1 ; }
+    [ -z "$audio_file" ] && { errcho "no audio file specified" ; return 1 ; }
 
     local output="$(_add_str_before_filetype "$video_file" '_replaced_audio')"  # add "_replaced_audio" before the video file's .<format>
 
@@ -2923,7 +2931,7 @@ function _colored_echo () {  ###tags: text-coloring
         fi
     done
 
-    [ -z "$tag" ] && errcho "Didn't get a tag to color with, and that's the whole purpose of this function" && return 1  # if no coloring tag picked
+    [ -z "$tag" ] && { errcho "Didn't get a tag to color with, and that's the whole purpose of this function" ; return 1 ; }  # if no coloring tag picked
 
     [ -n "$persist" ] && tag=$(_tag_persist "$tag")  # if requested to "upgrade" to persistant tag
 
