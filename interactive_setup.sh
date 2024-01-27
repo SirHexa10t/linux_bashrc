@@ -151,14 +151,13 @@ utility_vars+=("$var_pick_quit")
 
 declare -A vars_explanation=(
     ['TESTS_FILE']="A file that gets sourced after bashrc finishes loading, so any tests you write in it will execute ASAP. For $(wecho "development") of this project."
-    ['GARBAGE_OUTPUTS']="Default text-dump. There are aliases for tailing or writing into it. Mostly for $(wecho "development") of this project."
-    ['TERMINAL_DIMS']="Sets the size of terminal (number of chars in height/width)."
+    ['GARBAGE_OUTPUTS_FILE']="Default text-dump. There are aliases for tailing or writing into it. Mostly for $(wecho "development") of this project."
     ['SUBDIR_MOUNTS_FILE']="Defines custom shortcuts for media-drives, like /music, or /projects"
     ['CREDENTIALS_OPENAI']="API key for OpenAI's ChatGPT 3.5 (paid-subscription). Used to query $(wecho "A.I.") through simple terminal commands."
     ['DISPLAY_ARRANGEMENT']="Screen rearrangement through a keybind. Useful if your OS messes up your screen layout at times."
-    ['CUSTOM_TMPDIR']="Changes the tmp-files target-location from root (/) to your folder of choice (possibly on a large drive)"
+    ['CUSTOM_TMP_DIR']="Changes the tmp-files target-location from root (/) to your folder of choice (possibly on a large drive)"
     ['VM_IMG_PARTITION_UUID']="Partition auto-mounting, in case you use $(wecho "Virtual Machines"), and the VMs' storage is on a separate mountable partition"
-    ['LOOKING_GLASS_CLIENT']="Enables custom_bashrc's usage of looking-glass (a $(wecho "Virtual Machine") tool)"
+    ['LOOKING_GLASS_CLIENT_FILE']="Enables custom_bashrc's usage of looking-glass (a $(wecho "Virtual Machine") tool)"
     ['STOCKS_FILE']="Used for stock-data querying (graphs)"
     ['MONERO_MINER']="Privacy/secrecy-oriented crypto-currency CPU miner"
 )
@@ -363,14 +362,9 @@ function setup_utility () {
             echo "$executable_file_warning"
             prompt_create_file
         ;;
-        'GARBAGE_OUTPUTS')
+        'GARBAGE_OUTPUTS_FILE')
             becho "Feature: A default text-dump. Tied to several aliases that make it accessible. Useful for debugging or temporarily storing the output of a long-time operation."
             prompt_create_file
-        ;;
-        'TERMINAL_DIMS')
-            becho "Feature: set your terminal-window size on launch. Alternatively you can be also set through (but gets overriden by this feature): toolbar menu -> Edit > Preferences"
-            local prompt_file_input="$(becho -p "This feature requires 2 inputs that'll be saved into $directory_value. First is number of rows (height), second is number of columns (width). 36 on 120 is a decent choice.")" 
-            _prompt_input_to_file "$directory_value" "$prompt_file_input" '2'
         ;;
         'SUBDIR_MOUNTS_FILE')
             becho "Feature: Create convenient shortcuts into various directories in media partitions, for portability/access/order."
@@ -389,7 +383,7 @@ function setup_utility () {
             local prompt_file_input="$(becho -p 'This feature requires screen-layout (example: HDMI-0: nvidia-auto-select +1920+1080, DP-0: nvidia-auto-select +1920+0, DP-2: nvidia-auto-select +3840+1080, DP-4: 1920x1080_240 +0+1080" ), which gets fed into an nvidia-settings command. Get this info through: '"$(dabecho 'NVIDIA Settings > X Server Display Configuration -> click on "Save to X Configuration File" -> click on "Show preview..."')"'. I don'"'"'t know how to configure for AMD or Intel, nor whether the display issue occurs on their cards')"
             _prompt_input_to_file "$directory_value" "$prompt_file_input"
         ;;
-        'CUSTOM_TMPDIR')
+        'CUSTOM_TMP_DIR')
             becho "Feature: Replace the temp-files dir (default is /tmp), using a symlink that points to a folder. It can improve available cache-writing space (could be critical for some tools/commands) or faster cache-read/write. custom_bashrc evaluates the symlink each time it's sourced, so it won't default to given folder unless it's available."
             prompt_rootdir_shortcut
         ;;
@@ -398,7 +392,7 @@ function setup_utility () {
             local prompt_file_input="$(becho -p "This feature requires writing the partition's UUID into: \"$directory_value\". You can find the UUID of your partition by running the cusrom command \"devs\"")"
             _prompt_input_to_file "$directory_value" "$prompt_file_input"
         ;;
-        'LOOKING_GLASS_CLIENT')
+        'LOOKING_GLASS_CLIENT_FILE')
             becho "Feature: Utilize looking-glass host-client (passthrough of image-stream from a VM-dedicated GPU), using the path to its binaries-file."
             local prompt_file_input="$(becho -p "This feature requires writing the LG-host-client's path into \"$directory_value\". If you don't have such a client and need one, there's a guide in one of my other git repositories. You can also follow the official guide: $(buecho "https://looking-glass.io/docs/B6/install/")")"
             _prompt_input_to_file "$directory_value" "$prompt_file_input"

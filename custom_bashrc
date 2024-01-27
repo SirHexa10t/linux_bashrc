@@ -60,6 +60,7 @@
 
 ## please ignore - stuff that's needed early in this file; not meant for the user 
 #################################################################################
+
 # find existing aliases at the time this is run
 function _alias_names () { alias | grep -E "^alias" | sed "s/^alias \([^=]*\)=.*/\1/" ; }  # this is needed very early (and very late) for lookup of existing aliases
 # find existing functions at the time this is run
@@ -69,21 +70,21 @@ function _function_names () { declare -F | awk '{print $3}' ; }  # not as comple
 # arg 1: package name
 function _announce_pkg_installed () { [ -n "$(which "$1")" ] && return 0 || { echo "Can't use package '$1', consider installing it." ; return 1 ; }  } 
 
-# if the folder exists and isn't empty, print it, otherwise place an empty string
+# if the folder exists and isn't empty, print it, otherwise place an empty string and return false
 # arg 1: potential foldername
-function _nonempty_folder_or_nothing () { [[ -d "$1" && -n $(ls -A "$1") ]] && echo "$1" || echo '' ; }
+function _nonempty_folder_or_nothing () { [[ -d "$1" && -n $(ls -A "$1") ]] && echo "$1" ; }
 
-# if the file (any kind, including dir) exists, print it, otherwise place an empty string
+# if the file (any kind, including dir) exists, print it, otherwise place an empty string and return false
 # arg 1: potential filename
-function _filename_or_nothing () { [ -e "$1" ] && echo "$1" || echo '' ; }
+function _filename_or_nothing () { [ -e "$1" ] && echo "$1" ; }
 
-# if the file exists, print its contents, otherwise place an empty string
+# if the file exists, print its contents, otherwise place an empty string and return false
 # arg 1: potential filename
-function _file_content_or_nothing () { [ -f "$1" ] && cat "$1" || echo '' ; }
+function _file_content_or_nothing () { [ -f "$1" ] && cat "$1" ; }
 
-# If symlink exists and its target is valid, print symlink. Otherwise place an empty string.
+# If symlink exists and its target is valid, print symlink. Otherwise place an empty string and return false
 # arg 1: symlink file
-function _symlink_or_nothing () { [[ -L "$1" && -e $(readlink -f -- "$1") ]] && echo "$1" || echo '' ; }
+function _symlink_or_nothing () { [[ -L "$1" && -e "$(readlink -f -- "$1")" ]] && echo "$1" ; }
 
 
 ## Session data
@@ -119,16 +120,15 @@ CRYPTO_PROGRAMS_DIR="$UTILITY_FOLDER_PERSONAL/external_programs/crypto"  # your 
 
 declare -A _UTILITY_FILE_MAP=(
     ['TESTS_FILE']="$UTILITY_FOLDER_PERSONAL/run_tests.sh"  # Convenient debugging; automatically runs when this bashrc file finishes loading. The contents (and address) are up to you.
-    ['GARBAGE_OUTPUTS']="$UTILITY_FOLDER_PERSONAL/outputs.txt"  # default location to dump data into
-    ['TERMINAL_DIMS']="$UTILITY_FOLDER_PERSONAL/terminal_dims"  # dimensions of terminal-window (number of rows, number of cols)
+    ['GARBAGE_OUTPUTS_FILE']="$UTILITY_FOLDER_PERSONAL/outputs.txt"  # default location to dump data into
     ['SUBDIR_MOUNTS_FILE']="$UTILITY_FOLDER_PERSONAL/symlink_folder_mounts.sh"  # mount/symlink media-drives's internal directories
     ['CREDENTIALS_OPENAI']="$UTILITY_FOLDER_PERSONAL/openai_api_key"  # API key for ChatGPT 3.5
     ['DISPLAY_ARRANGEMENT']="$UTILITY_FOLDER_PERSONAL/screen_arrangement"  # will map to a keybind to re-sort your screen outputs in case your OS scrambles them
-    ['CUSTOM_TMPDIR']="/temp_cache"  # use a different space (folder) for tmp-files, pointed to by this symlink 
+    ['CUSTOM_TMP_DIR']="/temp_cache"  # use a different space (folder) for tmp-files, pointed to by this symlink 
     ['VM_IMG_PARTITION_UUID']="$UTILITY_FOLDER_PERSONAL/vm_images_partition"  # the drive that contains VMs' disk data; must be mounted when running a VM
-    ['LOOKING_GLASS_CLIENT']="$UTILITY_FOLDER_PERSONAL/looking_glass_host_client"  # location program (binaries file) that reads shared GPU memory into a local window
+    ['LOOKING_GLASS_CLIENT_FILE']="$UTILITY_FOLDER_PERSONAL/looking_glass_host_client"  # location program (binaries file) that reads shared GPU memory into a local window
     ['STOCKS_FILE']="$UTILITY_FOLDER_PERSONAL/stocks"  # file with list of followed stocks and optional price-points
-    ['MONERO_MINER']="$CRYPTO_PROGRAMS_DIR/monero_miner"  # folder that holds the monro miner program
+    ['MONERO_MINER_DIR']="$CRYPTO_PROGRAMS_DIR/monero_miner"  # folder that holds the monro miner program
 )
 
 # define additional vars, if they're relevant
@@ -141,12 +141,16 @@ function _remap_utility_files () {
         fi
     }
     
-    local filepath filecontent link folder
-
-    for filepath in "TESTS_FILE" "GARBAGE_OUTPUTS" "SUBDIR_MOUNTS_FILE" "STOCKS_FILE"; do check_and_eval _filename_or_nothing "$filepath"; done
-    for filecontent in "TERMINAL_DIMS" "CREDENTIALS_OPENAI" "DISPLAY_ARRANGEMENT" "VM_IMG_PARTITION_UUID" "LOOKING_GLASS_CLIENT"; do check_and_eval _file_content_or_nothing "$filecontent"; done
-    for link in "CUSTOM_TMPDIR"; do check_and_eval _symlink_or_nothing "$link"; done
-    for folder in "MONERO_MINER"; do check_and_eval _nonempty_folder_or_nothing "$folder"; done
+    local key
+    for key in "${!_UTILITY_FILE_MAP[@]}"; do
+        case $key in
+            *_DIR)  check_and_eval _nonempty_folder_or_nothing  "$key" ;;
+            *_FILE) check_and_eval _filename_or_nothing         "$key" ;;
+            *_LINK) check_and_eval _symlink_or_nothing          "$key" ;;
+            *)      check_and_eval _file_content_or_nothing     "$key" ;;
+        esac
+    done
+    
 }
 _remap_utility_files
 
@@ -154,19 +158,13 @@ _remap_utility_files
 # env variables that influence built-ins
 # --------------------------------------
 
-[ -n "$CUSTOM_TMPDIR" ] && export TMPDIR="$CUSTOM_TMPDIR"
+[ -n "$CUSTOM_TMP_DIR" ] && export TMPDIR="$CUSTOM_TMP_DIR"
 
 # display tweaks (only change at launch, don't force on re-source)
 if [ -z "$IS_CUSTOM_BASHRC_LOADED_ONCE" ]; then 
     export HISTTIMEFORMAT="%F_%T  "  # Makes "history" command display the time the command ran at. You can find more history settings in your own .bashrc file
 
     export PS1="\[\033[01;31m\][\$(date -u +%T)(UTC)]$PS1"  # prepends UTC-time to prompt, colored in red
-
-    # not a good feature; will probably remove it.
-    # # determine terminal-window size (num_of_rows , num_of_cols)
-    # [[ -n "$TERMINAL_DIMS" && -z "$SCRIPTED_SOURCING" ]] && \
-    #     printf '\e[8;%s;%st' "$(echo "$TERMINAL_DIMS" | head -n 1)" "$(echo "$TERMINAL_DIMS" | head -n 2 | tail -n 1)"
-    
     
 fi
 
@@ -234,13 +232,13 @@ fi
 # Custom files (#requires-configuration)
 # ============
 
-if [ -n "$GARBAGE_OUTPUTS" ]; then
+if [ -n "$GARBAGE_OUTPUTS_FILE" ]; then
     # tail (follow/real-time) the garbage-outputs file
-    alias garbage_tail='tail -f "$GARBAGE_OUTPUTS"'
+    alias garbage_tail='tail -f "$GARBAGE_OUTPUTS_FILE"'
     # truncate/clear the garbage-outputs file
-    alias garbage_clear='truncate -s 0 "$GARBAGE_OUTPUTS"'
+    alias garbage_clear='truncate -s 0 "$GARBAGE_OUTPUTS_FILE"'
     # print to garbage-outputs file
-    function garbage_print () { echo "$1" >> "$GARBAGE_OUTPUTS" ; }
+    function garbage_print () { echo "$1" >> "$GARBAGE_OUTPUTS_FILE" ; }
 fi
 
 if [ -n "$SUBDIR_MOUNTS_FILE" ]; then
@@ -326,8 +324,12 @@ alias updatengrade='\
 [ -n "$(which apt)" ] && { sudo apt update ; sudo apt-get full-upgrade -y && sudo apt-get autoremove -y ; }
 [ -n "$(which dnf)" ] && { sudo dnf check-update ; sudo dnf distro-sync -y && sudo dnf autoremove -y ; }
 [ -n "$(which nix)" ] && { nix-channel --update ; nix-env --upgrade ; }
+[ -n "$(which snap)" ] && { sudo snap refresh ; }
 [ -n "$(which flatpak)" ] && { flatpak upgrade --assumeyes ; }
+[ -n "$(which rustup)" ] && { rustup update ; }
 '
+# pip3 install --upgrade pip    - maybe
+
 
 # update all pip3 packages
 alias pip3update="pip3 freeze --local | grep -v '^\-e' | cut -d = -f 1  | xargs -n1 pip3 install -U"
@@ -2462,11 +2464,11 @@ function chatgpt_ask () {  ###tags: requires-configuration
 
 # Start Monero mining (CPU workload)
 # arg 1: how many threads (optional; defaults to number of exec-cores. You can set 9999, it won't assign more than it can run in parallel)
-[ -n "$MONERO_MINER" ] && \
+[ -n "$MONERO_MINER_DIR" ] && \
 function mine_monero () {  ###tags: requires-configuration
     # the args in the help menu don't work, so we'll set things through the config file each run.
-    local monero_config_file="$MONERO_MINER/config.json"
-    local miner_executable="$MONERO_MINER/xmrig"
+    local monero_config_file="$MONERO_MINER_DIR/config.json"
+    local miner_executable="$MONERO_MINER_DIR/xmrig"
 
     # arg 1: field-name , arg 2: value (may or may not include double-quotes)
     function replace_field_in_config () {
@@ -2518,7 +2520,7 @@ function mine_monero () {  ###tags: requires-configuration
 # TODO - offer to choose a vm by number [1-n]. Need to create a function like y_n one that gets a dicitonary as an argument 
 # TODO - offer to add USB (and other?) devices by ID (from displayed list). Filter out devices already in XML.
 # interactively launch looking-glass session and VM (if not running). 
-[ -n "$LOOKING_GLASS_CLIENT" ] && \
+[ -n "$LOOKING_GLASS_CLIENT_FILE" ] && \
 function launch_vm_w_lookingglass () {  ###tags: requires-configuration
     local is_vm_chosen vm_name
     while [ -z "$is_vm_chosen" ]
@@ -2599,7 +2601,7 @@ $(cecho "1080p:") 32M, $(cecho "1200p:") 32M, $(cecho "1440p:") 32M, $(cecho "4K
     # run looking glass client
     # experimental -S : Prevent the screensaver from starting  , win:size=1920x1080 : Initial window size at startup (default is 1024x768)
     becho "Starting host-side looking-glass client"
-    "$LOOKING_GLASS_CLIENT" -f "$lg_file" -p $portnum -k -S & disown # -k : enable FPS & UPS display  ; -S : prevent host going to sleep
+    "$LOOKING_GLASS_CLIENT_FILE" -f "$lg_file" -p $portnum -k -S & disown # -k : enable FPS & UPS display  ; -S : prevent host going to sleep
     
 }
 
