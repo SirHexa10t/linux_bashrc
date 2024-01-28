@@ -155,11 +155,11 @@ declare -A vars_explanation=(
     ['SUBDIR_MOUNTS_FILE']="Defines custom shortcuts for media-drives, like /music, or /projects"
     ['CREDENTIALS_OPENAI']="API key for OpenAI's ChatGPT 3.5 (paid-subscription). Used to query $(wecho "A.I.") through simple terminal commands."
     ['DISPLAY_ARRANGEMENT']="Screen rearrangement through a keybind. Useful if your OS messes up your screen layout at times."
-    ['CUSTOM_TMP_DIR']="Changes the tmp-files target-location from root (/) to your folder of choice (possibly on a large drive)"
+    ['CUSTOM_TMP_MOUNTPOINT']="Changes the tmp-files target-location from root (/) to your folder of choice (possibly on a large drive)"
     ['VM_IMG_PARTITION_UUID']="Partition auto-mounting, in case you use $(wecho "Virtual Machines"), and the VMs' storage is on a separate mountable partition"
     ['LOOKING_GLASS_CLIENT_FILE']="Enables custom_bashrc's usage of looking-glass (a $(wecho "Virtual Machine") tool)"
     ['STOCKS_FILE']="Used for stock-data querying (graphs)"
-    ['MONERO_MINER']="Privacy/secrecy-oriented crypto-currency CPU miner"
+    ['MONERO_MINER_DIR']="Privacy/secrecy-oriented crypto-currency CPU miner"
 )
 
 function choose_utility_var () {
@@ -215,7 +215,7 @@ function setup_utility () {
     }
 
     function install_monero_miner () {
-        [ -n "$(_nonempty_folder_or_nothing "$directory_value")" ] && { _prompt_yn "Monero Miner is already installed, re-install?" || return 0; }
+        _validate_nonempty_folder "$directory_value"  &&  { _prompt_yn "Monero Miner is already installed, re-install?" || return 0; }
 
         local monero_pick_skip='skip'
         local latest_release_page=$(curl -s "https://api.github.com/repos/xmrig/xmrig/releases/latest")  # latest release data
@@ -256,7 +256,7 @@ function setup_utility () {
         done
 
         # if isn't installed and user skipped anyway
-        [[ -n "$(_nonempty_folder_or_nothing "$directory_value")" && "$url_chosen" = "$monero_pick_skip" ]] && { errcho "There's no existing installation and you don't want to download it now, so there's no way to proceed with the setup" ; return 1;}
+        [[ _validate_nonempty_folder "$directory_value"  &&  "$url_chosen" = "$monero_pick_skip" ]] && { errcho "There's no existing installation and you don't want to download it now, so there's no way to proceed with the setup" ; return 1; }
 
         install_targz_from_url --url "$url_chosen" --app_name monero_miner --install_folder "$CRYPTO_PROGRAMS_DIR" --checksum256 "$checksum_string"  # --alias xmrig  # --alias is not necessary - a bashrc alias can replace it 
 
@@ -383,7 +383,7 @@ function setup_utility () {
             local prompt_file_input="$(becho -p 'This feature requires screen-layout (example: HDMI-0: nvidia-auto-select +1920+1080, DP-0: nvidia-auto-select +1920+0, DP-2: nvidia-auto-select +3840+1080, DP-4: 1920x1080_240 +0+1080" ), which gets fed into an nvidia-settings command. Get this info through: '"$(dabecho 'NVIDIA Settings > X Server Display Configuration -> click on "Save to X Configuration File" -> click on "Show preview..."')"'. I don'"'"'t know how to configure for AMD or Intel, nor whether the display issue occurs on their cards')"
             _prompt_input_to_file "$directory_value" "$prompt_file_input"
         ;;
-        'CUSTOM_TMP_DIR')
+        'CUSTOM_TMP_MOUNTPOINT')
             becho "Feature: Replace the temp-files dir (default is /tmp), using a symlink that points to a folder. It can improve available cache-writing space (could be critical for some tools/commands) or faster cache-read/write. custom_bashrc evaluates the symlink each time it's sourced, so it won't default to given folder unless it's available."
             prompt_rootdir_shortcut
         ;;
@@ -403,7 +403,7 @@ function setup_utility () {
             local prompt_file_input="Write stock symbols (and optionally price-point), one per line. Example: \"AMD\", or \"AMD 76.50\". When you're done, type: $(becho "$stop_str")"
             _prompt_input_to_file "$directory_value" "$prompt_file_input" '1000' "$stop_str"
         ;;
-        'MONERO_MINER')
+        'MONERO_MINER_DIR')
             becho "Feature: Manage your monero mining operations conveniently via Terminal. The miner works on CPU; there's a GPU version too, but as of the time of this writing, it's not worth considering."
             install_monero_miner && configure_monero_miner
         ;;
