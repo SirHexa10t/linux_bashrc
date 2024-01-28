@@ -132,22 +132,16 @@ declare -A _UTILITY_FILE_MAP=(
 )
 
 # define additional vars, if they're relevant
-function _remap_utility_files () {
-    # arg1: filtering command ; arg2: variable to define (key in _UTILITY_FILE_MAP)
-    function check_and_eval () {
-        # validate and if passes: evaluate the expression
-        "$1" "${_UTILITY_FILE_MAP[$2]}"  &&  eval "$2=\"${_UTILITY_FILE_MAP[$2]}\""
-    }
-    
+function _remap_utility_files () {    
     local key
     for key in "${!_UTILITY_FILE_MAP[@]}"; do
         local val="${_UTILITY_FILE_MAP[$key]}"
         case $key in
-            *_DIR)          check_and_eval _validate_nonempty_folder    "$key" ;;  # dir with files
-            *_MOUNTPOINT)   check_and_eval _validate_dirpoint           "$key" ;;  # a link or existing dir
-            *_FILE)         check_and_eval _validate_filename           "$key" ;;  # an existing file
-            *_LINK)         check_and_eval _validate_symlink            "$key" ;;  # a valid link (existing target)
-            *)              _validate_file_with_content "$val"  &&  eval "$key='$(cat "$val")'" ;;  # data within an existing file
+            *_DIR)          _validate_nonempty_folder   "$val"  &&  { eval "$key='$val'"; }  ;;  # dir with files
+            *_MOUNTPOINT)   _validate_dirpoint          "$val"  &&  { eval "$key='$val'"; }  ;;  # a link or existing dir
+            *_FILE)         _validate_filename          "$val"  &&  { eval "$key='$val'"; }  ;;  # an existing file
+            *_LINK)         _validate_symlink           "$val"  &&  { eval "$key='$val'"; }  ;;  # a valid link (existing target)
+            *)              _validate_file_with_content "$val"  &&  { eval "$key='$(cat "$val")'"; } ;;  # data within an existing file
         esac
     done
     
