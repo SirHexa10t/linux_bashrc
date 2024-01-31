@@ -2431,7 +2431,36 @@ function playlist_file_fix () {
     done <<< "$file_text" > "$1"
 }
 
-# TODO - create a function that uses youtube-dl and other website downloaders; have it accept any download-link. 
+# TODO - create a function that uses youtube-dl and other website downloaders; have it accept any download-link.
+
+# TODO - handle more cases. Maybe move this to downloader project?
+# find and download appropriate media file within given webpage
+# arg1: webpage's url
+function download_media_from_page () {
+    [[ -z "$1" ]] && { errcho "You need to provide the URL of the page you want me to scan!"; return 1; }
+    
+    local default_video_format='mp4'
+    
+    # case 1: page has m3u8 file
+    local segment_of_interest="$(wget -O - "$1" | grep '.m3u8')"
+    if [ -n "$segment_of_interest" ]; then
+        gecho "Found m3u8 file"
+        local url_to_dl="$(echo "$segment_of_interest" | grep -oE 'https://.*\.m3u8')"
+        local title_found="$(wget -O - "$1" 2>/dev/null | grep -oP '<h2 class="page-title">\K.*?(?=<)' | sed 's/[[:space:]]*$//' )"  # gets h2 "page-title" and removes trailing space if any
+        
+        [ -z "$title_found" ] && { errcho "Didn't find the title, reverting to given url" ; title_found="$1"; }
+        title_found=$(echo "$title_found" | tr -c '[:alnum:]' '_' | sed 's/_\+/_/g' | sed 's/_*$//')  # sanitizing so it'd be a valid filename (replace non-alphanumeric with underscore, then replace consecutive underscores with underscore, remove trailing underscore if any)
+
+        download_hls "$url_to_dl" "${title_found}.${default_video_format}"
+    fi
+}
+
+# downloads given media
+# arg1: video-link to download (specific m3u8 file, not the webpage's URL), arg2: name of file (example: output.mp4)
+function download_hls () {
+    [[ -z "$1" || -z "$2" ]] && { errcho "You need to provide 2 args (m3u8 file, and filename)!"; return 1; }
+    ffmpeg -i "$1" -c copy $2
+}
 
 
 # Artificial Idiocy ; the "intelligent" part isn't done in this project"
