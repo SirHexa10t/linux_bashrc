@@ -469,12 +469,7 @@ function sudo () {
 # TODO - do about the same for chmod and chown - print the directory/files with the changed data (maybe cancel that, getting the filenames in every case isn't simple)
 # add a print of local files after changing directory
 function cd () {
-    # if provided file, cd to the file's directory
-    local dir_to_cd="$@"
-    [[ $# -eq 1 && -f "$1" ]] && dir_to_cd="$(dirname "$1")"
-    
-    builtin cd "${dir_to_cd[@]}" && \
-        ls -AF --color=always --group-directories-first 
+    builtin cd $@  &&  ls -AF --color=always --group-directories-first 
 }
 
 # make mkdir more "reasonable" with a flag that is always nice to have ; -p doesn't print error if dir exists
