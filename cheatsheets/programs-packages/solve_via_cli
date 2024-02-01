@@ -1,0 +1,68 @@
+# A collection of neat/useful tools/commands.
+# TODO - write which package managers are most reliable for the following packages
+
+
+>> Packages
+* nala      :  apt, but better
+
+
+>> Processes
+* htop      #  real-time process monitor
+* btop      #  htop-like, but with slightly less focus on processes; an overview of the system, including CPU-core temps, and network-usage
+
+
+>> Disks
+* ldmtool                   :  Read dynamic disks by running `sudo ldmtool create all`, and then mounting with `mount -t ntfs /dev/mapper/<volume_name>`
+* wipefs -a /dev/<sd??>     # remove filesystem data; removes RAID metadata
+
+
+>> Network
+> Own network info
+* ip addr               # display own networking interfaces. A modern safer alternative to: ifconfig
+* sudo netstat -tulpn   # display active network connections and filter by port number
+
+> Seeking addresses
+* dig "amazon.com" +short   # resolve dns address (or addresses, in case content-distribution-networks are involved)
+* ping google.com           # ping address
+
+
+>> media (pdf) editors
+* pdftk
+*  pdftk <file.pdf> input_pw <password> output <fileout.pdf>                # save pdf copy without password
+*  pdftk <file1.pdf> <file2.pdf> <file3.pdf> cat output <merged_name.pdf>   # create a unified pdf file
+* xournal
+*  xournal <pdf_filepath>                                                   # edit a pdf file with option to add signatures
+
+
+>> media (images/video) editors
+* ffmpeg  # general media (image / audio / video) handling package, you can find some usages/examples in the custom_bashrc script
+
+
+>> Microsoft formatting and proprietary system (Windows) stuff
+* lnkinfo <lnk-file>        # display link info
+* dos2unix <file>           # convert files from windows to unix encoding
+* sudo ntfsfix <device> -v  # run check-disk on NTFS device
+* ldmtool                   #  Read "dynamic disks" by running `sudo ldmtool create all`, and then mounting with `mount -t ntfs /dev/mapper/<volume_name>`
+
+
+>> Terminal-purposed web services
+* curl "wttr.in"    # get an ascii weather report
+
+
+>> Boredom
+* furtune  # get a "fortune". needs package: fortune-mod
+*   watch fortune  # get new fortune text every 2 seconds
+
+
+>> ASCII (Boredom?)
++ Create ASCII writings in this site: http://patorjk.com/software/taag/
+* figlet <text>  # write ASCII styled text, different fonts are also supported
+* banner <text>  # write ASCII styled text
+* toilet <text>  # write ASCII styled text, different fonts and styles are also supported
+* jp2a --output=<output.txt> --colors <input.png>   # convert image to ASCII
+* ascii-image-converter <input.png>                 # convert image to ASCII
+* lolcat                                            # rainbow-color text
+*   <text_output_command> | lolcat
+* pv                                                # "pipe viewer" - not the main usage, but you can make it write text progressively (like being typed, or (if fast) etched by a laser engraver)
+*   <text_output_command> | pv -qL 200              # Apply pv to some text. Try testing with `neofetch`. Try adding pipe to `lolcat`.
+

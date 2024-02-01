@@ -4,6 +4,7 @@
 # TODO - rewrite a lot of string-parsing functions in a proper language (Rust) and move the current functions to a "deprecated" folder for redundancy.
     # Some of those are useful as standalones, so put them in a different repository and either make them a submodule or add them via the installation script
     # should include (not limited to): remindme, colorize
+    # the bashrc's commands parser should have API for "help", so that it'd be aliased/functioned in a convenient command in bashrc that explains chosen commands (instead of everything at once)
 
 # TODO - move the "bash_terminal" cheatsheet to "programming", and extract some things into the "linux_admin" cheatsheet
 
@@ -51,6 +52,13 @@
 
 # TODO - add installation from github "releases" page
 
+# TODO - consider adding aliases:
+#   disks_info
+#   list_programs
+#   list_commands
+
+
+# TODO - use "dialog" command for picking between options?
 
 #---------------------------------------------------------------------------------------------
 #----CUSTOM-----------------------------------------------------------------------------------
@@ -324,6 +332,15 @@ alias updatengrade='\
 '
 # pip3 install --upgrade pip    - maybe
 
+# get temperature of components
+alias check_temp='\
+becho "CPU Temps:"
+echo "If you want to update your CPU sensors list you can run: $(cecho "yes | sudo sensors-detect") . I wont do that for you because someone on the internet said its dangerous for some laptops."
+sensors
+becho "GPU Temps:"
+[ -n "$(which "nvidia-smi")" ] && nvidia-smi -q -d temperature
+# TODO - handle AMD and Intel GPUs
+'
 
 # update all pip3 packages
 alias pip3update="pip3 freeze --local | grep -v '^\-e' | cut -d = -f 1  | xargs -n1 pip3 install -U"
@@ -337,6 +354,7 @@ alias rebuild_ramfs='sudo update-initramfs -u'
 # Get basic hardware and system list
 alias sysinfo_short='echo "For simpler neat hardware specs, run \"neofetch\" or \"screenfetch\""; inxi -bD'
 
+# TODO - compare with `sudo lshw`
 # Get comprehensive system/specs details
 alias sysinfo_full='inxi -FxxzJy90'
 
@@ -380,6 +398,8 @@ alias whosmyisp='curl -s ipinfo.io/org'
 
 # Synonymous to "stfu".
 alias goaway='stfu'
+# look for keyword in the cheatsheets
+alias howdoi='supergrep -d "$CHEATSHEETS_PATH" -e'  # TODO - make the output prettier by outputting the cheatsheets' command-names rather than the actual files?
 # Synonymous to "remindme" with extra information (less useful to user).
 alias list_cmds='remindme --show_hidden --include_line_num'
 # Synonymous to "cheatsheets".

@@ -1,6 +1,0 @@
-# Reminders for microsoft-format handling tools
-* lnkinfo <lnk-file>  # display link info
-* dos2unix <file>  # convert files from windows to unix encoding
-* sudo ntfsfix <device> -v  # run check-disk on NTFS device
-* ldmtool  #  Read dynamic disks by running `sudo ldmtool create all`, and then mounting with `mount -t ntfs /dev/mapper/<volume_name>`
-

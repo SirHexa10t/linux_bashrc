@@ -39,6 +39,7 @@ let my_tuple: (i32, f64, char) = (42, 3.14, 'a');  // tuple - an array with mult
 + Primitives have callable functions too (unlike Java). Example: 'my_char.is_alphabetic()'
 
 
+
 >> PRINTING
 >> ========
 
@@ -48,6 +49,7 @@ println!("number is: {num}.");
 
 > Debug-printing. Prints collections.
 println!("{:?}", my_vector);
+
 
 
 >> CONVERSIONS
@@ -127,15 +129,21 @@ fn print<T: Display>(value: T) {
 fn print<T: Debug>(value: T) {
     println!("value = {:?}", value);
 }
-fn compare<T>(left: T, right: T)
-where
-    T: Debug + PartialEq,
-{
+fn compare<T>(left: T, right: T) where T: Debug + PartialEq, {  // use "where" to define traits for generics
     println!("{:?} {} {:?}", left, if left == right { "==" } else { "!=" }, right);
 }
 
 > Closures (basically defining a lambda)
 let add = |a, b| a + b;  // call like so: `add(3, 5);`
+
+
+> Passing arguments by reference
+fn read_vector(mut v: &Vec<i32>) -> Vec<i32> {  // v is passed by reference, i.e. read-only. Ownership isn't transferred to the function (original is still accessible)
+fn consume_vec(mut v: Vec<i32>) -> Vec<i32> {  // ownership is transferred (original becomes inaccessible), v can be consumed but it's still immutable, so the elements can't be modified
+fn modify_vector(v: &mut Vec<i32>) -> Vec<i32> {  // modify the contents of a vector, WITHOUT transferring ownership
++ of course, it's not possible to do `mut v: &Vec<i32>`
+
+for element in v.iter_mut() { *element *= 2; }  // editing elements within mutable vector v
 
 
 
@@ -147,6 +155,7 @@ for _ in 0..10 { /*code here*/ }
 
 > Loopint on elements with Iterator
 [0, 1, 2, 3].iter().for_each(|x| println!("iteration {x}"));
+
 
 
 >> ITERATORS STREAMS
@@ -171,6 +180,7 @@ let my_vector: Vec<i32> = (1..6).filter(|x| x % 2 == 0).take(5).collect();
 + Usually you'd want to use iter()
 + You can use into_iter() if you want to take ownership of the elements and consume them (the original collection would be gone)
 + Using iter_mut() allows you to modify the values within the collection
+
 
 
 >> ITERATION ORDER
@@ -327,6 +337,7 @@ rev
 try_collect, try_find, try_fold, try_for_each, try_reduce
 
 
+
 >> CONVENIENT RETURNS
 >> ==================
 
@@ -348,6 +359,7 @@ let result = match number {
     1 => "one",
     _ => "other",
 };
+
 
 
 >> CONDITIONAL STATEMENTS
@@ -392,12 +404,25 @@ fn print_number(n: Number) {
 >> STRUCTS
 >> =======
 
-> declaring structs:
-struct Number {
-    odd: bool,
-    value: i32,
+> 3 types of structs:
+struct Person {  // Normal (Classic) Struct
+    name: String,
+    age: u32,
 }
 
+struct Point(i32, i32);  // Tuple Struct (field names are just 0, 1, 2, ...)
+
+struct Marker;  // Unit-like Struct. They don't have any fields and are useful, for example, in generics or as markers.
+
+
+> Update off of another object (very convenient with a default template)
+let person2 = Person {
+    age: 31,
+    ..person1  // we already have person1, we want a similar Person but with different age
+};
+
+
+> adding logic (functions) to structs
 impl Number {
     fn is_strictly_positive(self) -> bool {
         self.value > 0
@@ -446,8 +471,23 @@ struct Number {
 }
 
 
->> VALUE POINT/COPY
->> ================
+
+>> VALUE REFERENCE/CLONE/COPY
+>> ==========================
+
++ Copy is just bitwise Clone (for simple objects)
+
++ Like in C/C++, '&' means "address of" (reference), and '*' means "value at pointed address".
+
+> "mutable aliasing" rule: only one mutable reference at a time (ensures memory safety)
+let mut x = 100;
+let r1 = &s;  // fine
+let r2 = &s;  // fine
+let y = &mut x;  //fine
+let z = &mut x;  // can't do that! Because we still need to use 'y' after this line
+*y += 100;  // if you move this above z's declaration, everything would be fine.
+*z += 1000;
+
 
 > can't transfer the point a non-Copy object's pointer twice based on the first pointer  
 let n = Number { odd: true, value: 51 };
@@ -493,6 +533,27 @@ fn main() {
 
 
 
+>> ANNOTATIONS
+>> ===========
+
+> Builder
+
+use derive_builder::Builder;
+
+#[derive(Builder, Debug)]
+struct Person {
+    #[builder(default = "String::from(\"Unknown\")")]
+    name: String,
+
+    #[builder(default = "0")]
+    age: u32,
+}
+
+// use like that:
+let person_with_defaults = PersonBuilder::default().build().unwrap();
+
+
+
 
 >> TESTING / ASSERTING
 >> ===================
@@ -516,5 +577,16 @@ mod tests {
         assert_eq!(42, bigger(42, 42));
     }
 }
+
+
+
+
+
+TODO:
+EventEmitter
+Tokio
+Rayon ?
+testing with `cargo test`
+benchmarking with criterion
 
 

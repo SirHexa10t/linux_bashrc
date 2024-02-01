@@ -1,32 +1,60 @@
 # Reminders for linux system tools and command options
++ Also check packages in "gui" and "cli" cheatsheets
+
+
 >> Firmware updates
 * Using "fwupdmgr" package
 *  fwupdmgr get-devices  # get list of updateable devices
 *  fwupdmgr refresh  # download metadata
 *  fwupdmgr update  # get updates
-* Some vendors don't provide updates through fwupdmgr, you might be able to download an iso-updater, as demonstrated here for Samsung SSDs:
-*  https://blog.quindorian.org/2021/05/firmware-update-samsung-ssd-in-linux.html/
->> Messing around with the system itself
++ Some vendors don't provide updates through fwupdmgr, you might be able to download an iso-updater, as demonstrated here for Samsung SSDs:
++  https://blog.quindorian.org/2021/05/firmware-update-samsung-ssd-in-linux.html/
+
+
+>> ON/OFF
 * reboot  # reboots the system (gracefully)
 * sudo systemctl start sshd  # start ssh service for external access
 * udisksctl mount --block-device=/dev/<device-name>  # Mount a device the way nemo would. No need for mkdir (and nemo can dismount it right), no harm in calling while unnecessary, automatically uses LABEL to mount at "/media/<username>/"
 *   udisksctl mount --block-device=/dev/<device-name> 2> /dev/null
+
+
+>> Users / Groups
+* groups <username>                                         # display the groups of a user
+* usermod -aG <groupA,groupB,groupC> <username>             # add user to group(s). You can even add to group sudo (makes into superuser in Ubuntu).
+* getent group                                              # list all groups and their user-members
+* sudo adduser --disabled-password --gecos "" <username>    # adduser is a useradd wrapper (addused is generally better). The `--disabled-password` and `--gecos` options are required for no-prompt; `--disabled-password` skips password creation and disables password login. `--gecos` fills thumbnail info (cancels interactive). `--no-create-home` skips homedir creation.
+*   sudo adduser <username> --gecos "" --disabled-password && echo "<username>:<password>" | sudo chpasswd  # Add user with password in one line. Be sure to specify the username twice, as needed here
+* sudo deluser --remove-home <username>                     # delete user and associate homedir
+* su - <username>  # Switch to user. Might require sudo.
+* visudo  # edit the /etc/sudoers file (only if you know what you are doing)
+
+
 >> configurations
 * /etc/default/grub  :  boot configurations
 *   update-grub2  # updates grub for you (comments out old grub configurations).
-#   if you want to setup a new boot partition for (U)EFI, you can just create at the start of your disk a new FAT32 partition with 300MB-1GB storage and boot-flag, using "gparted" (recommended through a live-boot usb-stick). Then run boot-repair (installation: `sudo apt install -y boot-repair`) and update-grub2. Rerun update-grub2 on your actual OS to overwrite the resulting listed "Ubuntu" grub.
++   if you want to setup a new boot partition for (U)EFI, you can just create at the start of your disk a new FAT32 partition with 300MB-1GB storage and boot-flag, using "gparted" (recommended through a live-boot usb-stick). Then run boot-repair (installation: `sudo apt install -y boot-repair`) and update-grub2. Rerun update-grub2 on your actual OS to overwrite the resulting listed "Ubuntu" grub.
+* /etc/ufw/ufw.conf                 :  UFW (firewall) config-file
+*   /var/log/ufw.log                :  UFW outputs file. To monitor incoming requests, `sudo tail` this file after setting config "LOGLEVEL=debug", applied with `sudo ufw reload` (no-interruption reset; if it won't work run: `sudo service ufw restart`)
 * /etc/modprobe.d/blacklist.conf  :  blacklist modules, such as firmware
 * /etc/fstab  :  mounting configurations, including for dir "/"
 * /etc/environment  :  OS environment variables
-*   printenv  # print (all) current environment variables 
+*   printenv  # print (all) current environment variables
+* /etc/sudoers  :  sudo users file
 * sudo nvidia-xconfig  # create new xorg config, used by nvidia driver
+
+
 >> configurations (GNOME)
 * ~/.config/autostart/  :  location of startup scripts that run for your own user after startup 
 * ~/Templates/  :  anything you put in this folder will be a new-file template when you right-click in nemo
+
+
 >> configurations (Nemo file-manager)
 * ~/.local/share/nemo/scripts/  :  anything you put in this folder will be an executable-script available when you right-click in nemo
 * ~/.local/share/nemo/actions/  :  config files you put in this folder will be available as actions when you right-click in nemo (immediately within the menu, not in a submenu like the scripts)
->> logs (to tail a logfile in real-time run: "tail -f <logfile>", or to get last 100 lines: "tail -100 <logfile>" )
+
+
+>> logs
++ to tail a logfile in real-time run: "tail -f <logfile>", or to get last 100 lines: "tail -100 <logfile>"
 * /var/log/boot.log  :  System boot log
 * /var/log/syslog  :  System-events log (like connection of a USB device)
 * /var/log/auth.log  :  Login-attempts log
@@ -36,5 +64,15 @@
 * /var/log/btmp  :  also could be "wtmp"; it's a binary file for login/logout events, and it can't be read directly
 *   last  # read binary log of login/logout events. Use "lastb" (like so: `sudo lastb -adF` ) to only read bad events.
 * journalctl  # inspect systemd logs (like so: `journalctl -u <service-name>`, you can add -f to follow)
->> working with devices (disks/volumes)
-* wipefs -a /dev/<sd??>  # remove filesystem data; removes RAID metadata
+
+
+>> Firewall
+* ufw allow 21115:21119/tcp  # change firewall rules (by ports or src address) - in this case, allow ports 21115 to 21119 (including) on tcp
+* sudo tcpdump -i any -n  # capture traffic on all networks for all ports
+* sudo tcpdump -i <interface> -n "src host <external_IP> and dst port <dst_port>"  # detailed monitoring
+*   detailed monitoring example 1:  `sudo tcpdump -i enp5s0 -n "dst port 21118"`
+*   detailed monitoring example 2:  `sudo tcpdump -i any -n "tcp and (dst port 21115 or dst port 21116 or dst port 21117 or dst port 21118 or dst port 21119)"`
+*   detailed monitoring example 3:  `sudo tcpdump -i any src 46.120.97.16 -nn -c 20`  # -nn shows ip addresses and port-num without resolving hostname, -c stops capturing after 20 packets
+
+
+
