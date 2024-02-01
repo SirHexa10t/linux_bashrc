@@ -9,11 +9,12 @@
 
 
 >> File Manager
-* Nemo                  # GNOME-based window-manager
+* Nemo                  # GNOME-based file manager. Started as a fork of Nautilus.
+* Dolphin               # KDE-based file manager
 
 
 >> Resource Management
-* gnome-disks-utility (built on UDisks)     :  display drives' info and (optionally) mount/dismount in dir "/media/" 
+* gnome-disks-utility (built on UDisks)     :  display drives' info and (optionally) mount/dismount in dir "/media/<username>/" 
 * GParted                                   :  partition management
 
 

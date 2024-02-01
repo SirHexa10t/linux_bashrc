@@ -1,6 +1,8 @@
 # The fundamentals of Bash programming - basic gimmicks of bash scripting and terminal usage
 + BASH = "Bourne Again SHell", so naturally the following covers Shell (and beyond)
-+ Once you understand the gist of this file, go read the CLI-tools cheatsheet for common / useful tools (commands)
++ Once you understand the gist of this file, go read:
+*   CLI-tools cheatsheet for useful commands (packages/tools)
+*   linux-admin cheatsheet for common usage of Bash and basic OS operations
 
 
 >> Basic terminal tricks
@@ -22,37 +24,11 @@
 *   help  # list built-in Bash commands
 
 
->> Packages (Debian)
->> =================
-
-* apt search <term>  # look for substring in known packages. As usual, nala can also be used
-* sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
-* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the `-n` is for "no prompt")
-* dpkg -l  # show all installed packages in table format
-* sudo dpkg -r <package>  # remove a package installed from a .deb file
-* sudo dpkg --purge <package>  # purge a package installed from a .deb file
-* dpkg-query --list <package>  # print info related to installed package (autocompletes the name), works for all installations including from .deb
-* apt list  # list all packages in followed repositories
-*   apt list --installed  # list installed packages
-*   dpkg -l  # show all installed packages in table format
-
-
->> filesystem
->> ==========
-
-* ln -s <existing_file_to_link> <link_name>  # define soft-link. There are 2 symlink types; soft (denoted with -s, which points to a file's address) and hard (points directly to the data of a file. Editing the data in either "original" or hard-link is the same, and deleting either file alone wouldn't delete the data since it's still pointed to)
-+   soft links don't really utilize permissions - they allow everything and rely on the target to determine access. chmodding a symlink would forward the modification to the target. 
-*   ln -sr scripts/*.js target/  # create soft-links for all .js files in "scripts/", in "target/" (target/[filename.js] -> scripts/[filename.js]) 
-* cd  # change directory to specified folder. Write no directory to return to home-dir - Equivalent to `cd ~`
-*   cd -  # go back to previous directory
-* less <file>  # Read file with up/down controls. Newer and more convenient than `more`.
-
-
->> bash basic utility commands (can be used in terminal of-course)
+>> bash basic utility commands
 >> ===========================
 
 * compgen -c  # get list of current commands
-> Use $ to reference variables
+* Use $ to reference variables
 *   "$my_var": value of variable my_var
 *   "$1": first arg in current scope (and so on for each num accordingly)
 *   "$@": all args in current scope as separate items ; "$*": all args in current scope concatenated into a unified string ; "$#": args count
@@ -90,12 +66,6 @@
 *       "=~": pattern matching. Example: check if string starts with h: [[ "hello" =~ ^h.*$ ]]
 *       operators "&&" and "||": AND and OR within the brackets, no parentheses needed for the conditions
 * extra_dist=$(( (a > b) ? (a - b) : 0 ))  # example for ternary in bash (use the "&&", "||" ternary instead when you have a condition in "[]"). The double-parentheses mean you don't need "$" to reference variables and that the math operations get evaluated
-
->> tools (utilities for usage that isn't about managing the OS)
-* wget <url>  # download files
-* curl <url>  # communicate through HTTP(S)/(S)FTP/SCP - make any request (but if you just want to download something, you should probably use `wget`)
-* diff <file1> <file2>  # get the text difference between 2 files
-* espeak <text>  # read-out (audio) the given text. A bit of a gimmick, sounds very robotic
 
 
 >> shortcuts

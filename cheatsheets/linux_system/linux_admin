@@ -2,6 +2,26 @@
 + Also check packages in "gui" and "cli" cheatsheets
 
 
+
+>> RUN
+* reboot                        # reboots the system (gracefully)
+* sudo systemctl start sshd     # start ssh service for external access
+* sudo service apache2 restart  # restart apache service (if any)
+
+
+>> Package Management (Debian)
+* apt search <term>  # look for substring in known packages. As usual, nala can also be used
+* sudo apt install/remove/purge <package>  # package install/remove/remove-including-configs
+* sudo gdebi -n <package.deb>  # probably the best way there is to install a .deb file (the `-n` is for "no prompt")
+* dpkg -l  # show all installed packages in table format
+* sudo dpkg -r <package>  # remove a package installed from a .deb file
+* sudo dpkg --purge <package>  # purge a package installed from a .deb file
+* dpkg-query --list <package>  # print info related to installed package (autocompletes the name), works for all installations including from .deb
+* apt list  # list all packages in followed repositories
+*   apt list --installed  # list installed packages
+*   dpkg -l  # show all installed packages in table format
+
+
 >> Firmware updates
 * Using "fwupdmgr" package
 *  fwupdmgr get-devices  # get list of updateable devices
@@ -11,11 +31,37 @@
 +  https://blog.quindorian.org/2021/05/firmware-update-samsung-ssd-in-linux.html/
 
 
->> ON/OFF
-* reboot  # reboots the system (gracefully)
-* sudo systemctl start sshd  # start ssh service for external access
-* udisksctl mount --block-device=/dev/<device-name>  # Mount a device the way nemo would. No need for mkdir (and nemo can dismount it right), no harm in calling while unnecessary, automatically uses LABEL to mount at "/media/<username>/"
-*   udisksctl mount --block-device=/dev/<device-name> 2> /dev/null
+>> filesystem
+* ln -s <existing_file_to_link> <link_name>  # define soft-link. There are 2 symlink types; soft (denoted with -s, which points to a file's address) and hard (points directly to the data of a file. Editing the data in either "original" or hard-link is the same, and deleting either file alone wouldn't delete the data since it's still pointed to)
++   soft links don't really utilize permissions - they allow everything and rely on the target to determine access. chmodding a symlink would forward the modification to the target. 
+*   ln -sr scripts/*.js target/  # create soft-links for all .js files in "scripts/", in "target/" (target/[filename.js] -> scripts/[filename.js]) 
+* cd  # change directory to specified folder. Write no directory to return to home-dir - Equivalent to `cd ~`
+*   cd -  # go back to previous directory
+* less <file>  # Read file with up/down controls. Newer and more convenient than `more`.
+* diff <file1> <file2>  # get the text difference between 2 files
+
+
+>> Network
+> Own network info
+* ip addr               # display own networking interfaces. A modern safer alternative to: ifconfig
+* sudo netstat -tulpn   # display active network connections and filter by port number
+> Seeking addresses
+* dig "amazon.com" +short   # resolve dns address (or addresses, in case content-distribution-networks are involved)
+* ping google.com           # ping address
+
+
+>> Internet Queries
+* wget <url>  # download files
+* curl <url>  # communicate through HTTP(S)/(S)FTP/SCP - make any request (but if you just want to download something, you should probably use `wget`)
+ 
+
+>> Firewall
+* ufw allow 21115:21119/tcp  # change firewall rules (by ports or src address) - in this case, allow ports 21115 to 21119 (including) on tcp
+* sudo tcpdump -i any -n  # capture traffic on all networks for all ports
+* sudo tcpdump -i <interface> -n "src host <external_IP> and dst port <dst_port>"  # detailed monitoring
+*   detailed monitoring example 1:  `sudo tcpdump -i enp5s0 -n "dst port 21118"`
+*   detailed monitoring example 2:  `sudo tcpdump -i any -n "tcp and (dst port 21115 or dst port 21116 or dst port 21117 or dst port 21118 or dst port 21119)"`
+*   detailed monitoring example 3:  `sudo tcpdump -i any src 46.120.97.16 -nn -c 20`  # -nn shows ip addresses and port-num without resolving hostname, -c stops capturing after 20 packets
 
 
 >> Users / Groups
@@ -43,17 +89,17 @@
 * sudo nvidia-xconfig  # create new xorg config, used by nvidia driver
 
 
->> configurations (GNOME)
+>> Configurations (GNOME)
 * ~/.config/autostart/  :  location of startup scripts that run for your own user after startup 
 * ~/Templates/  :  anything you put in this folder will be a new-file template when you right-click in nemo
 
 
->> configurations (Nemo file-manager)
+>> Configurations (Nemo file-manager)
 * ~/.local/share/nemo/scripts/  :  anything you put in this folder will be an executable-script available when you right-click in nemo
 * ~/.local/share/nemo/actions/  :  config files you put in this folder will be available as actions when you right-click in nemo (immediately within the menu, not in a submenu like the scripts)
 
 
->> logs
+>> Logs
 + to tail a logfile in real-time run: "tail -f <logfile>", or to get last 100 lines: "tail -100 <logfile>"
 * /var/log/boot.log  :  System boot log
 * /var/log/syslog  :  System-events log (like connection of a USB device)
@@ -64,15 +110,6 @@
 * /var/log/btmp  :  also could be "wtmp"; it's a binary file for login/logout events, and it can't be read directly
 *   last  # read binary log of login/logout events. Use "lastb" (like so: `sudo lastb -adF` ) to only read bad events.
 * journalctl  # inspect systemd logs (like so: `journalctl -u <service-name>`, you can add -f to follow)
-
-
->> Firewall
-* ufw allow 21115:21119/tcp  # change firewall rules (by ports or src address) - in this case, allow ports 21115 to 21119 (including) on tcp
-* sudo tcpdump -i any -n  # capture traffic on all networks for all ports
-* sudo tcpdump -i <interface> -n "src host <external_IP> and dst port <dst_port>"  # detailed monitoring
-*   detailed monitoring example 1:  `sudo tcpdump -i enp5s0 -n "dst port 21118"`
-*   detailed monitoring example 2:  `sudo tcpdump -i any -n "tcp and (dst port 21115 or dst port 21116 or dst port 21117 or dst port 21118 or dst port 21119)"`
-*   detailed monitoring example 3:  `sudo tcpdump -i any src 46.120.97.16 -nn -c 20`  # -nn shows ip addresses and port-num without resolving hostname, -c stops capturing after 20 packets
 
 
 

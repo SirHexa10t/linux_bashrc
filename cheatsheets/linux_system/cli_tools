@@ -1,4 +1,5 @@
-# A collection of neat/useful tools/commands.
+# A collection of neat/useful external tools.
++ Some of these tools may be pre-installed in your distro, but they're still not part of "clean" Linux. For default-tools, check the linux-admin cheatsheet
 # TODO - write which package managers are most reliable for the following packages
 
 
@@ -14,16 +15,8 @@
 >> Disks
 * ldmtool                   :  Read dynamic disks by running `sudo ldmtool create all`, and then mounting with `mount -t ntfs /dev/mapper/<volume_name>`
 * wipefs -a /dev/<sd??>     # remove filesystem data; removes RAID metadata
-
-
->> Network
-> Own network info
-* ip addr               # display own networking interfaces. A modern safer alternative to: ifconfig
-* sudo netstat -tulpn   # display active network connections and filter by port number
-
-> Seeking addresses
-* dig "amazon.com" +short   # resolve dns address (or addresses, in case content-distribution-networks are involved)
-* ping google.com           # ping address
+* udisksctl mount --block-device=/dev/<device-name>  # Mount a device the way nemo would. No need for mkdir (and nemo can dismount it right), no harm in calling while unnecessary, automatically uses LABEL to mount at "/media/<username>/"
+*   udisksctl mount --block-device=/dev/<device-name> 2> /dev/null
 
 
 >> media (pdf) editors
@@ -50,7 +43,7 @@
 
 
 >> Boredom
-* furtune  # get a "fortune". needs package: fortune-mod
+* fortune  # get a "fortune". needs package: fortune-mod
 *   watch fortune  # get new fortune text every 2 seconds
 
 
@@ -65,4 +58,11 @@
 *   <text_output_command> | lolcat
 * pv                                                # "pipe viewer" - not the main usage, but you can make it write text progressively (like being typed, or (if fast) etched by a laser engraver)
 *   <text_output_command> | pv -qL 200              # Apply pv to some text. Try testing with `neofetch`. Try adding pipe to `lolcat`.
+
+
+>> Text To Speech
+* espeak <text>  # read-out (audio) the given text. A bit of a gimmick, sounds very robotic
+
+
+
 
