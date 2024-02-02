@@ -1,0 +1,9 @@
+# Snippets and tricks for browsers
+
+>> General
+* document.getElementsByTagName("video")[0].playbackRate = 4  # Javascript command to run in console - change youtube playback speed (example here: x4)
+* greasyfork.org  : URL for source of scripts to run on your ViolentMonkey add-on/plugin
+
+>> Chromium-based
+* chrome://flags/#hardware-media-key-handling  : URL for advanced operation flags. Specifically media-key-handline - disable this to get rid of the banner that appears when you change audio-volume
+

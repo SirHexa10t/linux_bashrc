@@ -6,8 +6,6 @@
     # should include (not limited to): remindme, colorize
     # the bashrc's commands parser should have API for "help", so that it'd be aliased/functioned in a convenient command in bashrc that explains chosen commands (instead of everything at once)
 
-# TODO - move the "bash_terminal" cheatsheet to "programming", and extract some things into the "linux_admin" cheatsheet
-
 # TODO - lookup (grep) within "remindme"
 # TODO - "whatnow" - tag commands (things like "network" or "visual" or "filesystem") and list the tags for (optional) interactive picking 
 # TODO - find all "] &&" and see that they operate fine
@@ -56,6 +54,10 @@
 #   disks_info
 #   list_programs
 #   list_commands
+
+# TODO - hardware cheatsheets: vr, batteries
+# TODO - programming cheatsheets: python, java(?)
+# TODO - linux_system cheatsheets: distros
 
 
 # TODO - use "dialog" command for picking between options?
@@ -289,9 +291,6 @@ alias hg='history | grep -iF --color=auto'
 # get parameter's value (use by specifying variable's name, no '$')
 alias valueof='declare -p'
 
-# displays all cheatsheet commands
-alias cheatsheets='tree --dirsfirst "$CHEATSHEETS_PATH" ; yecho "Commands:"; echo "$(compgen -c | grep --color=never "^$CHEATSHEET_PREFIX")"'
-
 
 # Service/Application handling
 # ============================
@@ -398,12 +397,8 @@ alias whosmyisp='curl -s ipinfo.io/org'
 
 # Synonymous to "stfu".
 alias goaway='stfu'
-# look for keyword in the cheatsheets
-alias howdoi='supergrep -d "$CHEATSHEETS_PATH" -e'  # TODO - make the output prettier by outputting the cheatsheets' command-names rather than the actual files?
 # Synonymous to "remindme" with extra information (less useful to user).
 alias list_cmds='remindme --show_hidden --include_line_num'
-# Synonymous to "cheatsheets".
-alias list_cheatsheets='cheatsheets'
 # Synonymous to "remindme".
 alias what_commands='remindme'
 ## Mispelled intentionally; don't fix it.
@@ -447,19 +442,10 @@ alias autoclick_toggle_100cps='py_clicker --cps 100 --toggle'
 function _sudo_if_necessary () {
     [ $# -ge 1 ] || { errcho "WTF are you expecting me to sudo? Give me the command you want to run as string arguments" ; return ; }
     (  # can't make the output-catch var local - you'd get no root password prompt. So we put it in its own enclosed env.
-        local command_maybe_sudo=("$@")  # preseve strings with spaces as individual strings
-        if [ -t 0 ]; then  # no input piped in
-            command_output=$( "${command_maybe_sudo[@]}" 2>/dev/null )
-            if [ $? -ne 0 ]; then sudo "${command_maybe_sudo[@]}";
-            else echo "$command_output";
-            fi
-        else  # input is being piped in
-            local output=$(cat)
-            command_output=$( echo "$output" | "${command_maybe_sudo[@]}" 2>/dev/null )
-            if [ $? -ne 0 ]; then echo "$output" | sudo "${command_maybe_sudo[@]}";
-            else echo "$command_output";
-            fi
-        fi
+        [[ "$#" -gt 0 || ! -t 0 ]] || { errcho "${FUNCNAME[0]} expects either arguments or piped data. Neither were provided."; return 1; }
+        local command_maybe_sudo="${@:-$(cat)}"  # piped-in data, otherwise args.
+        ${command_maybe_sudo[@]}
+        if [ $? -ne 0 ]; then errcho "ran into a problem; rerunning with sudo"; sudo ${command_maybe_sudo[@]}; fi
     )
 }
 
@@ -942,7 +928,8 @@ function multiping () {
     # color-print number by its "grade" (quality determined by how big it is)
     # arg 1: number to print
     function grade_ping () {
-        local num="$1"
+        [[ -n "$1" || ! -t 0 ]] || { errcho "${FUNCNAME[0]} expects either an argument or piped data. Neither were provided."; return 1; }
+        local num="${1:-$(cat)}"  # piped-in data, otherwise arg1.
         if (( $(echo "$num < 20" | bc -l))); then cecho "$num";
         elif (( $(echo "$num < 100" | bc -l))); then gecho "$num";
         elif (( $(echo "$num < 200" | bc -l))); then yecho "$num";
@@ -951,7 +938,7 @@ function multiping () {
         fi
     }
     (  # The parentheses provide a subshell, so that shell job-control wouldn't bother us
-    for address in localhost $user_choice $dns_addresses $common_domains $mining_pools $aws_endpoints; do
+    for address in 'localhost' $user_choice $dns_addresses $common_domains $mining_pools $aws_endpoints; do
         for protocol in 4 6; do
             local running_processes=$(pgrep -c ping)
             (( running_processes >= max_ping_threads )) && wait -n  # don't start another thread while too many ping threads are under-way
@@ -970,7 +957,7 @@ function multiping () {
                 # if didn't fail, print the resutls
                 [ -z "$failure" ] && echo "$ping_results" \
                     | awk -F 'time=' '{if (NF > 1) {print $2}}' \
-                    | awk '{ total += $1 } END { print total/NR }' | echo "$colored_address on $protocol_name, avg ping time: $(grade_ping $(cat)) ms"      
+                    | awk '{ total += $1 } END { print total/NR }' | echo "$colored_address on $protocol_name, avg ping time: $(grade_ping) ms"      
             } &
 
         done
@@ -1682,7 +1669,8 @@ function mktouch () {
     touch "$@"
 }
 
-# take ownership of file (add file-name after this command) 
+# take ownership of file
+# args: filenames to claim
 function claim () {
     local file_list=()
     local potential_file file  # iterators
@@ -1778,20 +1766,26 @@ args:
     [ -n "$verbose" ] && becho "running on directory: \"$dir\"  ;  expression: \"$exp\"  ;  including strings up to length: \"$text_limit\""  # print found arguments (if verbose)
 
 
-    local post_cmd="grep -e \"$exp\" -i --color=always"  # colorize the found strings. The coloring is late because it changes the returned string's length.
-    if [ $(expr "$text_limit" + 0) -gt 0 ]; then  # if there's a limit for result length, throw away strings that are too long
-        [ -n "$verbose" ] && becho "filtering with maximum result length: $text_limit"
-        post_cmd="awk 'length(\$0) <= '$text_limit | $post_cmd"
-    fi
+    # colorize the found strings. The coloring is late because it changes the returned string's length.
+    function _mark_word () { cat | grep -e "$exp" -i --color=always; }
+    function _filter_too_long () {  # if applicable, filter out messages that are too long. Otherwise just output
+        (( text_limit > 0 )) && { [ -n "$verbose" ] && becho "filtering with maximum result length: $text_limit"; cat | awk "length(\$0) <= $text_limit"; } || cat 
+    }
 
-    # arg 1: search command, arg2: ret-code for denied-access
+    # TODO - rerunning as sudo causes re-print of the same findings (and wasted time looking through the same files). See if that can be avoided / mitigated
+    #  maybe filter the error stream and collect the problematic ones for the sudo re-run?
+    
+    # arg 1: ret-code for denied-access, other_args: search command 
     function _search_maybe_rerun () {
-        eval "$1" | eval "$post_cmd"
+        local denied_ret="$1"
+        shift;  # we need the args afterwards
+        $@ | _filter_too_long | _mark_word
+
         local cmd_result="${PIPESTATUS[0]}"  # get return status of first item in pipeline
         
-        [ "$cmd_result" -eq "$2" ] && { 
+        [ "$cmd_result" -eq "$denied_ret" ] && { 
             recho "Permission to files denied. Rerunning as root."
-            eval "sudo $1" | eval "$post_cmd"
+            sudo $@ | _filter_too_long | _mark_word
             cmd_result="${PIPESTATUS[0]}"  # update the returned value (same search, but without permission hindrance)
         }
         
@@ -1800,11 +1794,11 @@ args:
 
     becho "matching filenames:"
     becho "==================="
-    _search_maybe_rerun "find \"$dir\" -iname \"*$exp*\"" '1'  # 0 could mean success, maybe nothing was found. 1 means access was restricted 
+    _search_maybe_rerun '1' find "$dir" -iname "*$exp*"   # 0 could mean success, maybe nothing was found. 1 means access was restricted 
 
     becho "matching file contents:"
     becho "======================="
-    _search_maybe_rerun "grep -e \"$exp\" -Inir \"$dir\" --color=never" '2'  # 1 means no results found. 2 means access was restricted
+    _search_maybe_rerun '2' grep -e "$exp" -Inir "$dir" --color=never  # 1 means no results found. 2 means access was restricted
     [ "$?" -eq 1 ] && yecho "NO RESULTS FOUND"
     
     # TODO - read media files' embedded subtitles
@@ -2093,14 +2087,15 @@ function encrypt () {
     done
     
     [ -z "$password" ] && { errcho "You need to specify password for encryption"; return 1; }
-
-    if [ -z "$file_to_encrypt" ]; then  # try to get data from pipe (/dev/stdin) if not given as arg
-        [ -z "$output_file" ] && { errcho "You need to specify output file when encrypting piped data!"; return 1; }
-        openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$password" -out "$output_file"  # should take the data from pipe on its own
-    else
-        [ -z "$output_file" ] && output_file="$(_add_str_before_filetype "$file_to_encrypt" "_encrypted")"  # if not provided, default output to this
-        openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$password" -in "$file_to_encrypt" -out "$output_file"
-    fi
+    [[ -z "$file_to_encrypt" && -t 0 ]] && { errcho "${FUNCNAME[0]} expects either a filename or piped data. Neither were provided."; return 1; }
+    [[ -z "$file_to_encrypt" && -z "$output_file" ]] && { errcho "If you provide neither input and output files, I can't pick a decent name for the output"; return 1; }
+    
+    [ -z "$output_file" ] && output_file="$(_add_str_before_filetype "$file_to_encrypt" "_encrypted")"  # by this point we know that there's input file
+    
+    local maybe_input=()
+    [ -n "$file_to_encrypt" ] && maybe_input=(-in "$file_to_encrypt");  # we'll either get no input arg (forcing work with stream), or: -in "$file_to_encrypt"
+    openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$password" -out "$output_file" ${maybe_input[@]}
+    
 }
 
 # unencrypts encryption via openssl symmetric key or by specific compression algorithm
@@ -2169,6 +2164,7 @@ function unencrypt () {
     fi
 }
 
+# TODO - FIXME (broken)
 # TODO - collect error messages into an output file
 # archive a specified file/folder with various compressions
 # arg 1: file/folder to test with ; arg 2: --no-enc (optional)
@@ -2659,9 +2655,8 @@ $(cecho "1080p:") 32M, $(cecho "1200p:") 32M, $(cecho "1440p:") 32M, $(cecho "4K
 # Append spaces to text lines for a rectangular look; i.e. end uniformly on the same column.
 # Also works with pipes. Could be problematic for table formatting if color is involved (colors are extra unseen chars)
 function _pad_end_w_spaces () {
-    text="$1"  # assume that text is provided as an argument
-    if [ -z "$text" ] && ! [ -t 0 ]; then text=$(cat); fi  # if no arg given and there's a stream from a pipe, get the stream contents as text
-    awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "$text"
+    [[ -z "$1" && -t 0 ]] && return 1;  # no arg, nor piped input. Quit.
+    awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "${1:-$(cat)}"
 }
 
 # adds string before first dot, or just before first dot
@@ -2728,10 +2723,7 @@ function _repeat_whitespace_rows () {
 
 # removes whitespaces from line-starts
 function rm_leading_whitespaces () {
-    local expression='s/^[[:space:]]*//'
-    if ! [ -t 0 ]; then sed "$expression" ;  # modify the data from pipe
-    else echo "$@" | sed "$expression";  # or modify the data from args
-    fi
+    sed 's/^[[:space:]]*//' <<< "${1:-$(cat)}"
 }
 
 
@@ -2900,7 +2892,7 @@ function _underline () {
 # -t/--text <text> (specify text to color, if it's not piped-in) ; -w/--word <word> (substring to color, no option needed if it's the only arg and text is piped-in) ; -c/--color <color-string> (see available colors in "_draw_formatted", default is red)
 function color_word () {  ###tags: text-coloring
     local text word color='<=bold=><=red=>'
-    if [ $# -eq 1 ] && ! [ -t 0 ]; then  # only 1 arg + streamed input. Given arg is the word that needs to be colored.
+    if [[ $# -eq 1 && ! -t 0 ]]; then  # only 1 arg + streamed input. Given arg is the word that needs to be colored.
         word="$1"
     else  # "regular" case
         while [[ $# -gt 0 ]]; do
@@ -2928,10 +2920,10 @@ function color_word () {  ###tags: text-coloring
     fi
 
     # If text is not provided via --text, and if standard input (piped data) exists : assign standard input to text
-    if [ -z "$text" ] && ! [ -t 0 ]; then text=$(cat); fi
-
+    [ ! -t 0 ] && text="$(cat)"  # if there's a stream, it's meant to go into text var.
+    
     [ -z "$text" ] && return 1  # no text given
-    [ -z "$word" ] && echo "$text" && return # no word
+    [ -z "$word" ] && echo "$text" && return  # no word
 
     # insert tags around word, I makes it case-insensitive
     _draw_formatted "$(echo "$text" | sed -e "s/$word/$color&<=reset=>/gI")"
@@ -3031,8 +3023,7 @@ function commecho () {  ###tags: text-coloring
         esac
     done
 
-    local formatted="$@"  # get all of the input
-    [ -z "$formatted" ] && formatted=$(cat)  # if text wasn't in args, get it from redirected input (or pipe)
+    local formatted="${@:-$(cat)}"  # get all of the input, possibly from cat
     
     # formatted=$(echo "$formatted" | sed -E "s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-input). Needs to run first, to not modify the color tags
     formatted=$(echo "$formatted" | sed -E "s/(\`[^\`]*\`)/$tilted_quote_color\1$reset/g")  # recolor text that starts with 'http(s)://' (URLs)

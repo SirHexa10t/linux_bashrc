@@ -6,7 +6,8 @@ SCRIPTS_PATH="$CUSTOM_BASHRC_FOLDER/unlimited_script_works"  # name of the scrip
 CHEATSHEETS_PATH="$CUSTOM_BASHRC_FOLDER/cheatsheets"  # name of the cheatsheets folder within this project. Change it if you want, just be aware this could break.
 CHEATSHEET_PREFIX='howdoi_'
 
-alias _scripts_loaded_comfirmation='_py_confirm_loaded'  # a call to a script added in just to confirm that the rest of the scripts are reached right 
+# TODO - remove? Consider if useful. Entire removal requires deletion of related file.
+# alias _scripts_loaded_comfirmation='_py_confirm_loaded'  # a call to a script added in just to confirm that the rest of the scripts are reached right 
 
 # Reloads script-files into bash-calls. No need to manually call this, it's done automatically
 # --declare_commands (create aliases/functions to call scripts) , --output_commands (list found files and their appropriate calls)
@@ -68,3 +69,21 @@ function _list_script_calls () {
     local cmd_list=$(for item in "${cmds_to_text[@]}"; do echo "$item"; done | sort )
     echo "${cmd_list[@]}"
 }
+
+
+# displays all cheatsheet commands
+# arg1 (optional): word to search within cheatsheets
+function cheatsheets () {
+    tree --dirsfirst "$CHEATSHEETS_PATH"
+    echo
+    yecho "Commands:"
+    compgen -c | grep --color=never "^$CHEATSHEET_PREFIX"
+    
+    # TODO - filter with given word, instead of "howdoi" (delete it)
+}
+
+# look for keyword in the cheatsheets
+alias howdoi='supergrep -d "$CHEATSHEETS_PATH" -e'  # TODO - make the output prettier by outputting the cheatsheets' command-names rather than the actual files?
+# Synonymous to "cheatsheets".
+alias list_cheatsheets='cheatsheets'
+

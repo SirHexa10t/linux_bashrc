@@ -72,7 +72,9 @@
 *   sudo adduser <username> --gecos "" --disabled-password && echo "<username>:<password>" | sudo chpasswd  # Add user with password in one line. Be sure to specify the username twice, as needed here
 * sudo deluser --remove-home <username>                     # delete user and associate homedir
 * su - <username>  # Switch to user. Might require sudo.
-* visudo  # edit the /etc/sudoers file (only if you know what you are doing)
+* sudo usermod -a -G sudo <user>                            # add existing user to group "sudo" (works in Ubuntu)
+*   sudo adduser <user> sudo                                # add new user, put in group "sudo"
+* visudo  # edit the /etc/sudoers file (usually not the right way; only if you know what you are doing)
 
 
 >> configurations
