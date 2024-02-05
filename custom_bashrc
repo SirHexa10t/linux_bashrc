@@ -59,6 +59,7 @@
 # TODO - programming cheatsheets: python, java(?)
 # TODO - linux_system cheatsheets: distros
 
+# TODO - integrate Lua?
 
 # TODO - use "dialog" command for picking between options?
 
@@ -443,7 +444,7 @@ function _sudo_if_necessary () {
     [ $# -ge 1 ] || { errcho "WTF are you expecting me to sudo? Give me the command you want to run as string arguments" ; return ; }
     (  # can't make the output-catch var local - you'd get no root password prompt. So we put it in its own enclosed env.
         [[ "$#" -gt 0 || ! -t 0 ]] || { errcho "${FUNCNAME[0]} expects either arguments or piped data. Neither were provided."; return 1; }
-        local command_maybe_sudo="${@:-$(cat)}"  # piped-in data, otherwise args.
+        local command_maybe_sudo="${@:-$(cat)}"  # args, otherwise piped-in data.
         ${command_maybe_sudo[@]}
         if [ $? -ne 0 ]; then errcho "ran into a problem; rerunning with sudo"; sudo ${command_maybe_sudo[@]}; fi
     )
@@ -929,7 +930,7 @@ function multiping () {
     # arg 1: number to print
     function grade_ping () {
         [[ -n "$1" || ! -t 0 ]] || { errcho "${FUNCNAME[0]} expects either an argument or piped data. Neither were provided."; return 1; }
-        local num="${1:-$(cat)}"  # piped-in data, otherwise arg1.
+        local num="${1:-$(cat)}"  # arg1, otherwise piped-in data.
         if (( $(echo "$num < 20" | bc -l))); then cecho "$num";
         elif (( $(echo "$num < 100" | bc -l))); then gecho "$num";
         elif (( $(echo "$num < 200" | bc -l))); then yecho "$num";
@@ -2164,7 +2165,7 @@ function unencrypt () {
     fi
 }
 
-# TODO - FIXME (broken)
+# TODO - FIXME (broken)  コノママジャダメ
 # TODO - collect error messages into an output file
 # archive a specified file/folder with various compressions
 # arg 1: file/folder to test with ; arg 2: --no-enc (optional)

@@ -1,7 +1,7 @@
 # The fundamentals of Bash programming - basic gimmicks of bash scripting and terminal usage
 + BASH = "Bourne Again SHell", so naturally the following covers Shell (and beyond)
 + Once you understand the gist of this file, go read:
-*   CLI-tools cheatsheet for useful commands (packages/tools)
+*   packages cheatsheet for useful commands (packages/tools)
 *   linux-admin cheatsheet for common usage of Bash and basic OS operations
 
 
@@ -65,7 +65,8 @@
 * file_text="$(cat "$1")"   # using $() causes the evaluation of everything within, and saving the output into var. You can freely use quotes within, it won't
 
 > Default
-* num_of_threads=${1:-$(nproc)}  # if the command ("nproc") returns empty, default to the value on the left ("1")
+* num_of_threads=${1:-$(nproc)}  # use the arg on the left ($1), but if it isn't not provided or if it's empty, the command defaults to the arg on the right ("nproc")
+* num_of_threads=${1-$(nproc)}   # use the arg on the left ($1), but if it isn't not provided, the command defaults to the arg on the right ("nproc")
 
 
 >> Data Types

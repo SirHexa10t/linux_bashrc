@@ -1,0 +1,122 @@
+# A collection of neat/useful programs and tools.
+# TODO - write which package managers are most reliable for the following packages
+
+
+>> GUI / Visual
+>> ============
+
+> Process Manager
+* GNOME System Monitor  : Graphs for CPU, RAM, Network. Also storage% utilization and current proccesses (much like Windows' "Task Manager"), but there are better tools for those. 
+* xkill                 # after you run this, your mouse cursor would turn into an "x" sign, and the next window youll click would be killed. A bit lazy and silly.
+
+> File Manager
+* Nemo                  :  (gtk) GNOME-based file manager. Started as a fork of Nautilus.
+* Thunar                :  (gtk) does dual-window layout and remembers your last location
+* Dolphin               :  (qt) KDE-based file manager
+
+> Resource Management
+* gnome-disks-utility (built on UDisks)     :  display drives' info and (optionally) mount/dismount in dir "/media/<username>/"
+* GParted                                   :  partition management
+
+> Editor / viewer
+* LibreOffice                               :  Microsoft Office documents
+* OnlyOffice                                :  Microsoft Office documents (looks exactly like Microsoft's)
+* xreader [github.com/linuxmint/xreader]    :  documents, including PDF
+* xviewer [github.com/linuxmint/xviewer]    :  images/pictures
+* Visual Studio Code                        :  Text Editor
+* Sublime Text                              :  Text Editor
+* Xed [github.com/linuxmint/xed]            :  Text Editor
+* Kate                                      :  Text Editor
+
+> Browser / web-service client
+* Brave         :  Chromium-based privacy-oriented browser
+* LibreWolf     :  firefox-based privacy-oriented browser
+* Thunderbird   :  email-client
+    # TODO - check if better than GMail web-client
+* Signal        :  chat/phone app
+* Telegram      :  chat/phone app
+
+> Device integration
+* scrcpy                        # run daemon that casts the connected Android device screen onto a window, and shares the clicks within it back to the Android device
+*   scrcpy -r <filename.mp4>    # save a video recording of your connected android device activity (needs USB-Debug and File-Transfer mode)
+
+> Media Player
+* celluloid [formerly mpv]  :  videos
+* Hypnotix                  :  IPTV streaming
+
+> Desktop Sharing
+* OBS-Studio    :  screen sharing
+* RustDesk      :  screen sharing
+
+> Boredom
+* oneko &  # Summon a small cat that chases after your mouse. You can get many of those concurrently, and there's also a version with a dog (read the man page).
+
+> Packages of interest (didn't look into them properly yet; TODO)
+* FireDragon (browser)
+* Ranger (terminal-based file-manager, Python-based)
+* Krusader (file-manager)
+* Yazi [https://yazi-rs.github.io] (terminal-based file-manager, better than ranger?)
+* Vieb ( )
+
+
+
+>> CLI / Tools
+>> ===========
++ Some of these tools may be pre-installed in your distro, but they're still not part of "clean" Linux. For default-tools, check the linux-admin cheatsheet
+
+> Packages
+* nala      :  apt, but better
+
+> Processes
+* htop      #  real-time process monitor
+* btop      #  htop-like, but with slightly less focus on processes; an overview of the system, including CPU-core temps, and network-usage
+
+> Disks
+* ldmtool                   :  Read dynamic disks by running `sudo ldmtool create all`, and then mounting with `mount -t ntfs /dev/mapper/<volume_name>`
+* wipefs -a /dev/<sd??>     # remove filesystem data; removes RAID metadata
+* udisksctl mount --block-device=/dev/<device-name>  # Mount a device the way nemo would. No need for mkdir (and nemo can dismount it right), no harm in calling while unnecessary, automatically uses LABEL to mount at "/media/<username>/"
+*   udisksctl mount --block-device=/dev/<device-name> 2> /dev/null
+
+> media (pdf) editors
+* pdftk
+*  pdftk <file.pdf> input_pw <password> output <fileout.pdf>                # save pdf copy without password
+*  pdftk <file1.pdf> <file2.pdf> <file3.pdf> cat output <merged_name.pdf>   # create a unified pdf file
+* xournal
+*  xournal <pdf_filepath>                                                   # edit a pdf file with option to add signatures
+
+> media (images/video) editors
+* ffmpeg  # general media (image / audio / video) handling package, you can find some usages/examples in the custom_bashrc script
+
+> Microsoft formatting and proprietary system (Windows) stuff
+* lnkinfo <lnk-file>        # display link info
+* dos2unix <file>           # convert files from windows to unix encoding
+* sudo ntfsfix <device> -v  # run check-disk on NTFS device
+* ldmtool                   #  Read "dynamic disks" by running `sudo ldmtool create all`, and then mounting with `mount -t ntfs /dev/mapper/<volume_name>`
+
+> Terminal-purposed web services
+* curl "wttr.in"    # get an ascii weather report
+
+> Boredom
+* fortune  # get a "fortune". needs package: fortune-mod
+*   watch fortune  # get new fortune text every 2 seconds
+
+> Visual Appeal (making other people bored)
+* asciiaquarium  # Run ascii aquarium. Has some interactivity with hotkeys)
+
+> ASCII (Boredom?)
++ Create ASCII writings in this site: http://patorjk.com/software/taag/
+* figlet <text>  # write ASCII styled text, different fonts are also supported
+* banner <text>  # write ASCII styled text
+* toilet <text>  # write ASCII styled text, different fonts and styles are also supported
+* jp2a --output=<output.txt> --colors <input.png>   # convert image to ASCII
+* ascii-image-converter <input.png>                 # convert image to ASCII
+* lolcat                                            # rainbow-color text
+*   <text_output_command> | lolcat
+* pv                                                # "pipe viewer" - not the main usage, but you can make it write text progressively (like being typed, or (if fast) etched by a laser engraver)
+*   <text_output_command> | pv -qL 200              # Apply pv to some text. Try testing with `neofetch`. Try adding pipe to `lolcat`.
+
+> Text To Speech
+* espeak <text>  # read-out (audio) the given text. A bit of a gimmick, sounds very robotic
+
+
+
