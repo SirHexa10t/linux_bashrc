@@ -1,5 +1,6 @@
 # The fundamentals of Bash programming - basic gimmicks of bash scripting and terminal usage
 + BASH = "Bourne Again SHell", so naturally the following covers Shell (and beyond)
++ Bash is barely a language. It's more of an OS API script. You can't have 2D arrays, but you can easily look through files or processes.
 + Once you understand the gist of this file, go read:
 *   packages cheatsheet for useful commands (packages/tools)
 *   linux-admin cheatsheet for common usage of Bash and basic OS operations

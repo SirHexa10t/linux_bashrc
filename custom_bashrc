@@ -55,6 +55,17 @@
 #   list_programs
 #   list_commands
 
+# TODO - integrate AppImage system?
+    # there's AppImageHub which might have an API (or just use (scrape) their web search www.appimagehub.com) for finding app-images
+    # Maybe use AppImageLauncher: https://www.appimagehub.com/p/1228228
+    # could be helpful: https://github.com/prateekmedia/appimagepool
+    # could be helpful: https://github.com/AppImageCrafters/appimage-cli-tool
+    # could be helpful: https://github.com/AppImageCommunity/AppImageUpdate
+
+# TODO - write_table (make it in Rust instead of Bash?) - an editor/edit-watcher that automatically adjusts indentations for columns
+    # if a field invades next column's char-column index, add tab to all rows on that column. And remove tabs when necessary too
+    # consider double-quotes, so that spaces within quoted strings won't count as delimiters
+
 # TODO - hardware cheatsheets: vr, batteries
 # TODO - programming cheatsheets: python, java(?)
 # TODO - linux_system cheatsheets: distros

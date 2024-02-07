@@ -11,8 +11,6 @@
 
 > File Manager
 * Nemo                  :  (gtk) GNOME-based file manager. Started as a fork of Nautilus.
-* Thunar                :  (gtk) does dual-window layout and remembers your last location
-* Dolphin               :  (qt) KDE-based file manager
 
 > Resource Management
 * gnome-disks-utility (built on UDisks)     :  display drives' info and (optionally) mount/dismount in dir "/media/<username>/"
@@ -57,7 +55,8 @@
 * Krusader (file-manager)
 * Yazi [https://yazi-rs.github.io] (terminal-based file-manager, better than ranger?)
 * Vieb ( )
-
+* Thunar                :  (gtk) does dual-window layout and remembers your last location
+* Dolphin               :  (qt) KDE-based file manager
 
 
 >> CLI / Tools

@@ -1,0 +1,27 @@
+# terms that can make explanations shorter and should be common-programmers' understanding
+
+
+>> High-level terms
+>> ================
+
+> Determinism
+*   output is always the same for the same input
+
+
+
+>> Functions
+>> =========
+
+> Side-effects
+*   Alteration/modification of any data outside of function's scope, including usage of I/O devices, and including the args given
+*   Output might depend on something other than input
+*   (Generally bad)
+
+> Pure Function
+*   Deterministic
+*   No side-effects
+*   (Can exist "on their own", without external dependencies - this makes testing and usage simpler)
++ Example: `foo(x): return x+1` is pure.
++ Counter-example: `print("hello")` isn't pure (nor is any function containing such line)
+
+

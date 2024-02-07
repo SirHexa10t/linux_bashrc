@@ -6,6 +6,8 @@
 *  https://doc.rust-lang.org/rust-by-example/print.html
 
 
++ Rust is a 0-cost-abstactions memory-safe (without involving a garbage-collector!) language that goes both low/high-level, and provides thread safety, plus very helpful compile-error messages.
++  "It's Haskell, standing on Lisp's shoulders, hiding in C's coat, to sneak into production (the fancy nightclub where all the popular languages hang out)" ~ No_Boilerplate, watch?v=voRBS0r4EyI
 
 
 >> TYPES
@@ -21,6 +23,7 @@
 +     Bin:	0b1111_0000
 +     Byte (u8 only): b'A'
 + floating points: `f32`, `f64` (default)
+
 
 
 > Arrays
@@ -66,6 +69,8 @@ let my_set: HashSet<_> = my_vector.into_iter().collect();  // vector to set
 
 >> DECLARATIONS AND FUNCTIONS
 >> ==========================
+
++ Everything is immutable by default. You have to specify "&mut" to have mutability
 
 let x: i32 = 42;  // Assign a variable. The type-declaration is optional
 
@@ -145,6 +150,10 @@ fn modify_vector(v: &mut Vec<i32>) -> Vec<i32> {  // modify the contents of a ve
 
 for element in v.iter_mut() { *element *= 2; }  // editing elements within mutable vector v
 
++ "const" functions are deterministic and have no side-effects ("almost" pure) and thus can't print. To circumvent that, there's a crate called "const_panic" that includes assertions
++   const functions are only pure at runtime, so you can evaluate impure source-code to construct a function that's pure.
+
++ return "Infallible" from a function if the function never returns (runs forever)
 
 
 >> LOOPS
@@ -156,7 +165,9 @@ for _ in 0..10 { /*code here*/ }
 > Loopint on elements with Iterator
 [0, 1, 2, 3].iter().for_each(|x| println!("iteration {x}"));
 
-
+loop {
+    // code ...
+}
 
 >> ITERATORS STREAMS
 >> =================
@@ -353,13 +364,14 @@ let habitat = if identifier == 1 {
 };
 
 
-> "match" (Rust's "switch") can return values
+> "match" (Rust's "switch") can return values (and execute code of-course)
 let result = match number {
-    0 => "zero",
-    1 => "one",
-    _ => "other",
+    0           => "zero",
+    1           => "one",
+    3 | 5 | 7   => "an interesting number",  // multiple matches can be lumped together!
+    8..=99      => "random boring number"   // matches can also be made in ranges
+    _           => "other",
 };
-
 
 
 >> CONDITIONAL STATEMENTS
@@ -472,8 +484,8 @@ struct Number {
 
 
 
->> VALUE REFERENCE/CLONE/COPY
->> ==========================
+>> VARIABLE LIFETIME, REFERENCE/CLONE/COPY
+>> =======================================
 
 + Copy is just bitwise Clone (for simple objects)
 
@@ -553,6 +565,7 @@ struct Person {
 let person_with_defaults = PersonBuilder::default().build().unwrap();
 
 
+#[derive(Debug)]  // allows debug-printing
 
 
 >> TESTING / ASSERTING
@@ -571,7 +584,7 @@ mod tests {
     fn fortytwo_is_bigger_than_thirtytwo() {
         assert_eq!(42, bigger(32, 42));
     }
-
+ 
     #[test]
     fn equal_numbers() {
         assert_eq!(42, bigger(42, 42));
@@ -579,14 +592,74 @@ mod tests {
 }
 
 
+>> NEEDS TO BE ADDED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+>> =================
 
-
-
-TODO:
+TODO: very interesting crates
+color-eyre - pretty error handling
+rstest - testing framework, can use fixtures
+const_panic - string formatting for asserts
 EventEmitter
-Tokio
-Rayon ?
+Tokio - async await handling, with axum (web framework)
+Rayon - parallelism (instead of Tokio. It's built on Rust's side-effect system)
 testing with `cargo test`
 benchmarking with criterion
+clap - command line args parser
+bevy - building games
+wgpu - programming for GPU
+embassy - embedded systems
+nom - parser
+Cargo Lambda - build binaries for AWS Lambda
+diesel - SQL quearies
+sqlx - sql queries (better than diesel?)
+
+
+TODO maybe - external tool:
+Slint UI design in Rust:
+    "you need to build a RUST desktop app!!": https://www.youtube.com/watch?v=7aFgeUG9TK4
+    https://slint.dev/docs
+
+Blender as a level-editor, with Rust code:
+    "Use Blender as a Bevy Editor": https://www.youtube.com/watch?v=PRDUH0JUS_A
+    https://github.com/rust-adventure/yt-bevy-blender
+
+TODO: lints (cover what those are
+> solid setup:
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+enum_glob_use = "deny"
+pedantic = "deny"
+nursery = "deny"
+unwrap_used = "deny"  // run clippy in a terminal to see what was the first error (the one you need to fix)
+    // `bacon clippy` is "better" than `cargo clippy`?
+
+
+> optimizing size of release-builds (from: https://github.com/johnthagen/min-sized-rust )
+[profile.release]
+opt-level = 'z'     # optimize for size
+lto = true          # Optimize at the link stage. This can, for example, remove dead code and often times reduces binary size
+codegen-units = 1   # reduced to increase optimizations
+panic = 'abort'     # abort on panic
+strip = "symbols"   # strip symbols from binary
+
+
+>> SAMPLES
+>> =======
+
+> Parallelism with Rayon
+use rayon::prelude::*;
+fn sum_of_squares(input: &[i32]) -> i32 {
+    input.par_iter()
+        .map(|&i| i*i)
+        .sum()
+}
+
+
+
+
+
+
 
 

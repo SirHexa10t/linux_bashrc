@@ -2,6 +2,10 @@
 
 # This file calls script files in another location (relative to own location) in definitions that makes them accessible as terminal commands
 
+# TODO - move the cheatsheets to a new repository? (link into this repo as submodule).
+#   Maybe even rename custom_bashrc into comfy_linux
+
+
 SCRIPTS_PATH="$CUSTOM_BASHRC_FOLDER/unlimited_script_works"  # name of the scripts folder within this project. Change it if you want, just be aware this could break.
 CHEATSHEETS_PATH="$CUSTOM_BASHRC_FOLDER/cheatsheets"  # name of the cheatsheets folder within this project. Change it if you want, just be aware this could break.
 CHEATSHEET_PREFIX='howdoi_'

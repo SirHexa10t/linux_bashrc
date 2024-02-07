@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# TODO - replace all of the personal preferences with a template configs file
+#   the file would be copied into user's home-custom_bashrc-folder
+#   items within the file would have var names defined, but equal nothing. There'll be comments above them, which'll get copied over here for the explanations
+#   unfilled fields would be ignored (and an error would appear)
+#   the screen-dims var should be formatted as [num]x[num]
 
 
 echo "# prerequisites"
