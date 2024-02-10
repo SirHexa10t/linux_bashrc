@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# TODO - this project is quite bloated, so only load the "indexes" of the functions? (create aliases that point to the functions in files, but only load the functions when they're run)
+    # maybe just separate into different files for now
+    
+# TODO - OAuth that keeps your google (gmail) account alive by using it once in a while?
+    # requires sensitive data - ask for a file to point to, and suggest storing it in home folder in a low-permissions file?
 
 # TODO - rewrite a lot of string-parsing functions in a proper language (Rust) and move the current functions to a "deprecated" folder for redundancy.
     # Some of those are useful as standalones, so put them in a different repository and either make them a submodule or add them via the installation script
@@ -73,6 +78,9 @@
 # TODO - integrate Lua?
 
 # TODO - use "dialog" command for picking between options?
+
+# TODO - maybe add a TODO-manager (personal, in custom_bashrc's config files; not related to this project's TODOs)
+
 
 #---------------------------------------------------------------------------------------------
 #----CUSTOM-----------------------------------------------------------------------------------
@@ -303,6 +311,11 @@ alias hg='history | grep -iF --color=auto'
 # get parameter's value (use by specifying variable's name, no '$')
 alias valueof='declare -p'
 
+# TODO - develop a totally-terminal solution? (basically overwrite diff... maybe)
+# Compare texts, similar to diff but easier to understand (like when resolving git merge-conflict)
+[ -n "$(which kompare)" ] && \
+alias gui_diff='kompare'
+
 
 # Service/Application handling
 # ============================
@@ -342,6 +355,22 @@ alias updatengrade='\
 [ -n "$(which rustup)" ] && { rustup update ; }
 '
 # pip3 install --upgrade pip    - maybe
+
+# update devices using LVFS server (not all devices are supported)
+[ -n "$(which fwupdmgr)" ] && \
+alias update_firmware='\
+becho "Listing devices that support LVFS firmware updates"
+sudo fwupdmgr refresh
+sudo fwupdmgr get-devices
+_prompt_yn "$(becho "Confirm: update now")" && sudo fwupdmgr update
+commecho ">> If your device was not updated properly, check manually in the appropriate vendor site
+* Samsung: https://semiconductor.samsung.com/us/consumer-storage/support/tools/
+*   mount the firmware iso, then run to extract files into current dir:  gzip -dc <mountpoint>/initrd | cpio -idv --no-absolute-filenames
+*   then within that dir sudo run the file: root/fumagician/fumagician
+* Seagate: https://apps1.seagate.com/downloads/request.html
+* WD (Western Digital); maybe here: https://files.hddguru.com/download/Firmware%20updates/Western%20Digital/   official site: https://support-en.wd.com/app/products/downloads/softwaredownloads
+"
+'
 
 # get temperature of components
 alias check_temp='\
@@ -1601,6 +1630,7 @@ function test_drive_read_write () {
     becho "Reading file: \"$testfile\""
     dd if="$testfile" of=/dev/null bs="$testfile_size" count=1 iflag=direct
 
+    # TODO - fetch the data from the appropriate cheatsheets page instead?
     dagecho -p "Compare your results with the USB transfer speed specifications:
     USB 1.0: $(yecho '187 kB/s') , USB 1.1: $(yecho '1.5 MB/s')
     USB 2.0: $(yecho '60 MB/s')
@@ -1612,12 +1642,40 @@ function test_drive_read_write () {
     sudo rm "$testfile"  # test-file is no longer needed
 }
 
+# TODO - there are such functions now; resolve (unify)
+# write data to current dir to check its read/write speeds
+function benchmark_drive_read_write () {
+    local folder="$HOME/benchmarks_$(date +%F)"
+    becho "Writing results into: $(wecho "$folder")"
+    mkdir "$folder"
+    
+    local filename="local_filename_in_current_dir_dont_use_mktemp_itll_go_to_os_drive"
+    dd if=/dev/urandom of="$filename" bs="2G" count=1 oflag=direct 2> "${folder}/write_test.txt"
+    dd if="$filename" of=/dev/null bs="2G" count=1 iflag=direct 2> "${folder}/read_test.txt"
+    
+    rm "$filename"
+}
+
 # test the volume and throughput of a storage device
 function benchmark_drive () {
     _is_drive "$1" || { errcho "arg isn't a disk$(_is_dev "$1" && echo ' (though it is a partition)'). Aborting."; return 1; }
 
     test_drive_capacity "$1" --no_prompt
     test_drive_read_write "$1"
+}
+
+# run a couple of CPU-benchmarking tools, on different thread counts
+[[ -n "$(which 'sysbench')" && -n "$(which '7z')" ]] && \
+function benchmark_cpu () {
+    local folder="$HOME/benchmarks_$(date +%F)"
+    becho "Writing results into: $(wecho "$folder")"
+    mkdir "$folder"
+    
+    sysbench cpu --threads=2 run > "${folder}/sysbench_2_cpus.txt"
+    sysbench cpu --threads=$(nproc) run > "${folder}/sysbench_$(nproc)_cpus.txt"
+        
+    7z b -mmt1  > "${folder}/7z_single_threaded.txt"
+    7z b  > "${folder}/7z_multi_threaded.txt"
 }
 
 

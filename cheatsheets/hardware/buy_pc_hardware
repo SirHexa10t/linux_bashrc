@@ -99,6 +99,18 @@
 * As of the time of writing, AMD makes the best CPUs in both performance and efficiency.
 * AMD's CPUs are (ironically) the more expensive option, especially when factoring in the much higher motherboard prices over Intel's
 
+>> RAM
+* A desktop memory stick is DIMM. Laptop's is SO-DIMM.
+* MT vs MHz: DDR (Double Data Rate) RAM misconception; Products are specified as X MHz but measure at X/2 MHz in diagnostic tools. That's because this X refers to M.Transfers, not M.Hertz, since DDR (being true to its name) performs 2 transfer operations per cycle.
+* CAS latency / timing: "C" or "CL" or "Clock" signifies the number of cycles it takes to retrieve data
+*   So the latency of RAM is: (CL * 2 / transfer_rate) s.  The result is in the order of 1/10^8 s, so latency is typically around 10 nanoseconds.
+* As of the beginning of 2024, DDR4 is already unsupported by latest AMD/Intel generations. It's on its way out. DDR5 is about 1.5 times faster than DDR4, and consumes less power.
+* Use 2 or 4 sticks or RAM (just not an odd number) to avoid latency issues.
+* Use 2 RAM sticks instead of 4 to lower the load on the memory controller (2x16 GiB 3600MT will have better response rate than 4x8 GiB 3600MT)
+* You can ignore the QVL (qualified vendors list) of motherboards, RAM rarely works exclusively with the listed vendors.
+* You can ignore the CPUs' and motherboards' listed compatible memory speeds - those are base-specs, not limits.
+* Remember that motherboards typically run RAM at 2666 MHz by default. You need to enter BIOS/UEFI configuration (press DEL or some other key while booting) to specify the target intended speed through "XMP" or "EXPO". If your calibration fails, try slightly lower frequency (or different voltage if you know what you're doing)
+
 >> PSU
 [TODO; include the 80+ efficiency table]
 

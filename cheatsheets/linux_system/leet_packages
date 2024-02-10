@@ -49,6 +49,10 @@
 > Boredom
 * oneko &  # Summon a small cat that chases after your mouse. You can get many of those concurrently, and there's also a version with a dog (read the man page).
 
+
+
+
+
 > Packages of interest (didn't look into them properly yet; TODO)
 * FireDragon (browser)
 * Ranger (terminal-based file-manager, Python-based)
@@ -57,6 +61,7 @@
 * Vieb ( )
 * Thunar                :  (gtk) does dual-window layout and remembers your last location
 * Dolphin               :  (qt) KDE-based file manager
+
 
 
 >> CLI / Tools
@@ -101,6 +106,8 @@
 
 > Visual Appeal (making other people bored)
 * asciiaquarium  # Run ascii aquarium. Has some interactivity with hotkeys)
+* cmatrix  # have characters dripping down across your screen matrix-style
+*   cmatrix | lolcat  # same but rainbow-colored
 
 > ASCII (Boredom?)
 + Create ASCII writings in this site: http://patorjk.com/software/taag/
@@ -117,5 +124,12 @@
 > Text To Speech
 * espeak <text>  # read-out (audio) the given text. A bit of a gimmick, sounds very robotic
 
+
+
+
+# TODO
+* git bfg  :  delete specific data from repositories
+
+# TODO - merge everything from the installation scripts over here
 
 
