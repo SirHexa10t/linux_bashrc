@@ -1,0 +1,10 @@
+
+file_manager    GTK_or_QT*   bookmarks  has_previews            layout  remembers_session   bookmarks   drag-and-drop
+                                        tiling
+                                        2 panels side-by-side
+Krusader        KDE         plugin                                      Y
+
+
+
+* GNOME Files (formerly Nautilus) is GTK-based
+  KDE is Qt-based
