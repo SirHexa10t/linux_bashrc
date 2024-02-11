@@ -469,7 +469,8 @@ alias benchmark_internet_connectivity='multiping'
 alias autoclick_hold_100cps='py_clicker --cps 100'
 # alias to a python script (auto-clicker toggled)
 alias autoclick_toggle_100cps='py_clicker --cps 100 --toggle'
-
+# alias to a python script (format_into_columns)
+alias table_print='py_format_into_columns'
 
 
 # ---------- FUNCTIONS ----------
@@ -582,6 +583,85 @@ function _vars_added_by () {
     else dagecho "No new vars found!" ; fi
 
     rm "$before_file" "$after_file"
+}
+
+
+# String handling
+# ===============
+
+# useful for drawings or neat concatenating of tables like so: 'paste <(_pad_end_w_spaces "$(df -h)") <(_pad_end_w_spaces "$(df -hi)") <(_pad_end_w_spaces "$(df -hi)")'
+# Append spaces to text lines for a rectangular look; i.e. end uniformly on the same column.
+# Also works with pipes. Could be problematic for table formatting if color is involved (colors are extra unseen chars)
+function _pad_end_w_spaces () {
+    [[ -z "$1" && -t 0 ]] && return 1;  # no arg, nor piped input. Quit.
+    awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "${1:-$(cat)}"
+}
+
+# adds string before first dot, or just before first dot
+# arg 1: filename , arg 2: string to add
+function _add_str_before_filetype () {
+    # though it might not seem like it, none of the following commands necessarily require an existing file to run; you can use this command to determine future filenames 
+    local directory="$(dirname "$1")"
+    [[ "$directory" == */ ]] || directory="$directory/"  # only add '/' if the dir doesn't end with it already (and it would if the dir is just '/', it's a legitimate folder)
+    local filename="$(basename "$1")"
+    local inserted_str="$2"
+    echo "${directory}${filename%%.*}$inserted_str$([[ "$filename" == *.* ]] && echo ".${filename#*.}")"
+}
+
+# pastes text blocks (given as args) side by side
+# --lined (optional before texts: separate with line instead of space) , --glued (optional before texts: no delimiter) , --no_padding (optional before texts: no padding)
+function _side_by_side () {
+    local separator=' ' no_padding
+    [ "$1" = "--lined" ] && separator='|' && shift  # get rid of the flag, so it won't disturb us
+    [ "$1" = "--glued" ] && separator='' && shift  # get rid of the flag, so it won't disturb us
+    [ "$1" = "--no_padding" ] && no_padding='true' && shift  # get rid of the flag, so it won't disturb us
+
+    
+    # prepare to add more lines to texts that are too short
+    local line_counts=() i
+    for i in "$@"; do line_counts+=($(echo "$i" | wc -l)); done  # count the number of lines for each
+    local max_lines=$(max "${line_counts[@]}")
+
+    local args=("$@")  # for iteration. can't iterate on the index of $@ - the items start from 1, but the index starts on 0 ("bash") unlike lists that start their index at 1
+    local paste_texts=()  # the values that need to be pasted
+    local items_to_interpret=()  # will be made into a string that refers to the values; interpreted into a command
+    for i in "${!args[@]}"; do  
+        local modified_txt_block="${args[i]}"  # actual item
+        # add empty lines
+        local line_diff=$(( max_lines - line_counts[i] ))  # how many lines are "missing"
+        [ $line_diff -gt 0 ] && modified_txt_block+=$(echo -e "\n$(yes " " | head -$line_diff)")  # if text is shorter than max, add newlines (add [diff] 1-line spaces below - need an additional newline before those)
+        # pad to allow concatenating without messing up the lines
+        [ -z "$no_padding" ] && modified_txt_block=$(_pad_end_w_spaces "$modified_txt_block")
+        # add to list that we'll reference in the command
+        paste_texts+=("$modified_txt_block")  # data list
+        items_to_interpret+=('<(echo "${paste_texts['$i']}")')  # pointers to data
+    done
+    
+    eval "paste -d '$separator' ${items_to_interpret[@]}"
+}
+
+# get <arg 1> spaces
+function _repeat_space_n_times () {
+    local i
+    for (( i = 0; i < "$1"; ++i )); do echo -n " "; done
+}
+
+# create a block of whitespace
+# arg 1: height (number of rows), arg 2: width (number of columns)
+function _repeat_whitespace_rows () {
+    (($1 <= 0)) && return
+    (($2 <= 0)) && return
+    
+    local whitespace_line=$(_repeat_space_n_times "$2")
+    local i
+    for (( i=1; i<=$1; i++ )); do
+        echo "$whitespace_line"
+    done
+}
+
+# removes whitespaces from line-starts
+function rm_leading_whitespaces () {
+    sed 's/^[[:space:]]*//' <<< "${1:-$(cat)}"
 }
 
 
@@ -1759,7 +1839,7 @@ function claim () {
 # case-insensitive lookup on all files in dir (and subdirs).
 # -d <dir> (specify lookup start, default is ".") ; -e <expression> (looked-up expression/substring) ; --text_limit <limit> (how long the results may be, default is maximum: 5000) ; --text_limit_short (same as --text_limit 500) ; --text_limit_medium (same as --text_limit 5000) / --text_limit_unlimited (unlimited response length)
 function supergrep () {
-    [ $# -ge 1 ] || { echo "You must provide at least one argument, for the lookup-expression" ; return ; }
+    [ $# -ge 1 ] || { echo "You must provide at least one argument, for the lookup-expression" ; return 1; }
     # we have a text-length limit to skip gibbrish and text-dumps. It's allowed over 4k, since that's the minimum file-path length.
     local text_limit_default='5000' 
     local text_limit="$text_limit_default"
@@ -1831,13 +1911,19 @@ args:
     	esac
     done
 
-    [ -z "$exp" ] && echo "No expression specified. Use -e <expression> to set it." && return 1
+    [ -z "$exp" ] && { errcho "No expression specified. Use -e <expression> to set it."; return 1; }
     
     [ -n "$verbose" ] && becho "running on directory: \"$dir\"  ;  expression: \"$exp\"  ;  including strings up to length: \"$text_limit\""  # print found arguments (if verbose)
 
 
     # colorize the found strings. The coloring is late because it changes the returned string's length.
     function _mark_word () { cat | grep -e "$exp" -i --color=always; }
+    function _skip_if_found_in_file_var () { cat | grep -vFf "$1"; }
+    # function _skip_if_found_in_hashset_var () {
+    #     local -n hashset="$1"
+    #     local line
+    #     while IFS= read -r line; do [[ ! -v hashset["$line"] ]] && echo "$line"; done
+    # }
     function _filter_too_long () {  # if applicable, filter out messages that are too long. Otherwise just output
         (( text_limit > 0 )) && { [ -n "$verbose" ] && becho "filtering with maximum result length: $text_limit"; cat | awk "length(\$0) <= $text_limit"; } || cat 
     }
@@ -1849,26 +1935,35 @@ args:
     function _search_maybe_rerun () {
         local denied_ret="$1"
         shift;  # we need the args afterwards
-        $@ | _filter_too_long | _mark_word
+        local temp_file="$(mktemp)"  # holds found results, so we won't post them again on rerun
+        "$@" | _filter_too_long | tee "$temp_file" | _mark_word
 
         local cmd_result="${PIPESTATUS[0]}"  # get return status of first item in pipeline
         
         [ "$cmd_result" -eq "$denied_ret" ] && { 
             recho "Permission to files denied. Rerunning as root."
-            sudo $@ | _filter_too_long | _mark_word
+            # TODO - improve efficiency through the use of set rather than looking up the string matches in a file
+            # save into associative-array ("hashmap") for better lookup performance
+            # declare -A seen_lines
+            # local line
+            # while IFS= read -r line; do seen_lines["$line"]=1; done < "$temp_file"  # doesn't work right
+            
+            # sudo "$@" | _filter_too_long | _skip_if_found_in_hashset_var seen_lines | _mark_word
+            sudo "$@" | _filter_too_long | _skip_if_found_in_file_var "$temp_file" | _mark_word
             cmd_result="${PIPESTATUS[0]}"  # update the returned value (same search, but without permission hindrance)
         }
         
+        rm "$temp_file"
         return "$cmd_result"
     }
 
     becho "matching filenames:"
     becho "==================="
-    _search_maybe_rerun '1' find "$dir" -iname "*$exp*"   # 0 could mean success, maybe nothing was found. 1 means access was restricted 
+    _search_maybe_rerun '1' find "$dir" '-iname' "*$exp*" 2>/dev/null  # 0 could mean success, maybe nothing was found. 1 means access was restricted 
 
     becho "matching file contents:"
     becho "======================="
-    _search_maybe_rerun '2' grep -e "$exp" -Inir "$dir" --color=never  # 1 means no results found. 2 means access was restricted
+    _search_maybe_rerun '2' grep -e "$exp" -Inir "$dir" --color=never 2>/dev/null  # 1 means no results found. 2 means access was restricted
     [ "$?" -eq 1 ] && yecho "NO RESULTS FOUND"
     
     # TODO - read media files' embedded subtitles
@@ -2718,85 +2813,6 @@ $(cecho "1080p:") 32M, $(cecho "1200p:") 32M, $(cecho "1440p:") 32M, $(cecho "4K
 }
 
 
-# String handling
-# ===============
-
-# useful for drawings or neat concatenating of tables like so: 'paste <(_pad_end_w_spaces "$(df -h)") <(_pad_end_w_spaces "$(df -hi)") <(_pad_end_w_spaces "$(df -hi)")'
-# Append spaces to text lines for a rectangular look; i.e. end uniformly on the same column.
-# Also works with pipes. Could be problematic for table formatting if color is involved (colors are extra unseen chars)
-function _pad_end_w_spaces () {
-    [[ -z "$1" && -t 0 ]] && return 1;  # no arg, nor piped input. Quit.
-    awk '{hi[NR]=$0; max_len=length($0) > max_len ? length($0) : max_len} END {for (line in hi) { printf "%s%*s\n", hi[line], max_len-length(hi[line]), "" }}' <<< "${1:-$(cat)}"
-}
-
-# adds string before first dot, or just before first dot
-# arg 1: filename , arg 2: string to add
-function _add_str_before_filetype () {
-    # though it might not seem like it, none of the following commands necessarily require an existing file to run; you can use this command to determine future filenames 
-    local directory="$(dirname "$1")"
-    [[ "$directory" == */ ]] || directory="$directory/"  # only add '/' if the dir doesn't end with it already (and it would if the dir is just '/', it's a legitimate folder)
-    local filename="$(basename "$1")"
-    local inserted_str="$2"
-    echo "${directory}${filename%%.*}$inserted_str$([[ "$filename" == *.* ]] && echo ".${filename#*.}")"
-}
-
-# pastes text blocks (given as args) side by side
-# --lined (optional before texts: separate with line instead of space) , --glued (optional before texts: no delimiter) , --no_padding (optional before texts: no padding)
-function _side_by_side () {
-    local separator=' ' no_padding
-    [ "$1" = "--lined" ] && separator='|' && shift  # get rid of the flag, so it won't disturb us
-    [ "$1" = "--glued" ] && separator='' && shift  # get rid of the flag, so it won't disturb us
-    [ "$1" = "--no_padding" ] && no_padding='true' && shift  # get rid of the flag, so it won't disturb us
-
-    
-    # prepare to add more lines to texts that are too short
-    local line_counts=() i
-    for i in "$@"; do line_counts+=($(echo "$i" | wc -l)); done  # count the number of lines for each
-    local max_lines=$(max "${line_counts[@]}")
-
-    local args=("$@")  # for iteration. can't iterate on the index of $@ - the items start from 1, but the index starts on 0 ("bash") unlike lists that start their index at 1
-    local paste_texts=()  # the values that need to be pasted
-    local items_to_interpret=()  # will be made into a string that refers to the values; interpreted into a command
-    for i in "${!args[@]}"; do  
-        local modified_txt_block="${args[i]}"  # actual item
-        # add empty lines
-        local line_diff=$(( max_lines - line_counts[i] ))  # how many lines are "missing"
-        [ $line_diff -gt 0 ] && modified_txt_block+=$(echo -e "\n$(yes " " | head -$line_diff)")  # if text is shorter than max, add newlines (add [diff] 1-line spaces below - need an additional newline before those)
-        # pad to allow concatenating without messing up the lines
-        [ -z "$no_padding" ] && modified_txt_block=$(_pad_end_w_spaces "$modified_txt_block")
-        # add to list that we'll reference in the command
-        paste_texts+=("$modified_txt_block")  # data list
-        items_to_interpret+=('<(echo "${paste_texts['$i']}")')  # pointers to data
-    done
-    
-    eval "paste -d '$separator' ${items_to_interpret[@]}"
-}
-
-# get <arg 1> spaces
-function _repeat_space_n_times () {
-    local i
-    for (( i = 0; i < "$1"; ++i )); do echo -n " "; done
-}
-
-# create a block of whitespace
-# arg 1: height (number of rows), arg 2: width (number of columns)
-function _repeat_whitespace_rows () {
-    (($1 <= 0)) && return
-    (($2 <= 0)) && return
-    
-    local whitespace_line=$(_repeat_space_n_times "$2")
-    local i
-    for (( i=1; i<=$1; i++ )); do
-        echo "$whitespace_line"
-    done
-}
-
-# removes whitespaces from line-starts
-function rm_leading_whitespaces () {
-    sed 's/^[[:space:]]*//' <<< "${1:-$(cat)}"
-}
-
-
 # Graphical/Visual/Stylizing
 # ==========================
 
@@ -3050,20 +3066,22 @@ function _colored_echo () {  ###tags: text-coloring
 # comment-colorized echo - Colorize and reorganize in ways that make text easy to read. It's a bit like markdown, but with colors, and better compatibility with code readability
 # -l (optional: include legend)
 function commecho () {  ###tags: text-coloring
-    local bullet_point_color='<=cyan=>'
-    local bullet_point_sub_color='<=green=>'
-    local upper_line_continuing_arrow='<=green=>'
-    local double_cat_line_color=$(_tag_persist '<=bold=><=yellow=>')
-    local single_cat_line_color=$(_tag_persist '<=bold=><=blue=>')
-    local plus_line_color=$(_tag_persist '<=bold=><=cyan=>')
-    local sharp_comment_color=$(_tag_persist '<=yellow=>')
-    local double_slash_documentation_color="$sharp_comment_color"
-    local colon_comment_color=$(_tag_persist '<=yellow=>')
-    local sharp_documentation_color=$(_tag_persist '<=green=>')
-    local double_quotes_color='<=bold=><=red=>'  # also used for text between bra and ket ( <> )
-    local tilted_quote_color='<=bold=><=orange=>'  # TODO - make code-marking persistant, but only until the closing '`', not until EOL
-    local warning_color='<=flicker=><=uline=><=bold=><=red=>'
-    local hyperlink_color='<=uline=><=b_cyan=>'
+    local bullet_point_color='<=cyan=>'                                 # * item
+    local bullet_point_sub_color='<=green=>'                            # *   sub-item
+    local upper_line_continuing_arrow="$bullet_point_sub_color"         # char automatically added to sub-items: ↳
+    local double_cat_line_color=$(_tag_persist '<=bold=><=yellow=>')    # >> title
+    local single_cat_line_color=$(_tag_persist '<=bold=><=blue=>')      # > topic
+    local tilda_cat_line_color=$(_tag_persist '<=b_purple=>')           # ~> table_topic
+    local tilda_bra_line_color=$(_tag_persist '<=italic=>')             # ~< table_content
+    local plus_line_color=$(_tag_persist '<=bold=><=cyan=>')            # + remark
+    local double_slash_documentation_color="$sharp_comment_color"       #  // comment
+    local sharp_comment_color=$(_tag_persist '<=yellow=>')              #   # comment
+    local colon_comment_color=$(_tag_persist '<=yellow=>')              #   : comment
+    local sharp_documentation_color=$(_tag_persist '<=green=>')         # # comment
+    local double_quotes_color='<=bold=><=red=>'                         # "something"       # also used for text between bra and ket ( <> )
+    local tilted_quote_color='<=bold=><=orange=>'                       # `code piece`      # TODO - make code-marking persistant, but only until the closing '`', not until EOL
+    local warning_color='<=flicker=><=uline=><=bold=><=red=>'           # oh_no!!
+    local hyperlink_color='<=uline=><=b_cyan=>'                         # https://gg.ez
     # angled_brackets_color='<=italic=>'  # problematic when within a color that's already within persisting color  # TODO - fix (improve the coloring function)
     local reset='<=reset=>'
 
@@ -3103,7 +3121,9 @@ function commecho () {  ###tags: text-coloring
     formatted=$(echo "$formatted" | sed "s/^*  /${bullet_point_sub_color}*${reset} ${upper_line_continuing_arrow}↳${reset}/g")  # replace beginning '*  ' with a colored asterisk, a space, and a mildly colored arrow referencing line above (sub-bullet-points)
     formatted=$(echo "$formatted" | sed "s/^* /${bullet_point_color}*${reset} /g")  # replace beginning '* ' with a colored asterisk and space  (bullet-points)
     formatted=$(echo "$formatted" | sed "s/^>>\(.*$\)/${double_cat_line_color}➤\1/g")  # recolor lines beginning '>>', and replace with a nice ascii char  (topics)
-    formatted=$(echo "$formatted" | sed "s/^>\(.*$\)/${single_cat_line_color}⇾\1/g")  # recolor lines beginning '>', and replace with a nice ascii char  (sub-topics)
+    formatted=$(echo "$formatted" | sed "s/^> \(.*$\)/${single_cat_line_color}⇾ \1/g")  # recolor lines beginning '>', and replace with a nice ascii char  (sub-topics)
+    formatted=$(echo "$formatted" | sed "s/^~> \(.*$\)/${tilda_cat_line_color} \1/g")  # recolor lines beginning '~>' (table-title)
+    formatted=$(echo "$formatted" | sed "s/^~< \(.*$\)/${tilda_bra_line_color} \1/g")  # recolor lines beginning '~<' (table-content)
     formatted=$(echo "$formatted" | sed "s/^+.*$/${plus_line_color}&/g")  # recolor lines beginning '+'  (notes)
     formatted=$(echo "$formatted" | sed "s/  \(#.*\)$/  ${sharp_comment_color}\1/g")  # recolor starting from '  #'  (code-comments)
     formatted=$(echo "$formatted" | sed "s| \(//.*\)$| ${double_slash_documentation_color}\1|g")  # recolor starting from ' //'  (code-comments)

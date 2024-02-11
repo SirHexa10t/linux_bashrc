@@ -102,8 +102,13 @@
 >> RAM
 * A desktop memory stick is DIMM. Laptop's is SO-DIMM.
 * MT vs MHz: DDR (Double Data Rate) RAM misconception; Products are specified as X MHz but measure at X/2 MHz in diagnostic tools. That's because this X refers to M.Transfers, not M.Hertz, since DDR (being true to its name) performs 2 transfer operations per cycle.
-* CAS latency / timing: "C" or "CL" or "Clock" signifies the number of cycles it takes to retrieve data
-*   So the latency of RAM is: (CL * 2 / transfer_rate) s.  The result is in the order of 1/10^8 s, so latency is typically around 10 nanoseconds.
+> Timing: There are 4-5 different timings: CL-tRCD-tRP-tRAS-(maybe)CMD  # for more details, read: https://hardwaresecrets.com/understanding-ram-timings/
+*   CAS latency: "C" or "CL" or "Clock" is the most significant factor; num of cycles the memory controller takes to retrieve data
+*      So the latency of RAM is: (CL * 2 / transfer_rate) instructions/s.  The result is in the order of 1/10^8 instructions/s, so latency is typically around 10 nanoseconds.
+*   RAS to CAS delay: "tRCD"; num of cycles it takes to access ready memory (time between "RAS"; row activation, and "CAS"; column activation in the data-matrix)
+*   RAS precharge: "tRP"; num of cycles between row reads (disabling access to one line, and beginning access to another line)
+*   Active to Precharge Delay: "tRAS"; minumum waiting-cycles a row (in data-matrix) has to go through until next memory access
+*   Command rate: "CMD"; Sometimes not announced. Usually 1 or 2 cycles, which the memory chip requires to get ready after activation 
 * As of the beginning of 2024, DDR4 is already unsupported by latest AMD/Intel generations. It's on its way out. DDR5 is about 1.5 times faster than DDR4, and consumes less power.
 * Use 2 or 4 sticks or RAM (just not an odd number) to avoid latency issues.
 * Use 2 RAM sticks instead of 4 to lower the load on the memory controller (2x16 GiB 3600MT will have better response rate than 4x8 GiB 3600MT)
@@ -112,7 +117,36 @@
 * Remember that motherboards typically run RAM at 2666 MHz by default. You need to enter BIOS/UEFI configuration (press DEL or some other key while booting) to specify the target intended speed through "XMP" or "EXPO". If your calibration fails, try slightly lower frequency (or different voltage if you know what you're doing)
 
 >> PSU
-[TODO; include the 80+ efficiency table]
+* PSUs are most efficient (min. amount of power-loss) at around 50% utility. Of-course it's also important that it's able to power the entire system (PC) on full-load 
+* An old 1200W PSU is about as good and long-lasting as a modern-built one: computing evolves but physics doesn't; capacitors aren't built in much better quality than in the past
+*   Unless Nvidia would change the basic-wattage-requirement perception again, and your once-overkill PSU would be relatively underpowered in modern standards
+*   Generally buying a PSU that's "too good" in terms of wattage-supply is a generally a good idea - you won't need to buy a new one for your next PC, and it'd save a bit on your electricity as it'd run closer to the mentioned 50% point.
+* You should pick a PSU from a reputable vendor that uses Japanese capacitors, those are the best. The best-by-quality PSU companies by descending order:
+*   Seasonic
+*   EVGA / Corsair
+*   PC-case companies like Antec / be-quiet! / Cooler-Master / Fractal-Design
+*   motherboard companies like MSi / ASUS
+*   other known brands, such as XFX
+*   Gigabyte - knowingly shipped power supplies that 
+* Don't buy the following; Besides having to replace them sooner, your other more-expensive computer parts would be in danger:
+*   Unknown brands
+*       Aresgames [obscure brand] (Lied to become top PSU-seller in Amazon, for model "AGS850", claiming it was 80+ Gold, while it was 80+ Bronze at best)
+*   Gigabyte (purposely shipped faulty PSUs in the past. Look up "exploding power supplies" and you'll see them mentioned first.)
+* Try to pick a PSU with a better 80+ certification of efficiency, to minimize power-loss.
+*   This is just an efficiency-rating, don't think of it as a general-quality grade
+*   Be aware that this isn't monitored/enforced, and some companies have been caught lying about it
+~> Table: "80+'s efficiency per workload"
+~>  _             115V_internal*_____  230V**_____________  230V_EU*___________
+~>        load->  10%  20%  50%  100%  10%  20%  50%  100%  10%  20%  50%  100%
+~<  80+             -  80%  80%   80%    -    -    -     -    -  82%  85%   82%
+~<  80+_Bronze      -  82%  85%   82%    -  81%  85%   81%    -  85%  88%   85%
+~<  80+_Silver      -  85%  88%   85%    -  85%  89%   85%    -  87%  90%   87%
+~<  80+_Gold        -  87%  90%   87%    -  88%  92%   88%    -  90%  92%   89%
+~<  80+_Platinum    -  90%  92%   89%    -  90%  94%   91%    -  92%  94%   90%
+~<  80+_Titanium  90%  92%  94%   90%  90%  94%  96%   91%  90%  94%  96%   94%
+*:  internal_non-redundant
+**: internal redundant
+
 
 
 
