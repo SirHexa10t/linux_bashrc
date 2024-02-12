@@ -81,6 +81,8 @@
 
 # TODO - maybe add a TODO-manager (personal, in custom_bashrc's config files; not related to this project's TODOs)
 
+# TODO  Maybe rename custom_bashrc into comfy_linux
+
 
 #---------------------------------------------------------------------------------------------
 #----CUSTOM-----------------------------------------------------------------------------------
@@ -123,6 +125,7 @@ SUDO_FILE="$(which sudo)"
 CUSTOM_BASHRC_FILE="$(realpath "$BASH_SOURCE")"  # this file
 CUSTOM_BASHRC_FOLDER="$(dirname "$CUSTOM_BASHRC_FILE")"  # this file's folder-path
 SCRIPTS_BASHRC_FILE="$CUSTOM_BASHRC_FOLDER/script_calls_bashrc"  # external (not this file) content loader  # TODO - put in utility files?
+CHEATSHEETS_FILE="$CUSTOM_BASHRC_FOLDER/rember/cheatsheet_loader.sh"   # main file of notes ("cheatsheets") sub-project
 
 if [ -z "$IS_CUSTOM_BASHRC_LOADED_ONCE" ]; then  # only do if not defined already (can happen if you source this file again), in which case, previous iteration's values are the right ones
     CUSTOM_ALIASES_INITIAL=$(_alias_names)
@@ -589,6 +592,18 @@ function _vars_added_by () {
 # String handling
 # ===============
 
+# remove special characters (coloring/stylizing) from string
+function rm_ansi () {
+    echo "${1:-$(cat)}" | sed -e 's/\x1b\[[0-9;]*m//g'
+}
+
+# stream in a block of text, stream out lines of text
+function _split_stream_by_lines () {
+    local line
+    while IFS= read -r line; do echo "$line"; done <<< "$(cat)"
+}
+
+
 # useful for drawings or neat concatenating of tables like so: 'paste <(_pad_end_w_spaces "$(df -h)") <(_pad_end_w_spaces "$(df -hi)") <(_pad_end_w_spaces "$(df -hi)")'
 # Append spaces to text lines for a rectangular look; i.e. end uniformly on the same column.
 # Also works with pipes. Could be problematic for table formatting if color is involved (colors are extra unseen chars)
@@ -918,10 +933,10 @@ function remindme () {
     get_commands_by_expression "^\s*function\s+<name>\s*\(\)\s*{" 2 "$CUSTOM_FUNCTIONS"
 
     # scripts
-    local commands_external="$(_list_script_calls)"
+    local commands_external="$(_list_script_calls)" # non-bash scripts
+    local commands_external+="$(_list_cheatsheets_api)"  # cheatsheets
     if [ -n "$commands_external" ]; then
         local line_num_past_file="$(($(cat $CUSTOM_BASHRC_FILE | wc -l)+1))"  # get row count of this file and start adding "virtual" lines for loaded scripts
-        line_to_cmd["$line_num_past_file"]="# ---------- EXTERNAL (sourced non-bash) ----------"  # this gets displayed in the printed output, it doesn't exist on its own in-code
         local cmde
         while IFS= read -r cmde; do
             if [ -z "$show_hidden" ] && [[ "${cmde:0:1}" == '_' ]]; then continue; fi
@@ -2966,7 +2981,8 @@ function errcho () { recho -p "$@" >&2 ; }
 # arg 1: string , arg 2 (optional): line-char (default is '-')
 function _underline () {
     local char=${2:-'-'}  # determine which char to repeat in underline
-    local input_string_length=${#1}
+    local clean_str="$(rm_ansi "$1")"  # we want an underline the length of VISIBLE characters - the invisible ones must be removed in measurement
+    local input_string_length=${#clean_str}
     
     local line=$(printf "%${input_string_length}s" | tr ' ' "$char")  # Create a line of the specified character with the same length as the input string
 
@@ -3401,6 +3417,11 @@ fi
 
 # load the external (other-language) scripts!
 [ -f "$SCRIPTS_BASHRC_FILE" ] && { source "$SCRIPTS_BASHRC_FILE"; }
+
+# load cheatsheets
+[ -f "$CHEATSHEETS_FILE" ] && { source "$CHEATSHEETS_FILE"; }
+
+
 
 # End-message (finished sourcing)
 if [[ -z "$SCRIPTED_SOURCING" && $EUID -ne 0 ]]; then   # don't output messages if user is root (sudo running) or if accessed through a script
