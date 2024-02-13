@@ -83,6 +83,7 @@
 
 # TODO  Maybe rename custom_bashrc into comfy_linux
 
+# TODO - use ${param:?} to check for input and auto-exit in functions
 
 #---------------------------------------------------------------------------------------------
 #----CUSTOM-----------------------------------------------------------------------------------

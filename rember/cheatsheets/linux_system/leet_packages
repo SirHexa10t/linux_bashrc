@@ -17,7 +17,7 @@
 * GParted                                   :  partition management
 
 > Editor / viewer
-* LibreOffice                               :  Microsoft Office documents
+* LibreOffice                               :  Microsoft Office documents (fork of Sun's Open Office, after Oracle bought them and angered the open-software contributors)
 * OnlyOffice                                :  Microsoft Office documents (looks exactly like Microsoft's)
 * xreader [github.com/linuxmint/xreader]    :  documents, including PDF
 * xviewer [github.com/linuxmint/xviewer]    :  images/pictures
@@ -29,8 +29,6 @@
 > Browser / web-service client
 * Brave         :  Chromium-based privacy-oriented browser
 * LibreWolf     :  firefox-based privacy-oriented browser
-* Thunderbird   :  email-client
-    # TODO - check if better than GMail web-client
 * Signal        :  chat/phone app
 * Telegram      :  chat/phone app
 
@@ -61,6 +59,12 @@
 * Vieb ( )
 * Thunar                :  (gtk) does dual-window layout and remembers your last location
 * Dolphin               :  (qt) KDE-based file manager
+
+* Thunderbird   :  email-client
+    # check if better than GMail web-client
+* geary [github.com/GNOME/geary]    :   email-client
+    # not from Mozilla, who're becoming anti-free-software; so it's "more free" than Thunderbird
+# other emails: claws mail, mailspring... see more at: https://alternativeto.net/software/mozilla-thunderbird/
 
 
 

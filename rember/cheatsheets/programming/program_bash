@@ -63,11 +63,52 @@
 * echo "3.14/2" | bc -l     # result is 1.57000000000000000000
 
 > Inline
-* file_text="$(cat "$1")"   # using $() causes the evaluation of everything within, and saving the output into var. You can freely use quotes within, it won't
+* file_text="$(cat "$1")"   # using $() causes the evaluation of everything within, and saving the output into var. You can freely use quotes within, it won't interfere with external quotes
+* myvar=`my_cmd arg1 arg2`  # same as using $(), though less elegant
 
-> Default
-* num_of_threads=${1:-$(nproc)}  # use the arg on the left ($1), but if it isn't not provided or if it's empty, the command defaults to the arg on the right ("nproc")
-* num_of_threads=${1-$(nproc)}   # use the arg on the left ($1), but if it isn't not provided, the command defaults to the arg on the right ("nproc")
+
+>> Parameter Expansion
+>> ===================
+
+> Default to (pick)
+* num_of_threads=${1-$(nproc)}   # "-":  Default to right-side if left arg ($1) is unset
+* extra=${somevar:-$defaultvar}  # ":-": Default to right-side if left arg ($1) is unset or empty
+* ${parameter:+word}             # ":+": if the variable on the left is unset, leave it be. If it IS set, overwrite it with arg on right
+* a="${b:=some_value}"           # ":=": if b is unset, assign some_value. Eventually assign b's value to a 
+
+> Checks/Conditionals
+* ${param:?}                     # ":?": if param is unset, exit and output: "bash: param: parameter null or not set"
+* ${param:?word}                 # ":?": if param is unset, exit and output: "bash: word: parameter null or not set"
+
+> Substrings
+* result="${hello_world_str:2}"  # ":":  returns substring from nth char onward. In this case if the string is "hello world" it'll return "llo world"
+*   "${@:2}"                     #          can return whole args by index, not just strings
+* result="${hello_world_str:2:5}"# ":":  returns substring starting at first index, at the length of second. In this case if the string is "hello world" it'll return "llo w"
+*   "${str:0:3}${str:7}"         #          pick string at ranges; this basically removes the substring between index 3 and 7 (exclusive)
+*   "${list[@]:$start:$count}"   #          get a <count> items, starting from <start> index 
+* "${filename%.*}"               # "%":  remove string from end; if removing pattern: shortest possible - in this example only last ".<thing>" gets erased, not all chain of ".<other>.<thing>".
+* "${multi_suffixed%%.txt}"      # "%%": remove string from end; if removing pattern: longest possible - in this example there's no pattern. It's the same as using a single '%'
+* "${filename#*_}"               # "#":  remove string from start; if removing pattern: shortest possible - in this example only first "<thing>_" gets erased, not all chain of "<thing>_<other_thing>_".
+* "${file%%"encrypted - "}"      # "##": remove string from start; if removing pattern: longest possible - in this example there's no pattern. It's the same as using a single '%'
+
+> Replacement (get a "fixed" copy, original doesn't get modified)
+* "${text/pattern/replacement}"  # "/":  replace first match of a string with a different string
+* "${text//pattern/replacement}" # "//": replace all matches of a string with a different string
+* "${hworld/#hello/hi}"          # "/#": replace a single leading-text (if) matched
+* "${hworld/%world/universe}"    # "/%": replace a single trailing-text (if) matched
+
+> Formatting
+* in_lower="${hworld_var,,}"     # ",,": to lower case
+* in_upper="${hworld_var^^}"     # "^^": to upper case
+* in_upper="${hworld_var,}"      # ",":  make first letter lower case
+* in_upper="${hworld_var^}"      # "^":  make first letter upper case
+* ${my_var@Q}                    # "@Q": make usable as input by putting in single quotes and escaping the exising single quotes
+* ${my_var@E}                    # "@E": make a predefined string usable as regex  - TODO: verify
+
+> Measures and completion
+* ${#text}                       # get length
+* ${#list[@]}                    # get size of list
+* "${prefix@}"                   # list vars that begin with specified string - literal, not var; this example would print vars whose name starts with "prefix"
 
 
 >> Data Types
@@ -95,6 +136,7 @@
 > Lists
 * list=("${@:2}")           # create list of all args from 2nd onwards
   list+=("another_one")     # append another element to list
+* "$(declare -p mylist)"    # get as indexed array; basically conversion to hashmap. Turns (apple, banana, orange) to [0]="apple" [1]="banana" [2]="orange"
 
 > Associative Arrays (similar to hashmap)
 + Don't use "local" - "declare -A" takes care of the scope issues.

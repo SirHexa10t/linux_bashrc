@@ -4,61 +4,44 @@
 
 SCRIPTS_PATH="$CUSTOM_BASHRC_FOLDER/unlimited_script_works"  # name of the scripts folder within this project. Change it if you want, just be aware this could break.
 
-# TODO - cleanup
-
 # TODO - remove? Consider if useful. Entire removal requires deletion of related file.
 # alias _scripts_loaded_comfirmation='_py_confirm_loaded'  # a call to a script added in just to confirm that the rest of the scripts are reached right 
 
 # Reloads script-files into bash-calls. No need to manually call this, it's done automatically
 # --declare_commands (create aliases/functions to call scripts) , --output_commands (list found files and their appropriate calls)
+
+
+# get command name that runs the script/program-file ; arg1: the file (or main file)
+function get_cmd_name () {
+    local filename="$(basename "$scr_file")"
+    local extension=$([[ "$filename" = *.* ]] && echo "${filename##*.}" || echo 'generic' )  # gets file-type, or default if there's no dot.
+    echo "$extension ${filename%.*}" | awk '{ print (substr($2,1,1) == "_") ? "_"$1$2 : $1"_"$2 }'  # keep the file name but not the ending suffix. use ext as prefix, and make sure it's separated from the filename and that it keeps the leading "_" if it exists
+ }
+
 function _reload_scriptfiles () {
-    local declare_commands output_commands
-    [[ "$@" =~ ^"--declare_commands"$ ]] && declare_commands='true'
-    [[ "$@" =~ ^"--output_commands"$ ]] && output_commands='true'
-
-    # loading scripts
-    local file_names=$(find "$SCRIPTS_PATH" -type f)
-    local file_path
-    for file_path in $file_names; do  # Loop through the list of files and create a function for each
-        local filename="$(basename "$file_path")"
-        local function_name=${filename%.*}  # keep the file name but not the ending suffix
-
-        local extension=$([[ "$filename" = *.* ]] && echo "${filename##*.}" || echo 'generic' )  # gets file-type, or default if there's no dot.
-        local prefix=$([[ "$function_name" = _* ]] && echo "_${extension}" || echo "${extension}_")
-        local cmd_name="${prefix}${function_name}"
-
-        [ -n "$declare_commands" ] && eval "function $cmd_name () { "$file_path" \"\$@\"; }"  # make script callable with optional args
-        [ -n "$output_commands" ] && echo "$cmd_name:$file_path"
-    done <<< "$file_names"
+    local scr_file
+    while IFS= read -r scr_file; do
+        eval "function $(get_cmd_name "$scr_file") () { "$scr_file" \"\$@\"; }"
+    done <<< "$(find "$SCRIPTS_PATH" -type f)" 
 }
-_reload_scriptfiles --declare_commands
+_reload_scriptfiles
+
 
 # used by "remindme" - lists this file's introduced aliases and functions
 function _list_script_calls () {
     echo '# ---------- EXTERNAL (sourced non-bash) ----------'
-
-    local commands=$(_reload_scriptfiles --output_commands)
-    local cmds_to_text=()
-    local name file  # keep iteration vars from polluting your env
-    while IFS=: read -r name file; do 
-        local documentation
-        if [[ "$file" == *.py ]]; then
-            documentation=$(sed -n '/"""/, /"""/{ /"""/! { /"""/! {p; q}}}' "$file")  # get the documentation between 2 """ strings
-        else  # default (no extension)
-            local non_comment_line_number="$(grep -n -m 1 -v '^#' "$file" | cut -d ':' -f 1)"  # get number of first line that doesn't start with '#'
-            documentation="$(head -n $((non_comment_line_number - 1)) "$file")"  # get all lines until last-found
-        fi
-
-        if [ -n "$documentation" ]; then
-            documentation=$(paste -s -d ' ' <<< "$documentation" )  # merge into one line
-            documentation=$(sed 's/^#[[:space:]]*//' <<< "$documentation" )  # trim leading sharp-comment if it's there
-        fi
-        cmds_to_text+=("$name  # $documentation")
-    done <<< "$commands"
-
-    local item
-    local cmd_list=$(for item in "${cmds_to_text[@]}"; do echo "$item"; done | sort )
-    echo "${cmd_list[@]}"
+    
+    local scr_file
+    while IFS= read -r scr_file; do
+        local documentation="$(
+            if [[ "$scr_file" == *.py ]]; then  sed -n '/"""/, /"""/{ /"""/! { /"""/! {p; q}}}' "$scr_file";  # get the documentation between 2 """ strings
+            else  grep -n -m 1 -v '^#' "$scr_file" | cut -d ':' -f 1 | head -n $(($(cat) - 1)) "$scr_file";  # default (no extension) - get consecutive comments starting with '#' from top of file
+            fi
+        )"
+        # unify multiple lines and sanitize
+        [ -n "$documentation" ] && documentation="$( echo "$documentation" | paste -s -d ' ' | sed 's/^#[[:space:]]*//' )"
+        echo "$(get_cmd_name "$scr_file")  # $documentation"
+    done <<< "$(find "$SCRIPTS_PATH" -type f)" 
 }
 
 

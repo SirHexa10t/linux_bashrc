@@ -7,7 +7,7 @@ flags: --prepend: prefix the spaces instead of suffixing them
 
 # TODO - handle quotes better
 #   lone double-quotes crash the program
-#   maybe user doesn't want the quotes removed (during arg separation evaluation, by shlex.split())
+#   maybe user doesn't want the quotes removed (during arg separation evaluation, by shlex.split()) - have a flag that adds-in quotes to "words" with spaces within (needs to be done early)
 
 import sys
 import os
