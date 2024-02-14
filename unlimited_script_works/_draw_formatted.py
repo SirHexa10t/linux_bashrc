@@ -10,7 +10,12 @@ import re
 
 colors_map = {
     # less standard colors
-    '<=orange=>': '\033[38;5;208m',
+    '<=orange=>': '\033[38;5;208m', '<=brown=>': '\033[38;5;130m', 
+    '<=pink=>': '\033[38;5;213m', '<=light_pink=>': '\033[38;5;219m', '<=very_light_red=>': '\033[38;5;210m',
+    '<=skin_light=>': '\033[38;5;223m', '<=skin_pink=>': '\033[38;5;225m', '<=skin_pink_2=>': '\033[38;5;217m',
+    '<=dark_brown=>': '\033[38;5;58m', '<=dark_brown_2=>': '\033[38;5;94m',
+    '<=light_grey=>': '\033[38;5;254m',
+    '<=neon_green=>': '\033[38;5;118m', '<=medium_green=>': '\033[38;5;77m',
     # colors
     '<=black=>': '\033[30m', '<=red=>': '\033[31m', '<=green=>': '\033[32m', '<=yellow=>': '\033[33m',
     '<=blue=>': '\033[34m', '<=purple=>': '\033[35m', '<=cyan=>': '\033[36m', '<=grey=>': '\033[37m',
