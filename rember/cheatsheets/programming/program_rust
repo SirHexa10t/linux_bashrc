@@ -104,7 +104,8 @@ fn ret_four() -> i32 {
 
 
 > returning multiple values
-let (_, right) = slice.split_at(middle);  // save tuple return into 2 variables, throw the first one (meaning of underscore)
+* let (_, right) = slice.split_at(middle);  // save tuple return into 2 variables, throw the first one (meaning of underscore)
+* let DeriveInput {id, data, .. } = some_query_macro!(input as DeriveInput);  // save returned stream into 2 variables, and throw away the rest
 
 
 > You can go into namespaces using ::
@@ -168,6 +169,7 @@ for _ in 0..10 { /*code here*/ }
 loop {
     // code ...
 }
+
 
 >> ITERATORS STREAMS
 >> =================
@@ -543,6 +545,63 @@ fn main() {
 }
 
 
+>> MACROS
+>> ======
+
++ A macro is code snippet that the compiler pastes at every instance of its call.
+  * macro_rules! hello_world { () => { println!("Hello World") }; }
+    hello_world!();  // this line is replaced with the contents of the called Macro
+
++ Procedural Macros can be defined with `#[proc_macro_derive(MyMacro)]`
+
+> 4 ways of defining a macro
+* Declarative - code by example
+  * let v = vec![1, 2, 3,];
+  * println!("Hello World");
+* Derive - procedural; add code to enums or structs.
+  * #[derive(MyBehaviorMacro)]
+    struct AnyStruct;
+
+    AnyStruct::my_behavior();  // possible thanks to macro
+* Attribute-like - procedural; define custom attributes, for *any* item
+  * #[get("/")]
+    fn index () {}
+* Function-like - procedural; work with tokens as args
+  * command!(mkf --fs);
+
+> Eliminating repetitions
++ You can use macros to generate code, such as interface implementation
+  * macro_rules! bounded_impl {  // simple re-implementation of Bounded in crate "num-traits"
+        ( $t:ty, $min:expr, $max:expr ) => {   
+            impl Bounded for $t {
+                #[inline]
+                fn min_value() -> $t {
+                    $min
+                }
+                #[inline]
+                fn max_value() -> $t {
+                    $max
+                }
+            }
+        };
+    }
+    // the macro is used with greatly-reduced code repetitions
+    bounded_impl!(u8, u8::MIN, u8::MAX)
+    bounded_impl!(usize, usize::MIN, usize::MAX)
+    bounded_impl!(u16, u16::MIN, u16::MAX)
+
+> Procedural
++ Procedural macros have execution of code at compile-time. You can write your own languages/interpreters/markups!
+  * let page = html! {  // using crate "html-to-string-macro" to get html highlighting and compilater-remarks
+        <html>
+            <head>
+                <title>"My blog"</title>
+            </head>
+            <body>
+                <div id="my_div"></div>
+            </body>
+        </html>
+    };
 
 
 >> ANNOTATIONS
@@ -611,7 +670,7 @@ embassy - embedded systems
 nom - parser
 Cargo Lambda - build binaries for AWS Lambda
 diesel - SQL quearies
-sqlx - sql queries (better than diesel?)
+sqlx - sql queries (better than diesel? has queary-function built as a macro so the compiler runs attempts to use your quearies on a local database, throwing compile error if those tests fail)
 
 
 TODO maybe - external tool:

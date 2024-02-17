@@ -6,6 +6,9 @@ CHEATSHEETS_FILE="$(realpath "$BASH_SOURCE")"  # not necessary if main script al
 CHEATSHEETS_PATH="$(dirname "$CHEATSHEETS_FILE")/cheatsheets"
 CHEATSHEET_PREFIX='howdoi_'
 CHSH_EDIT_FLAG='--edit'
+CHSH_EDIT_FLAG_ALT='-e'
+
+CHSH_EDIT_FLAGS_CHECK='[[ "$1" == "$CHSH_EDIT_FLAG" || "$1" == "$CHSH_EDIT_FLAG_ALT" ]]'
 
 # Synonymous to "cheatsheets".
 alias list_cheatsheets='cheatsheets'
@@ -20,7 +23,7 @@ function _load_cheatsheets () {
     local chsh_file
     while IFS= read -r chsh_file; do
         local cmd_name="$(_derive_chsh_cmd_name "$chsh_file")"
-        eval "function $cmd_name () { [[ \"\$1\" == \"$CHSH_EDIT_FLAG\" ]] && xdg-open \"$chsh_file\" || commecho -l < \"$chsh_file\"; }"
+        eval "function $cmd_name () { $CHSH_EDIT_FLAGS_CHECK && xdg-open \"$chsh_file\" || commecho -l < \"$chsh_file\"; }"
     done <<< "$(_get_cheatsheet_files)" 
 }
 _load_cheatsheets
@@ -59,7 +62,7 @@ function cheatsheets () {
         _get_cheatsheet_files | while IFS= read -r file; do grep -e "$1" -i "$file" -C 2 --color=always | _print_if_stream "Matches within $(wecho $(_derive_chsh_cmd_name "$file"))" ; done        
     else    # general info
         orecho "To search within cheatsheets, rerun this command, followed by string-to-search."
-        orecho "To edit a cheatsheet you can run its \"$CHEATSHEET_PREFIX\" command, followed by the flag \"$CHSH_EDIT_FLAG\""
+        orecho "To edit a cheatsheet you can run its \"$CHEATSHEET_PREFIX\" command, followed by the flag '$CHSH_EDIT_FLAG' (or '$CHSH_EDIT_FLAG_ALT')"
         echo 
         tree --dirsfirst "$CHEATSHEETS_PATH"  # paste files, tree style
         echo
@@ -97,7 +100,7 @@ function _howdoi_rember () {
 
     # To make parts of the hair brighter, replace the hair chars with '#' - it's leaving less space fot the blackness of the terminal
 
-ascii_gyate_yuuka_inverted="\
+local ascii_gyate_yuuka_inverted="\
 ${w}@@@@@@@@@@@@@@&${o}(${w}%@${h}%((((((((((((((((((((((((((((((((((((((((((((((((${w}##((@&#(#%@@@@@@@@@@@@&#${o}&L${w}&@@@@@@
 ${w}@@@@@@@@@@@@${o}%${w}(@@@@@%${h}(((((((((((((((((((((((((((((((((((((((((${w}#@@%(%@@&####${h}/((((((((((${w}Y%@@%${h}l${w}%${o}Y(${w}@@@@@@
 ${w}@@@@@@@@@@#${o}/${w}8@@@@@@%${h}(${w}%@%${h}(((((((((((((((((((((((((((${w}(##%%&@@@@&${h}((((${y}((${y}((${y}((/((((((((((((${w}V&${h}((((${o}R${w}&@@@@
@@ -132,10 +135,10 @@ ${h}((((((((((((((((((((((${y}(((((${y}(((${y}((${h}(${y}${o}#${s}@@@@@@@@@@@@@@
 ${h}((((((((((((((((((((((${y}${y}((((((${y}(((${y}(${o}%${s}@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@${o}&%${h}((((((((((((((((${o}w${h}((${o}(${w}#@@@@
 ${h}((((((((((((((((((((((((${y}(((((${y}${y}((((((/${o}/${o}(${w}#&${o}&@${s}@@@@@@@@@@@@@@@@@@@@@&${o}%${h}((((((((((((((((((((((${o}(${w}@${o}^${w}#%@@@@@
 ${h}/((((((((((((((((((((((((((${y}((((${y}((${y}${o}/${w}(%@@@@@@@@%${o}>${s}W@@@@@@@<${o}</${w}d@@@@@${o}&${h}((((((((((((((((((((((${o}/${w}%@@@@@@@@@
-${writings}pls rember that wen u feel scare or frigten
-${writings}never forget ttimes wen u feeled happy     
-${writings}                                           
-${writings}wen day is dark alway rember happy day     
+${writings}pls rember that wen u feel scare or frigten 
+${writings}never forget ttimes wen u feeled happy      
+${writings}                                            
+${writings}wen day is dark alway rember happy day      
 "
 
 _draw_formatted "$ascii_gyate_yuuka_inverted"
