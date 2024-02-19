@@ -1852,14 +1852,15 @@ function claim () {
 }
 
 
-# case-insensitive lookup on all files in dir (and subdirs).
-# -d <dir> (specify lookup start, default is ".") ; -e <expression> (looked-up expression/substring) ; --text_limit <limit> (how long the results may be, default is maximum: 5000) ; --text_limit_short (same as --text_limit 500) ; --text_limit_medium (same as --text_limit 5000) / --text_limit_unlimited (unlimited response length)
+# case-insensitive lookup through all files in dir (and subdirs).
+# -d/--directory <dir> (specify lookup start, default is ".") ; -e/--expression <expression> (looked-up expression(s)/substring(s)) ; -t/--text_limit <limit> (skip print for bigger outputs, default: 5000) ; -s/--text_limit_short (same as --text_limit 500) ; -m/--text_limit_medium (same as --text_limit 5000) / -u/--text_limit_unlimited (unlimited response length)
 function supergrep () {
     [ $# -ge 1 ] || { echo "You must provide at least one argument, for the lookup-expression" ; return 1; }
     # we have a text-length limit to skip gibbrish and text-dumps. It's allowed over 4k, since that's the minimum file-path length.
     local text_limit_default='5000' 
     local text_limit="$text_limit_default"
     local dir='.'
+    local exp=()
     local first_free_arg_is_exp exp verbose  # defaults, and clearing (in case they're set)
     while [[ $# -gt 0 ]]; do
     	case "$1" in
@@ -1869,7 +1870,7 @@ function supergrep () {
     			continue
     		;;
     		'-e'|'--expression')
-    			exp="$2"
+    			exp+=("$2")
     			shift 2
     			continue
             ;;
@@ -1915,14 +1916,9 @@ args:
 "
                 return
             ;;
-    		*)
-                if [ -z "$first_arg_used_as_exp" ]; then
-                    first_free_arg_is_exp='true'
-                    exp=$1
-                else
-                    errcho "${FUNCNAME[0]} doesn't know how to handle arg: '$1'"
-                fi
-    			shift
+    		*)  # if not specified - add word to looked-up list
+                exp+=("$1")
+                shift
     		;;
     	esac
     done
@@ -1931,6 +1927,10 @@ args:
     
     [ -n "$verbose" ] && becho "running on directory: \"$dir\"  ;  expression: \"$exp\"  ;  including strings up to length: \"$text_limit\""  # print found arguments (if verbose)
 
+    # concat all elements into exp1\|exp2\|exp3 form, efficiently
+    local separator='\|'
+    exp="$( for term in "${exp[@]}"; do echo -n "${term}${separator}"; done )"
+    exp="${exp%"$separator"}"
 
     # colorize the found strings. The coloring is late because it changes the returned string's length.
     function _mark_word () { cat | grep -e "$exp" -i --color=always; }
@@ -2059,6 +2059,7 @@ function checksum_sha256 () {
     fi
 }
 
+# TODO - accept streamed-in file
 # perform checksum operation on file and check against the correct line in checksum file
 # arg 1: <file_to_checksum> , arg 2: <file_with_expected_checksum>
 function checksum_sha256_entry () {
