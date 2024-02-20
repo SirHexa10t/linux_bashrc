@@ -489,9 +489,9 @@ function _sudo_if_necessary () {
     [ $# -ge 1 ] || { errcho "WTF are you expecting me to sudo? Give me the command you want to run as string arguments" ; return ; }
     (  # can't make the output-catch var local - you'd get no root password prompt. So we put it in its own enclosed env.
         [[ "$#" -gt 0 || ! -t 0 ]] || { errcho "${FUNCNAME[0]} expects either arguments or piped data. Neither were provided."; return 1; }
-        local command_maybe_sudo="${@:-$(cat)}"  # args, otherwise piped-in data.
-        ${command_maybe_sudo[@]}
-        if [ $? -ne 0 ]; then errcho "ran into a problem; rerunning with sudo"; sudo ${command_maybe_sudo[@]}; fi
+        local command_maybe_sudo=("${@:-$(cat)}")  # args, otherwise piped-in data.
+        "${command_maybe_sudo[@]}"
+        if [ $? -ne 0 ]; then errcho "ran into a problem; rerunning with sudo"; sudo "${command_maybe_sudo[@]}"; fi
     )
 }
 
@@ -521,7 +521,8 @@ function sudo () {
 # TODO - do about the same for chmod and chown - print the directory/files with the changed data (maybe cancel that, getting the filenames in every case isn't simple)
 # add a print of local files after changing directory
 function cd () {
-    builtin cd $@  &&  ls -AF --color=always --group-directories-first 
+    [[ "$#" -eq 1 && -f "$1" ]] && { set -- "$(dirname "$1")"; }  # if given (only a) file, change arg1 to file's location
+    builtin cd $@  &&  ls -AF --color=always --group-directories-first
 }
 
 # make mkdir more "reasonable" with a flag that is always nice to have ; -p doesn't print error if dir exists
@@ -1928,9 +1929,9 @@ args:
     [ -n "$verbose" ] && becho "running on directory: \"$dir\"  ;  expression: \"$exp\"  ;  including strings up to length: \"$text_limit\""  # print found arguments (if verbose)
 
     # concat all elements into exp1\|exp2\|exp3 form, efficiently
-    local separator='\|'
-    exp="$( for term in "${exp[@]}"; do echo -n "${term}${separator}"; done )"
-    exp="${exp%"$separator"}"
+    local separator='\|' joined
+    printf -v joined '%s\|' "${exp[@]}"
+    exp="${joined%"$separator"}"
 
     # colorize the found strings. The coloring is late because it changes the returned string's length.
     function _mark_word () { cat | grep -e "$exp" -i --color=always; }

@@ -1,12 +1,29 @@
 # Reminders for vm tools and command options (mostly stuff you can't do through Virtual Machine Manager)
+
+> Get info
+* virsh list --all  # show VM list
+
+> Handle snapshots
+* virsh snapshot-create-as --domain <VM-NAME> --name <SNAPSHOT-NAME>  # create snapshot for a vm (has to be turned off)
+* virsh snapshot-list --domain <VM-NAME>  # list snapshots of vm
+* virsh snapshot-info/snapshot-revert/snapshot-delete --domain <VM-NAME> --snapshotname <SNAPSHOT-NAME>  # detail/go_back_to/delete snapshot
+
+> VM operations
 * systemctl restart libvirtd  # restart the libvirt daemon vm-manager
 * virsh start <name>  # start VM
 * virsh domrename <old_name> <new_name>  # rename vm
 * virsh edit <name>  # modify the xml of a VM (you can do that in Virtual Machine Manager instead)
+
+> VM volume modifications
 * sudo virt-sparsify --in-place -v <diskimg.qcow2>  # compress vm disk file
-* virsh list --all  # show VM list
-* virsh snapshot-create-as --domain <VM-NAME> --name <SNAPSHOT-NAME>  # create snapshot for a vm (has to be turned off)
-* virsh snapshot-list --domain <VM-NAME>  # list snapshots of vm
-* virsh snapshot-info/snapshot-revert/snapshot-delete --domain <VM-NAME> --snapshotname <SNAPSHOT-NAME>  # detail/go_back_to/delete snapshot
+* sudo qemu-img resize <image_name.qcow2> +<size>   # expand size of vm-file (e.g. specify "+100G" to increase its size by additional 100 GiB ). Remember to allocate the new space within the VM's OS!
 * qemu-img create -f qcow2 -F qcow2 -b <path_to_src_disk.qcow2> <path_to_output_disk.qcow2>  # snapshot a single disk
+
+> Files of interest
+* /var/log/libvirt/libvirtd.log     : VM manager logs
+* /var/log/libvirt/qemu             : individual VM logs
+* /etc/libvirt/                     : configuration files
+* /etc/libvirt/qemu                 : VM specs XMLs
+
+
 

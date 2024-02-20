@@ -95,6 +95,9 @@
 > media (images/video) editors
 * ffmpeg  # general media (image / audio / video) handling package, you can find some usages/examples in the custom_bashrc script
 
+> online-content downloader
+* youtube-dlp [github.com/ytdl-org/youtube-dl]  # can download videos from youtube, and also various other websites
+
 > Microsoft formatting and proprietary system (Windows) stuff
 * lnkinfo <lnk-file>        # display link info
 * dos2unix <file>           # convert files from windows to unix encoding
