@@ -605,6 +605,16 @@ function _split_stream_by_lines () {
     while IFS= read -r line; do echo "$line"; done <<< "$(cat)"
 }
 
+# prints problematic strings in readable way
+function print_formatted () {
+    local fixed="${1:-$(cat)}"
+    local braille_chars=$(echo -n "$fixed" | grep -oP --color=never "[\x{2800}-\x{28FF}]" | wc -l)
+    if (( braille_chars > 0 )); then    # braille-art; replace spaces with newlines in ascii-art
+        fixed="$(echo "$fixed" | sed 's/ /\n/g')"
+    fi
+    
+    echo "$fixed"
+}
 
 # useful for drawings or neat concatenating of tables like so: 'paste <(_pad_end_w_spaces "$(df -h)") <(_pad_end_w_spaces "$(df -hi)") <(_pad_end_w_spaces "$(df -hi)")'
 # Append spaces to text lines for a rectangular look; i.e. end uniformly on the same column.
