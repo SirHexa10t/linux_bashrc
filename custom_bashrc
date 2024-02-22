@@ -1928,25 +1928,18 @@ args:
     
     [ -n "$verbose" ] && becho "running on directory: \"$dir\"  ;  expression: \"$exp\"  ;  including strings up to length: \"$text_limit\""  # print found arguments (if verbose)
 
-    # concat all elements into exp1\|exp2\|exp3 form, efficiently
-    local separator='\|' joined
-    printf -v joined '%s\|' "${exp[@]}"
-    exp="${joined%"$separator"}"
+    # concat all elements into exp1\|exp2\|exp3 form, efficiently (not using `str+=` )
+    local sep='\|'
+    printf -v exp "%s$sep" "${exp[@]}"
+    exp="${exp%"$sep"}"
 
     # colorize the found strings. The coloring is late because it changes the returned string's length.
     function _mark_word () { cat | grep -e "$exp" -i --color=always; }
-    function _skip_if_found_in_file_var () { cat | grep -vFf "$1"; }
-    # function _skip_if_found_in_hashset_var () {
-    #     local -n hashset="$1"
-    #     local line
-    #     while IFS= read -r line; do [[ ! -v hashset["$line"] ]] && echo "$line"; done
-    # }
     function _filter_too_long () {  # if applicable, filter out messages that are too long. Otherwise just output
         (( text_limit > 0 )) && { [ -n "$verbose" ] && becho "filtering with maximum result length: $text_limit"; cat | awk "length(\$0) <= $text_limit"; } || cat 
     }
 
-    # TODO - rerunning as sudo causes re-print of the same findings (and wasted time looking through the same files). See if that can be avoided / mitigated
-    #  maybe filter the error stream and collect the problematic ones for the sudo re-run?
+    #  TODO - maybe filter the error stream and collect the problematic ones for the sudo re-run?
     
     # arg 1: ret-code for denied-access, other_args: search command 
     function _search_maybe_rerun () {
@@ -1959,14 +1952,14 @@ args:
         
         [ "$cmd_result" -eq "$denied_ret" ] && { 
             recho "Permission to files denied. Rerunning as root."
-            # TODO - improve efficiency through the use of set rather than looking up the string matches in a file
-            # save into associative-array ("hashmap") for better lookup performance
-            # declare -A seen_lines
-            # local line
-            # while IFS= read -r line; do seen_lines["$line"]=1; done < "$temp_file"  # doesn't work right
             
-            # sudo "$@" | _filter_too_long | _skip_if_found_in_hashset_var seen_lines | _mark_word
-            sudo "$@" | _filter_too_long | _skip_if_found_in_file_var "$temp_file" | _mark_word
+            declare -A found_map;
+            local line;
+            while IFS= read -r line; do found_map["$line"]=1; done < "$temp_file"  # tmp file lines populate "hashmap"
+            function _print_if_not_in_map () { while IFS= read -r line; do [ -z "${found_map["$line"]}" ] && echo "$line"; done; }  # compare against map
+            
+            sudo "$@" | _filter_too_long | _print_if_not_in_map | _mark_word
+
             cmd_result="${PIPESTATUS[0]}"  # update the returned value (same search, but without permission hindrance)
         }
         
@@ -3092,6 +3085,7 @@ function commecho () {  ###tags: text-coloring
     local single_cat_line_color=$(_tag_persist '<=bold=><=blue=>')      # > topic
     local tilda_cat_line_color=$(_tag_persist '<=b_purple=>')           # ~> table_topic
     local tilda_bra_line_color=$(_tag_persist '<=italic=>')             # ~< table_content
+    local minus_bra_line_color=$(_tag_persist '<=yellow=>')             # -< table_content (contains emojis or other chars that don't look well with regular formatting)
     local plus_line_color=$(_tag_persist '<=bold=><=cyan=>')            # + remark
     local double_slash_documentation_color="$sharp_comment_color"       #  // comment
     local sharp_comment_color=$(_tag_persist '<=yellow=>')              #   # comment
@@ -3143,6 +3137,7 @@ function commecho () {  ###tags: text-coloring
     formatted=$(echo "$formatted" | sed "s/^> \(.*$\)/${single_cat_line_color}⇾ \1/g")  # recolor lines beginning '>', and replace with a nice ascii char  (sub-topics)
     formatted=$(echo "$formatted" | sed "s/^~> \(.*$\)/${tilda_cat_line_color} \1/g")  # recolor lines beginning '~>' (table-title)
     formatted=$(echo "$formatted" | sed "s/^~< \(.*$\)/${tilda_bra_line_color} \1/g")  # recolor lines beginning '~<' (table-content)
+    formatted=$(echo "$formatted" | sed "s/^-< \(.*$\)/${minus_bra_line_color} \1/g")  # recolor lines beginning '-<' (table-content)
     formatted=$(echo "$formatted" | sed "s/^+.*$/${plus_line_color}&/g")  # recolor lines beginning '+'  (notes)
     formatted=$(echo "$formatted" | sed "s/  \(#.*\)$/  ${sharp_comment_color}\1/g")  # recolor starting from '  #'  (code-comments)
     formatted=$(echo "$formatted" | sed "s| \(//.*\)$| ${double_slash_documentation_color}\1|g")  # recolor starting from ' //'  (code-comments)

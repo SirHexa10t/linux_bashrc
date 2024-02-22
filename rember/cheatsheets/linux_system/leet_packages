@@ -16,6 +16,9 @@
 * gnome-disks-utility (built on UDisks)     :  display drives' info and (optionally) mount/dismount in dir "/media/<username>/"
 * GParted                                   :  partition management
 
+> Virtualization
+* virt-Manager [virt-manager.org]     : VM Manager
+
 > Editor / viewer
 * LibreOffice                               :  Microsoft Office documents (fork of Sun's Open Office, after Oracle bought them and angered the open-software contributors)
 * OnlyOffice                                :  Microsoft Office documents (looks exactly like Microsoft's)
@@ -31,6 +34,7 @@
 * LibreWolf     :  firefox-based privacy-oriented browser
 * Signal        :  chat/phone app
 * Telegram      :  chat/phone app
+* LBRY          :  youtube-alternative browsing client
 
 > Device integration
 * scrcpy                        # run daemon that casts the connected Android device screen onto a window, and shares the clicks within it back to the Android device
@@ -39,6 +43,10 @@
 > Media Player
 * celluloid [formerly mpv]  :  videos
 * Hypnotix                  :  IPTV streaming
+
+> Image editing
+* GIMP          : Photoshop / Paint replacement
+* Krita         : Artist-oriented (serious graphic design)
 
 > Desktop Sharing
 * OBS-Studio    :  screen sharing
@@ -52,7 +60,6 @@
 
 
 > Packages of interest (didn't look into them properly yet; TODO)
-* FireDragon (browser)
 * Ranger (terminal-based file-manager, Python-based)
 * Krusader (file-manager)
 * Yazi [https://yazi-rs.github.io] (terminal-based file-manager, better than ranger?)
@@ -60,11 +67,22 @@
 * Thunar                :  (gtk) does dual-window layout and remembers your last location
 * Dolphin               :  (qt) KDE-based file manager
 
+
+> Packages of interest KDE-specific (didn't look into them properly yet; TODO)
+* FireDragon (browser)
+* KDE Connect           :  connect phone to computer for all sorts of interactions and control
+
+
 * Thunderbird   :  email-client
     # check if better than GMail web-client
 * geary [github.com/GNOME/geary]    :   email-client
     # not from Mozilla, who're becoming anti-free-software; so it's "more free" than Thunderbird
 # other emails: claws mail, mailspring... see more at: https://alternativeto.net/software/mozilla-thunderbird/
+
+* Fluent RSS Reader     : get RSS updates (news-like. Have webpages delivered to you instead of looking through bookmarks)
+
+* Ardour                : Sound editing, like Audacity
+
 
 
 
@@ -78,6 +96,7 @@
 > Processes
 * htop      #  real-time process monitor
 * btop      #  htop-like, but with slightly less focus on processes; an overview of the system, including CPU-core temps, and network-usage
+* bpytop    #  like htop, but displays data more graphically, including network usage, CPU temperature, and more memory-details. Written in Python.
 
 > Disks
 * ldmtool                   :  Read dynamic disks by running `sudo ldmtool create all`, and then mounting with `mount -t ntfs /dev/mapper/<volume_name>`

@@ -51,6 +51,26 @@
 * declare -p <variable>  # Note: no use of $. Print the variable to check data / data-type
 
 
+>> PIPES
+>> =====
+
+> using as-is
+* echo 'hello world ' | sed 's/[[:space:]]*$//'  # some commands (here it's sed, removing trailing spaces) expect possible input through std-in (piped input)
+
+> reading into input in the middle of pipeline
+* echo "Hello, World" | { read input; printf "${input%'World'}"; }  # use "read" to assign input to a variable, so it could be used in things like Parameter Expansion.
+* cat myfile | while IFS= read -r line; do [[ -z "${found_map["$line"]}" ]] && echo "$line"; done  # If you're piping more than one line, you need more than "read" (which ignores anything after first line).
+
+> pasting contents of pipe
+* echo "my_string" | echo "the string is '$(cat)' and it was passed in stdin"  # reading reading the data into a specific location
+
+> checking if data is being piped into current function
+* [ ! -t 0 ]  # condition that says "stdin isn't empty". You can consume it with `cat`.
+
+> mid-pipe ret values
++ read above note about PIPESTATUS
+
+
 >> Expressions
 >> ===========
 
@@ -91,7 +111,7 @@
 * "${filename#*_}"               # "#":  remove string from start; if removing pattern: shortest possible - in this example only first "<thing>_" gets erased, not all chain of "<thing>_<other_thing>_".
 * "${file%%"encrypted - "}"      # "##": remove string from start; if removing pattern: longest possible - in this example there's no pattern. It's the same as using a single '%'
 
-> Replacement (get a "fixed" copy, original doesn't get modified)
+> Replacement/substitution (get a "fixed" copy, original doesn't get modified)
 * "${text/pattern/replacement}"  # "/":  replace first match of a string with a different string
 * "${text//pattern/replacement}" # "//": replace all matches of a string with a different string
 * "${hworld/#hello/hi}"          # "/#": replace a single leading-text (if) matched
@@ -140,10 +160,12 @@
 
 > Associative Arrays (similar to hashmap)
 + Don't use "local" - "declare -A" takes care of the scope issues.
-* declare -A colors=( [black]='\033[30m' [red]='\033[31m' [green]='\033[32m' [yellow]='\033[33m' [blue]='\033[34m' [purple]='\033[35m' )    # declaration and assignment
-  colors[cyan]='\033[36m'                                                                                                                   # assign to key (overwrite if exists) 
-  echo -e "${colors[red]}The text is red\033[0m"                                                                                               # read via key
+* declare -A colors=( [red]='\033[31m' [green]='\033[32m' [blue]='\033[34m' )   # declaration and assignment
+  colors[cyan]='\033[36m'                                                       # assign to key (overwrite if exists) 
+  echo -e "${colors[red]}The text is red\033[0m"                                # read via key through ${map[key]}
+* num_of_items=${#mymap[@]}                                                     # get count of items
 + for looping over hashmap, refer to Loops section
++ see iteration on "hashmaps" in loops section
 
 
 >> Conditions
@@ -182,7 +204,7 @@
 
 > while
   * while true; do                                                      # infinite loop (needs to exit with "break" within)
-  * while IFS= read -r line; do <command>; done < "$bookmarks_file"     # read file line by line (each line saved into var "line")
+  * while IFS= read -r line; do <command>; done < "$some_file"          # read file line by line (each line saved into var "line")
   * while IFS= read -r cmde; do <command>; done <<< "$text_block"       # read line by line from text. Can also do: << <<< "${text_list[@]}"
   * while [[ $# -gt 0 ]]; do                                            # iterate while there are still args (contents of loop using "shift" to consume the args)
   * while [ -z "$found" ]; do                                           # any condition would do.
@@ -201,6 +223,16 @@
   * for ((i=0; i<$num_of_threads; i++)); do                     # c-style for-loop.
   *     for ((i=0; i<$num_of_threads; ++i)); do                 # also works
   *     for ((i=0, j=1; i<$num_of_threads; i++, j++)); do       # also works
+
+
+>> String operations
+>> =================
+
+> Join
+* joined="$(IFS=$sep; echo "${arr[*]}")"                                            # ONLY if your separator is a single char
+* joined="$(printf "%s$separator" "${arr[@]}")"; joined="${joined%"$separator"}"    # print separated string with any separator. There's always a trailing separator at the end, so it needs to be removed explicitly
+*   printf -v joined "%s$separator" "${arr[@]}" ; joined="${joined%"$separator"}"   # same thing
+*   joined="$(printf "%s$separator" "${arr[@]}" | sed "s/${separator}$//")"         # ONLY if you don't have special characters in separator
 
 
 >> shortcuts

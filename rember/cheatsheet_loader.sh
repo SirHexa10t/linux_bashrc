@@ -5,10 +5,24 @@
 CHEATSHEETS_FILE="$(realpath "$BASH_SOURCE")"  # not necessary if main script already has it, but with this the file is more independent
 CHEATSHEETS_PATH="$(dirname "$CHEATSHEETS_FILE")/cheatsheets"
 CHEATSHEET_PREFIX='howdoi_'
-CHSH_EDIT_FLAG='--edit'
-CHSH_EDIT_FLAG_ALT='-e'
 
-CHSH_EDIT_FLAGS_CHECK='[[ "$1" == "$CHSH_EDIT_FLAG" || "$1" == "$CHSH_EDIT_FLAG_ALT" ]]'
+declare -A CHSH_FLAGS
+CHSH_FLAGS['--edit']='xdg-open'
+CHSH_FLAGS['-e']='xdg-open'
+[ -n "$(which codium)" ] && CHSH_FLAGS['-c']='codium'
+CHEATSHEET_PLACEHOLDER='chsh_file'
+
+function _get_chsh_edit_conditions () {
+    function _get_chsh_edit_condition () { echo 'if [ "$1" == '"$1"' ]; then '"${CHSH_FLAGS[$1]} $CHEATSHEET_PLACEHOLDER; "; }  # if var exists, check gets printed
+    local flag  condition_items=()
+    for flag in "${!CHSH_FLAGS[@]}"; do condition_items+=("$(_get_chsh_edit_condition "$flag")"); done
+    # separate with "el" (to make those "elif") and add the default op
+    local final_contents="$(printf '%sel' "${condition_items[@]}")if : ; then commecho -l < $CHEATSHEET_PLACEHOLDER; fi"  # last block applies by default, but still uses "if" (if TRUE), in case the string before it is empty
+    
+    echo "$final_contents"
+}
+CHSH_FUNCTION_CONTENTS="$(_get_chsh_edit_conditions)"
+
 
 # Synonymous to "cheatsheets".
 alias list_cheatsheets='cheatsheets'
@@ -23,7 +37,7 @@ function _load_cheatsheets () {
     local chsh_file
     while IFS= read -r chsh_file; do
         local cmd_name="$(_derive_chsh_cmd_name "$chsh_file")"
-        eval "function $cmd_name () { $CHSH_EDIT_FLAGS_CHECK && xdg-open \"$chsh_file\" || commecho -l < \"$chsh_file\"; }"
+        eval "function $cmd_name () { "${CHSH_FUNCTION_CONTENTS//$CHEATSHEET_PLACEHOLDER/$chsh_file}"; }"
     done <<< "$(_get_cheatsheet_files)" 
 }
 _load_cheatsheets
@@ -62,7 +76,8 @@ function cheatsheets () {
         _get_cheatsheet_files | while IFS= read -r file; do grep -e "$1" -i "$file" -C 2 --color=always | _print_if_stream "Matches within $(wecho $(_derive_chsh_cmd_name "$file"))" ; done        
     else    # general info
         orecho "To search within cheatsheets, rerun this command, followed by string-to-search."
-        orecho "To edit a cheatsheet you can run its \"$CHEATSHEET_PREFIX\" command, followed by the flag '$CHSH_EDIT_FLAG' (or '$CHSH_EDIT_FLAG_ALT')"
+        orecho "To edit a cheatsheet you can run its \"$CHEATSHEET_PREFIX\" command, followed by a flag. \
+    $( for flag in "${!CHSH_FLAGS[@]}"; do echo -n "$(wecho "$flag"): open using ${CHSH_FLAGS[$flag]}  "; done )"
         echo 
         tree --dirsfirst "$CHEATSHEETS_PATH"  # paste files, tree style
         echo
