@@ -7,13 +7,14 @@ CHEATSHEETS_PATH="$(dirname "$CHEATSHEETS_FILE")/cheatsheets"
 CHEATSHEET_PREFIX='howdoi_'
 
 declare -A CHSH_FLAGS
-CHSH_FLAGS['--edit']='xdg-open'
+CHSH_FLAGS['--edit']='xdg-open'  # open with default editor (like Xed)
 CHSH_FLAGS['-e']='xdg-open'
-[ -n "$(which codium)" ] && CHSH_FLAGS['-c']='codium'
+CHSH_FLAGS['--fp']='echo'  # file-path printing
+[ -n "$(which codium)" ] && CHSH_FLAGS['-c']='codium'  # open with VSCodium (only if available)
 CHEATSHEET_PLACEHOLDER='chsh_file'
 
 function _get_chsh_edit_conditions () {
-    function _get_chsh_edit_condition () { echo 'if [ "$1" == '"$1"' ]; then '"${CHSH_FLAGS[$1]} $CHEATSHEET_PLACEHOLDER; "; }  # if var exists, check gets printed
+    function _get_chsh_edit_condition () { echo 'if [ "$1" == '"$1"' ]; then '"${CHSH_FLAGS[$1]} '$CHEATSHEET_PLACEHOLDER'; "; }  # if var exists, check gets printed
     local flag  condition_items=()
     for flag in "${!CHSH_FLAGS[@]}"; do condition_items+=("$(_get_chsh_edit_condition "$flag")"); done
     # separate with "el" (to make those "elif") and add the default op
@@ -77,7 +78,7 @@ function cheatsheets () {
     else    # general info
         orecho "To search within cheatsheets, rerun this command, followed by string-to-search."
         orecho "To edit a cheatsheet you can run its \"$CHEATSHEET_PREFIX\" command, followed by a flag. \
-    $( for flag in "${!CHSH_FLAGS[@]}"; do echo -n "$(wecho "$flag"): open using ${CHSH_FLAGS[$flag]}  "; done )"
+    $( for flag in "${!CHSH_FLAGS[@]}"; do echo -n "$(wecho "$flag"): open/print file using $(orecho "${CHSH_FLAGS[$flag]}")  "; done )"
         echo 
         tree --dirsfirst "$CHEATSHEETS_PATH"  # paste files, tree style
         echo

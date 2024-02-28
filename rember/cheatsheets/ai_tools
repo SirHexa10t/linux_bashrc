@@ -5,50 +5,56 @@
 * https://github.com/
 
 
+
 >> Audio
 >> =====
 
 > song vocals remover
-  * https://github.com/Anjok07/ultimatevocalremovergui
+* https://github.com/Anjok07/ultimatevocalremovergui
+
 
 
 >> Image in-fill
 >> =============
 
 > Imagine/Speculate/Fill contents of missing part within an image
-  * https://github.com/Acly/comfyui-inpaint-nodes
+* https://github.com/Acly/comfyui-inpaint-nodes
+
+
 
 >> Image/Video Processing
 >> ======================
 
 > upscaling, various manipulations
-  * https://github.com/chaiNNer-org/chaiNNer    : upscaling images/videos, video-manipulations. Has awesome-looking GUI
+* https://github.com/chaiNNer-org/chaiNNer    : upscaling images/videos, video-manipulations. Has awesome-looking GUI
+
 
 
 >> Searching / Summary
 >> ===================
 
 > Local files search/summary
-  * Nvidia Chat with RTX: https://www.nvidia.com/en-us/ai-on-rtx/chat-with-rtx-generative-ai/   :  Works on Windows 11 (maybe also Windows 10?) on RTX-30 series and above
+* Nvidia Chat with RTX: https://www.nvidia.com/en-us/ai-on-rtx/chat-with-rtx-generative-ai/   :  Works on Windows 11 (maybe also Windows 10?) on RTX-30 series and above
+
 
 
 >> ChatGPT replacement/competitors
 >> ===============================
 
 > Chat GPT 3.5/4/Copilot - the original thing. GPT3.5 requires signup (with phone-num), and anything beyond costs money
-  * https://chat.openai.com/
+* https://chat.openai.com/
 
 > Miqu - leaked model said to be on par with ChatGPT4
-  * https://huggingface.co/miqudev/miqu-1-70b
-  * https://huggingface.co/152334H/miqu-1-70b-sf
+* https://huggingface.co/miqudev/miqu-1-70b
+* https://huggingface.co/152334H/miqu-1-70b-sf
 
 > Bing Chat - Microsoft's hosting of ChatGPT4 (no registration required)
-  * https://www.bing.com/search?toncp=0&q=Bing+AI&showconv=1    : there are other possible links, but connecting to this via LibreWolf+VPN sometimes gives you 10 consecutive-context queries instead of just 4
+* https://www.bing.com/search?toncp=0&q=Bing+AI&showconv=1    : there are other possible links, but connecting to this via LibreWolf+VPN sometimes gives you 10 consecutive-context queries instead of just 4
 
 > Grok - Elon Musk's AI
-  * https://x.ai/       : requires payment
+* https://x.ai/       : requires payment
 
 > Gemini - Google's AI
-  * https://www.gemini.com/
+* https://gemini.google.com/app
 
 

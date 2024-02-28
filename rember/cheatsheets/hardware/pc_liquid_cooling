@@ -1,0 +1,163 @@
+# A guide/brief-overview of the parts involved in PC Watercooling / Liquid-cooling
++ An expensive hobby, but gets the best thermal results and thus also the best performance out of your system.
++ Does NOT cover Immersion Cooling, i.e. Mineral-oil cooling (mineral oil is thermally conductive, but not electrically-conductive); with 3M Novac or just plain baby-oil.
+
+
+
+>> General
+
+> Requirements
+* at-least one radiator
+* typically one pump (D5 is the safer bet, but DDC is fine too), maybe 2 (rarely needed) if your system has multiple extra parts
+* a reservoir (technically possible without, but it helps a lot)
+* at least one water-block (one on each cooled component)
+* tubings between the components and a fitting for each connection between a tube and a component
+
+> Assembly/loop-design and servicing
+* The order of components doesn't matter. You won't choke one component with the heat of another, the water passes too fast to change temps significantly
+* KIS; connect the loop in series, no 2-loop-separation or parallel components.
+* Draining:
++   It's a good idea to replace the coolant once every 6 months / year. Also necessary if you want to change your loop's layout or parts.
++   Remember that you need an air entrance to allow the coolant to flow out
++   Having a valve (fitting) at the bottom helps drain the loop. A complicated loop could utilize more than one "exit point".
++   If your pump is at the bottom, it could be used in aid of draining the loop
++       Obviously you still need some opening for air within the loop
++       Could be done by adding a valve after the pump's output, and a 'T' junction right before it, where the coolant would leave the loop. Best if there's a part that could just do both - stop flow to one route, and into the other.
++           There's a danger of running the pump on air once it's done sucking out all of the coolant, so it's helpful if there's a reservoir on top of it, which would still provide some coolant even when no more comes in from the loop
++           Draining the prior-pump-intake part of the loop could be done with a separate valve/T-junction
+* Refilling:
++   If your case has a hole for it at the top, you could install a fill-port
++       The fill-port could (simpler but lesser option;) go directly to the reservoir, or a radiator
++       It's even better if it connects to the line that returns water to the reservoir within the loop.
++           That way you leave the reservoir's other fill-port free, and can refill in 2 directions of the loop (rather than just fill one side and force the liquid around back to the other end)
+*   Having a reservoir helps fill the whole loop as it gives an extra water-volume buffer that aids with the displacement of trapped air (so you won't need to make too many refilling sessions)
+
+
+
+>> AIO
+* TODO
+
+
+
+>> Water/Coolant
++ Heat-conductive liquid that's non-viscous, and ideally non-conductive (in case it spills out)
+* Distilled water with anti-bacterial solution (available from various water-cooling brands) is generally enough
+*   There are various kinds of pure water - what's important is that they don't contain ions and impurities that could lead to electric-conductivity, metal corrosion, bacterial growth, and clogging/gunking
+* Don't put dye / coloring / pigments in your coolant, it'll build-up gunk inside your loop, and cause parts to stop working (especially the pump)
+
+
+
+>> Tubing
+
+> Hard-tubes
+* TODO
+
+> Soft-tubes
+* TODO
+
+
+
+>> Fittings
+* TODO - explain G1/4
+
+
+
+>> Radiators
++ Conduct the heat from the coolent flowing through it so that it can be released into the air that's flowing between its fins
+* As with other cooling bodies of metal, size matters.
+* DON'T mix components with different metals. You may be tempted to buy aluminium radiators (cheapest, lightest, excellent thermal conductivity), but the rest of your items' internals are probably made of copper. The different metals would corrode each-other and make any slight conductivity/impurite in the coolant much worse!
+
+
+
+>> Water-blocks
++ Heatsink-replacements that sit on top of a component (GPU-board/CPU) and carry the heat away into the passing coolant
++ You can use a toothbrush to clean the cooling fins and coolant-contacting surfaces. If you have bacterial growth, you could use tooth-paste (JayzTwoCents says Crest toothpaste is the best cleaner he ever used on disassembled water-blocks; gives back the new shiny-nickel look)
+* CPU blocks are largely (but not all/entirely) cross-compatible between boards
+* GPUs blocks' layout varies! Make sure that you buy a block that works for the exact GPU you have, as the components' layout on the GPU's PCB can be differently between different versions of the same GPU model! 
+
+
+
+>> Reservoir
++ Gets rid of bubbles (make sure that the reservoir is big enough to allow bubbles to rise before getting sucked forward) and eases the refilling of the loop
+* should be positioned high in the loop, to easily contain the air that bubbles upwards
+*   If the reservoir is connected to the pump, at least try to make the pump below some other components
+* A reservoir-pump combo is convenient, as it takes less space (and tubing effort), and helps make sure that there'd be mostly-air-free cooland feeding into the pump
+* Some people put a small piece of silver in the reservoir, so it'd kill bacteria on contact; I don't know if it's a good or effective idea...
+
+
+
+>> Pump
+
+> PWM - controlled by the motherboard rather than going fully-powered at all times
+* The control is via an extra (4th) pin that determines if it's on or off at the necessary intervals. Can't do analog because some pumps/fans won't work at all unless they get the full-required voltage.
+
+> "D5" pump - the simplest pump; fewest parts (just 2), thus least prone to breaking
+* Overall the better-choice pump.
+* The 2 parts are the spinning item (hemispherical impeller; magnetic - that's how it's spun) and the base (wear-resistant bell-shaped ceramic bearing)
+* High flow rate, at low pressure (fluid flows fast, but won't climb up far in a vertical shaft)
+* Maintains optimal temperature through the coolant, no meaningful cooling externally
+* Lain's original D5 has set the standard in form-factor - later-released pumps that operate the same way come in the same form factor are considered "D5".
+
+> "DDC" pump
+* Smaller than D5. Usually also noisier and running hotter.
+* High pressure (so it's stronger), decent flow-rate but slower than D5's.
+* Dumps its heat to a metal piece that surrounds it, at the bottom. Technically could work without the heatsink, but it prolongs its lifespan. You should make sure it's vented.
+* As of now, Q1 2024, there's an EKWB product where a DDC_4.2 pump comes pre-installed on-top of a CPU waterblock like in an AIO, to save on space and connection hassles. 
+
+> "DC-LT" pump - the pump type that's embedded within AIOs. You're not supposed to buy those unless you're fixing a broken AIO.
+* Smaller and weaker than D5 and DDC, just powerful enough for the small waterblock and radiator it comes with.
+
+> Pump-top
++ Channels coolant in/out of your pump
+* Some pump-tops are meant to connect to a reservoir, some are actually the reservoir itself.
+* DDC and D5 (and DC-LT) pump-tops are different.
+
+> Pump-bottom
++ Metallic housing that increases surface-area, for cooling
++ Only DDC needs a bottom; often sold with one pre-attached
+
+> Configurations/Resolving issues:
+* If your pump isn't working, expect the static-coolant to passively get temperatures in the 50s-60s after starting your system, and climbing by another degree every few seconds.
+*   There's a part specifically made with a rotating needle, to show you that coolant is flowing through it. You could get something like that if you're worried about your loop standing still due to a failed pump.
+* A "dead" pump might make clicking noises while failing to run (or rather start running)
+*   Try running your pump in a small tub of water.
+*   A dead pump might be fixed by just cleaning its internals (disassembly is very easy, but required; a cleaning solution won't do instead).
+* NEVER!! run your pump dry. Pumps are water-lubricated. Running them on air ruins them!
+* The pump should be positioned relatively low in the build, maybe even at the lowest point, so that it'd always be flooded.
+* 2 pumps in series work fine together, even if they're not working at the same speed. It's like working together on rope-pulling (tug of war)
+*   If the pumps run at different speeds, you'd get weird sounds; if both are the similar (i.e. two 12V DDC pumps), you can correct it by connecting both to the same header (on the motherboard) so that they'll be fed the same voltage and work the same at all times
+*   A dead pump typically acts like nothing's there to another pump - water flows almost-freely through.
+
+
+
+>> Brands
++ All genuine "D5" pumps are made by Laing (maybe also DDC?), even the ones sold by large sellers like EKWB and Alphacool
+
+> Renown firms
+* EKWB (Edvard König Water Blocks)
+*   Good products, premium-priced.
+*   Often comes pre-pick for the few GPUs that get sold with water-blocks instead of air-coolers
+* AlphaCool
+*   German-quality; decent prices.
+*   Have their own version of the D5, called "VPP". The latest is their VPP Apex, which is a fixed(?) version of the faulty VPP 755, and powered by SATA rather than 
+*   Have varying sizes of radiators; if you're missing a radiator in specific uncommon proportions (or are unaware of better options), chances are that they have what you need.
+* PrimoChill
+
+> Decent vendors; not the best, but trustable (not primarily liquid-cooling-business focused)
+* Thermaltake
+* Corsair
+
+> Chinese brands that are actually good
++ The main appeal of those is the lower price. You can buy the simpler parts from them: fittings, reservoirs, maybe even water-blocks.
++ Probably shouldn't rely on their pumps
++ Maybe their radiators are fine, but you should probably just buy Alphacool's.
+* Bykski
+*   Actually a major vendor
+* Barrow
+*   Has a selection of simple parts
+* Flyphant
+*   Makes good cheap fittings
+* (ST)VODOOL
+*   makes decent cheap valves
+* Yosoo(?)
+

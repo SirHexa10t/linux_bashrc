@@ -12,34 +12,31 @@
 
 >> TYPES
 >> =====
++ Primitives have callable functions too (unlike Java). Example: `my_char.is_alphabetic()`
 
 > Scalar types
-+ integers: `i8`, `i16`, `i32` (default), `i64`, `i128`, and `isize` which adapts to your architecture (will be i64 if you're on x64)
-+   to use unsigned integers, just use 'u' instead of 'i', including `usize`
-+   to assign numbers based on different bases:
-+     Dec: 1_200_000   (a readable way to write 1.2 million, the underscores '_' are not mandatory)
-+     Hex:	0xff
-+     Oct:	0o77
-+     Bin:	0b1111_0000
-+     Byte (u8 only): b'A'
-+ floating points: `f32`, `f64` (default)
-
-
-
-> Arrays
-let my_array: [i32; 3] = [1, 2, 3];  // array
-
-let v: Vec<i32> = Vec::new();  // vector - basically "list" in Java (can change size)
-let my_vec = vec![1, 2, 3];
-
-
-let my_tuple: (i32, f64, char) = (42, 3.14, 'a');  // tuple - an array with multiple types
-
+* integers: `i8`, `i16`, `i32` (default), `i64`, `i128`, and `isize` which adapts to your architecture (will be i64 if you're on x64)
+*   to use unsigned integers, just use 'u' instead of 'i', including `usize`
+*   to assign numbers based on different bases:
+*       Dec:    1_200_000   (a readable way to write 1.2 million, the underscores '_' are not mandatory)
+*       Hex:	0xff
+*       Oct:	0o77
+*       Bin:	0b1111_0000
+*       Byte (u8 only): b'A'
+* floating points: `f32`, `f64` (default)
 
 > Other types
-+ char, bool
+* char
+* bool
 
-+ Primitives have callable functions too (unlike Java). Example: 'my_char.is_alphabetic()'
+> Arrays
+* array
+``` let my_array: [i32; 3] = [1, 2, 3];  // array
+* vector
+``` let v: Vec<i32> = Vec::new();  // vector - basically "list" in Java (can change size)
+``` let my_vec = vec![1, 2, 3];
+* tuple
+``` let my_tuple: (i32, f64, char) = (42, 3.14, 'a');  // tuple - an array with multiple types
 
 
 
@@ -47,11 +44,11 @@ let my_tuple: (i32, f64, char) = (42, 3.14, 'a');  // tuple - an array with mult
 >> ========
 
 > Printed strings are f-strings by default
-let num = 12;
-println!("number is: {num}.");
+``` let num = 12;
+    println!("number is: {num}.");
 
 > Debug-printing. Prints collections.
-println!("{:?}", my_vector);
+``` println!("{:?}", my_vector);
 
 
 
@@ -59,11 +56,11 @@ println!("{:?}", my_vector);
 >> ===========
 
 > Convert into Vec
-my_array.to_vec();  // items are copied, not pointed-at again
+``` my_array.to_vec();  // items are copied, not pointed-at again
 
 > Convert into Set 
-let my_set: HashSet<_> = my_array.iter().cloned().collect();  // array to set
-let my_set: HashSet<_> = my_vector.into_iter().collect();  // vector to set
+``` let my_set: HashSet<_> = my_array.iter().cloned().collect();  // array to set
+``` let my_set: HashSet<_> = my_vector.into_iter().collect();  // vector to set
 
 
 
@@ -72,22 +69,21 @@ let my_set: HashSet<_> = my_vector.into_iter().collect();  // vector to set
 
 + Everything is immutable by default. You have to specify "&mut" to have mutability
 
-let x: i32 = 42;  // Assign a variable. The type-declaration is optional
+``` let x: i32 = 42;  // Assign a variable. The type-declaration is optional
 
 > Strings
-let repeated_string: String = "-=".repeat(100);  // repeats the string
+``` let repeated_string: String = "-=".repeat(100);  // repeats the string
 
-let s = String::from("hello world");
-let hello = &s[0..5];  // string "slice"
-let world = &s[6..11];
+``` let s = String::from("hello world");
+    let hello = &s[0..5];  // string "slice"
+    let world = &s[6..11];
 
 
 > Arrays
-let pair = ('a', 17);  // tuple - a fixed-size list
-pair.0;  // access at index 0 of a tuple, as if it were a field
-
-let long_array: [i32; 100] = [42; 100];  // construct an array of 100 items, all of which are the number "42".
-let arr: [&str; 100] = ["hi" ; 100];  // construct an array of 100 items, all of which are the string "hi"
+``` let pair = ('a', 17);  // tuple - a fixed-size list
+    pair.0;  // access at index 0 of a tuple, as if it were a field
+``` let long_array: [i32; 100] = [42; 100];  // construct an array of 100 items, all of which are the number "42".
+    let arr: [&str; 100] = ["hi" ; 100];  // construct an array of 100 items, all of which are the string "hi"
 
 
 > blocks evaluate values

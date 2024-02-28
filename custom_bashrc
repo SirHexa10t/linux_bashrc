@@ -2802,7 +2802,7 @@ $(cecho "1080p:") 32M, $(cecho "1200p:") 32M, $(cecho "1440p:") 32M, $(cecho "4K
 
     becho "Creating looking-glass session file: $lg_file"
     sudo touch "$lg_file" && sudo chown $(whoami):kvm "$lg_file" && sudo chmod 660 "$lg_file"
-    [ -f "$lg_file" ] && dagecho $(ls -alF "$lg_file")
+    [ -f "$lg_file" ] && dagecho "$(ls -alF "$lg_file")"
     
     # run the vm (if needed)
     becho "Starting/resuming VM. This might take a minute."
@@ -3051,7 +3051,9 @@ function _tag_persist () {  ###tags: text-coloring
 # any early arg: color (see available colors in "_draw_formatted") , any early arg: -p (optional - turn tag to persistant) , any early arg: -n (optional - no coloring, just tagging) , any early arg: -t (optional - just return the tag itself) , last arg: text to color
 function _colored_echo () {  ###tags: text-coloring
     local no_drawing persist tag only_tag
-    while [[ $# -gt 0 ]]; do
+
+    # handle flags, leave text to the end
+    while [[ $# -gt 1 ]]; do
         if [ "$1" == '-n' ]; then  # just put in the tags, don't draw
             no_drawing='true'
             shift
@@ -3068,14 +3070,14 @@ function _colored_echo () {  ###tags: text-coloring
             break
         fi
     done
-
+    
     [ -z "$tag" ] && { errcho "Didn't get a tag to color with, and that's the whole purpose of this function" ; return 1 ; }  # if no coloring tag picked
 
     [ -n "$persist" ] && tag=$(_tag_persist "$tag")  # if requested to "upgrade" to persistant tag
 
     [ -n "$only_tag" ] && { echo "$tag" ; return ; }  # if requested to only return the tag
 
-    local formatted=$( echo "$@" | while IFS= read -r line; do echo "${tag}${line}<=reset=>"; done )
+    local formatted=$( for arg in "$@"; do echo "${tag}${arg}<=reset=>"; done )
     if [ -n "$no_drawing" ]; then
         echo "$formatted"
         return
@@ -3097,8 +3099,8 @@ function commecho () {  ###tags: text-coloring
     local tilda_bra_line_color=$(_tag_persist '<=italic=>')             # ~< table_content
     local minus_bra_line_color=$(_tag_persist '<=yellow=>')             # -< table_content (contains emojis or other chars that don't look well with regular formatting)
     local plus_line_color=$(_tag_persist '<=bold=><=cyan=>')            # + remark
-    local double_slash_documentation_color="$sharp_comment_color"       #  // comment
     local sharp_comment_color=$(_tag_persist '<=yellow=>')              #   # comment
+    local double_slash_documentation_color="$sharp_comment_color"       #  // comment
     local colon_comment_color=$(_tag_persist '<=yellow=>')              #   : comment
     local sharp_documentation_color=$(_tag_persist '<=green=>')         # # comment
     local double_quotes_color='<=bold=><=red=>'                         # "something"       # also used for text between bra and ket ( <> )
@@ -3136,23 +3138,38 @@ function commecho () {  ###tags: text-coloring
 
     local formatted="${@:-$(cat)}"  # get all of the input, possibly from cat
     
+    # improving readability of the following code:
+    local ny='\(.*\)'  # "n-ything"
+    local n_e='\(.*$\)'  # "en-ee"; "ANYthing until End". The braces need to be escaped, but not the dollar sign, it means "end"
+    local cs='^``` '  # code-start (line starts with: '``` '), used to identify if later code-comment is applicable
+    local cm="$tilted_quote_color"  # code-marking (the color-coding at the start of a code-line)
+    
     # formatted=$(echo "$formatted" | sed -E "s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-input). Needs to run first, to not modify the color tags
-    formatted=$(echo "$formatted" | sed -E "s/(\`[^\`]*\`)/$tilted_quote_color\1$reset/g")  # recolor text that starts with 'http(s)://' (URLs)
-    formatted=$(echo "$formatted" | sed -E "s/(https?:\/\/[^[:space:]]+)/$hyperlink_color\1$reset/g")  # recolor within ` ` (code)
+    
+        
+    formatted="$(echo "$formatted" | awk '
+                    in_code && !/^    / { in_code = 0 }                 # if entered code-mode, stay in it only if the spacing indicates youre still in the same block 
+                    /^``` / { in_code = 1 }                             # enter code-mode (maybe a whole block)
+                    in_code { sub(/^``` /, "*   "); print "'$cm'" $0 }  # prints, replacing the starting ``` (if found) with something else
+                    !in_code { print $0 }'
+                )"  # replace lines beginning with '``` ' (code-line) with a colored '*' and then 3 spaces   TODO - do better (maybe give it a different background and make the chars softer, not black/white; get inspiration from markdown)
+    formatted=$(echo "$formatted" | sed "s/^$cm$ny  #$n_e$/$cm\1  ${sharp_comment_color}#\2/g")  # recolor starting from '  #'  (code-comments)            
+    formatted=$(echo "$formatted" | sed "s|^$cm$ny  //$n_e$|$cm\1  ${double_slash_documentation_color}//\2|g")  # recolor starting from '  //'  (code-comments)
+    
+    formatted=$(echo "$formatted" | sed -E "s/(\`[^\`]*\`)/$tilted_quote_color\1$reset/g")  # recolor within ` ` (code)
+    formatted=$(echo "$formatted" | sed -E "s/(https?:\/\/[^[:space:]]+)/$hyperlink_color\1$reset/g")  # recolor text that starts with 'http(s)://' (URLs)
     formatted=$(echo "$formatted" | sed -E "s/(\"[^\"]*\")/$double_quotes_color\1$reset/g")  # recolor within " " (specifics)
     # formatted=$(echo "$formatted" | sed -E "s/(<[^>]*>)/$double_quotes_color\1$reset/g")  # recolor within < > (specifics)  # TODO - this doesn't work because of tags nested within quotes (or other semi-persistent thing), so the tagging system needs a "stepping down" mechanic which allows a reset to the previous color
     formatted=$(echo "$formatted" | sed "s/^*  /${bullet_point_sub_color}*${reset} ${upper_line_continuing_arrow}↳${reset}/g")  # replace beginning '*  ' with a colored asterisk, a space, and a mildly colored arrow referencing line above (sub-bullet-points)
-    formatted=$(echo "$formatted" | sed "s/^* /${bullet_point_color}*${reset} /g")  # replace beginning '* ' with a colored asterisk and space  (bullet-points)
-    formatted=$(echo "$formatted" | sed "s/^>>\(.*$\)/${double_cat_line_color}➤\1/g")  # recolor lines beginning '>>', and replace with a nice ascii char  (topics)
-    formatted=$(echo "$formatted" | sed "s/^> \(.*$\)/${single_cat_line_color}⇾ \1/g")  # recolor lines beginning '>', and replace with a nice ascii char  (sub-topics)
-    formatted=$(echo "$formatted" | sed "s/^~> \(.*$\)/${tilda_cat_line_color} \1/g")  # recolor lines beginning '~>' (table-title)
-    formatted=$(echo "$formatted" | sed "s/^~< \(.*$\)/${tilda_bra_line_color} \1/g")  # recolor lines beginning '~<' (table-content)
-    formatted=$(echo "$formatted" | sed "s/^-< \(.*$\)/${minus_bra_line_color} \1/g")  # recolor lines beginning '-<' (table-content)
-    formatted=$(echo "$formatted" | sed "s/^+.*$/${plus_line_color}&/g")  # recolor lines beginning '+'  (notes)
-    formatted=$(echo "$formatted" | sed "s/  \(#.*\)$/  ${sharp_comment_color}\1/g")  # recolor starting from '  #'  (code-comments)
-    formatted=$(echo "$formatted" | sed "s| \(//.*\)$| ${double_slash_documentation_color}\1|g")  # recolor starting from ' //'  (code-comments)
+    formatted=$(echo "$formatted" | sed "s/^* /${bullet_point_color}*${reset} /g")  # replace beginning with '* ' with a colored '*' and then space  (bullet-points)
+    formatted=$(echo "$formatted" | sed "s/^>> $n_e/${double_cat_line_color}➤ \1/g")  # recolor lines beginning with '>> ', and replace with a nice ascii char  (topics)
+    formatted=$(echo "$formatted" | sed "s/^> $n_e/${single_cat_line_color}⇾ \1/g")  # recolor lines beginning with '> ', and replace with a nice ascii char  (sub-topics)
+    formatted=$(echo "$formatted" | sed "s/^~> $n_e/${tilda_cat_line_color} \1/g")  # recolor lines beginning with '~>' (table-title)
+    formatted=$(echo "$formatted" | sed "s/^~< $n_e/${tilda_bra_line_color} \1/g")  # recolor lines beginning with '~<' (table-content)
+    formatted=$(echo "$formatted" | sed "s/^-< $n_e/${minus_bra_line_color} \1/g")  # recolor lines beginning with '-<' (table-content)
+    formatted=$(echo "$formatted" | sed "s/^+ $n_e/${plus_line_color}&/g")  # recolor lines beginning with '+ '  (notes)
     formatted=$(echo "$formatted" | sed "s/^# /${sharp_documentation_color}&/g")  # recolor starting from '# '  (page's documentation)
-    formatted=$(echo "$formatted" | sed "s/  \(:.*\)$/  ${colon_comment_color}\1/g")  # recolor starting from '  :'  (item-comments)
+    formatted=$(echo "$formatted" | sed "s/  : $n_e$/  ${colon_comment_color}: \1/g")  # recolor starting from '  : '  (item-comments)
     formatted=$(echo "$formatted" | sed "s/[A-Z]\+![!]\+/${warning_color}&$reset/g")  # recolor capitalized words with at least two '!' exclamation marks
     _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
 }

@@ -1,0 +1,379 @@
+# Reminders for relevant specs and priorities when buying computer hardware
+
+
++ A notice about units in this page (skip this if you're short on time)
++ Wherever mentioned in this page, "B" refers to "byte" (8 bits) and "b" refers to "bit". In no place should 'B' be used to signify "bit".
++ Decimal vs Binary units:
++   "KB"/"MB"/"GB"/"TB"/"PB"/"EB"/"ZB"        refer to decimal thousands  (10^3x); kilo is 1000 , mega is 1,000,000 , giga is 1,000,000,000 , tera is 1,000,000,000,000 , and so on.
++   "KiB"/"MiB"/"GiB"/"TiB"/"PiB"/"EiB"/"ZiB" refer to binary "thousands" (2^10x); kibi is 1024 , mebi is 1,048,576 , gibi is 1,073,741,824 , tebi is 1,099,511,627,776 , and so on.
++       People are generally confused about these and often mention "KB"/"MB"/"GB"/"TB" when they mean "KiB"/"MiB"/"GiB"/"TiB" (Thanks, Microstoft. For starting this. STILL persisting with the wrong notation to this day!)
++       As you can see, almost exactly 10% of your X-TB SSD's space would be "gone" because they promise in decimal, but your OS shows in binary
++           If you're curious about it, the "error" is almost 21% difference between the binary "Yobi" (2^80) and decimal "Yotta" (1000^8, i.e. e24, a "Tera Tera")
+*           The difference reaches 100% (decimal's is less than half of binary's) where 1024^x/1000^x = 1.024^x > 2 ; so at x=30. The internet is sized at order of magnitude of 100 Zetabytes, not even 1 Yottabyte (where x=8)
+
+
+
+>> Desktop PC requirements
+* A standard desktop computer should includes the following:
+*   Motherboard
+*   CPU
+*   CPU cooler
+*   GPU (usually comes with air-cooled heatsink, rarely with AIO or water-block)
+*       If you don't need a strong GPU, a CPU's integrated graphics unit (APU) should be fine as a replacement; if you need that, make sure to get a CPU that has it.
+*   RAM
+*   Disk (could/should be SSD)
+*   PSU
+*   Case
++   Also cables, like DP/HDMI for monitor, or SATA cables for SATA devices
++   Optionally other peripherals (if needed) that do a better job than your motherboard at audio or networking
+* You can do liquid-cooling (not for beginners) and forego some of the air-coolers.
+*   A guide for that is in a separate page
+
+
+>> PC Desktop Screen/Monitor
++ If you only want another screen for a TTY prompt or to display a playlist or a git manager or such, only resolution/size should concern you. 
+# Not discussing how things work; only the effects of used technologies
+
+> Type of LCD panel; Almost all monitors are made of LCD, lit by LEDs. The LCD is arranged in one of the following 3 configurations
+* IPS (In-Plane Switching): Good colors and angles, most common type as of this writing
+* VA (Vertical alignment; basically IPS but different crystal orientation): Similar to IPS, slightly better in some aspects
+* TN (Twisted Nematic): Worst at most (especially at color display), but has better refresh/response time (though the gap has been largely narrowed). Often the cheapest option.
++ There's also OLED, which has "true black" (since it's self-illuminating, no extra backpanel illumination) and is growing in popularity over LCD types. OLED oxidises and experiences burn-ins (localized heating issues), so its lifespan is generally shorter than LED.
++ Future technology: Micro-(O)Led. Can be assembled at much higher density and survives longer than OLED. For now it still has "ghosting" issues (previous frames still being visible, can make a "smearing" effect)
++   Mini-LED is a transitionary technology. Just bigger (worse) MicroLED.
+
+> Response time
+* 5 ms response should be the most you accept at this point
+* 1 ms is the high standard and is becoming very common
+
+> Frequency
+* 60Hz is the standard garbage-extra-monitor. You can easily see which frames your monitor couldn't draw your mouse at.
+* 120Hz / 144Hz is a noticeable improvement over 60
+* 240 is about the best you can find but is still largely a TN-screen niche
+
+> Resolution
++ You should already know what resolution you're after (and remember that your computer requires a certain amount of power to drive the according amount of pixels)
++ There's 720p and 1366x768 ("WXGA HD"), but they're not worth looking into. 1080p is already a low bar at this age.
+* "1080p": 1920x1080 ("Full HD"). You can call it "1K".
+*   same category: 1920x1200 ("WUXGA"), and the x2 wider: 2560x1080
+* "1440p": 2560x1440 ("QHD" / "WQHD"). You can call it "2K"
+*   same category: 3440x1440 ("Ultra Wide QHD"/"UWQHD"), and the x2 wider: 5120x1440 ("Dual QHD")
+* "4K": 3840x2160 ("4K UHD")
+*   same category: the wider 5120x2160
+* "5K": 5120x2880 ("5K UHD")
+* "8K": 7680x4320 ("8K UHD")
+
+> HDR (color vibrance adjustment/improvement)
+* HDR 400: 400 nits of brightness; 8-bit colors (sRGB). Considered garbage quality, but it's still HDR...
+* HDR 10: 10-bit colors (Wide color gamut). A group of types that forms the vast majority of displays. If a monitor is just mentioned as "HDR 10", assume it's of the lowest quality of this group.
+* HDR 600: 600 nits of brightness; 10-bit colors
+* HDR 1000: 1000 nits of brightness; 10-bit colors. The high-standard of quality HDR with noticable improvement over the lesser options
+* HDR 1600: 1600 nits of brightness; 10-bit colors.
+
+> Freesync/G-sync
+* G-SYNC ("True GSYNC", NOT "GSYNC-Compatible") means that unlike Freesync, there's an actual processor within the screen that does 2-way communication with the video card 
+* Some great monitors don't have G-SYNC, but having G-SYNC is an assurance of a great monitor 
+
+> Brands
+* LG's highest-quality line of products: "UltraGear"
+* Acer's highest-quality line of products: "Predator"
+* ASUS's highest-quality line of products: "ROG Strix"
+
+
+
+>> Desktop PC case
+> TODO: form factors
+* TODO: Motherboard, GPU and maybe PSU size limitations
+> TODO: airflow
+
+
+
+>> SSD (flash)
++ No notes about Intel Optane (non-flash SSD), because as of the time of writing, it's discontinued
++ No comparison with HDDs, it's a slowly-dying technology. Longer waiting time, no tolerance to movement, bit-rot (magnetic flip of some bits after some time), higher electricity consumption and heat, larger physical space taken... Do yourself a favor and avoid those whenever you can. Get a QVO SSD if you want cheaper bulk-storage.
+
+> NVMe is better than SATA
++ Notice, on M.2 connections (or the SSD sticks) you can identify the supported protocol: 1 notch (hole, no bus) means it's NVMe, 2 notches means it's SATA
+* SATA is both the physical interface and the protocol. SATA III's bandwidth caps at 600 GB/s
+*  Notice that because of this, a USB 3.0 port (or better) can properly substitute a SATA port (with a proper adapter)
+* NVMe is a protocol optimized for SSDs, and requires a PCIe connection (M.2 is most common; there's also U.2)
+*  Throughput of NVMe on PCI gen.3: each lane supports 985 MB/s -- x1: 985 MB/s , x2: 1970 MB/s , x4: 3940 MB/s , x8: 7880 MB/s , x16: 15800 MB/s
+*  Throughput of NVMe on PCI gen.4: each lane supports 1970 MB/s -- x1: 1970 MB/s , x2: 3940 MB/s , x4: 7880 MB/s , x8: 15800 MB/s , x16: 31600 MB/s
+
+> SATA
++ The largest volume SSDs are in SATA or U.2 form. SATA is the more common and affordable options
+* If you need large storage-volume
+
+> USB
+* USB drives are usually used as temporary/transfer-storage, or as an easily-carried backup. They usually have very simple controllers, not meant for constant operation with concurrent requests
+*   You can use it for a few operating systems, notoriously Tails-OS which is built for privacy and content-ownership deniability
++ Taking the limitations of USB drives into consideration, you'd probably only value their volume (nowadays typically between 64GiB and 2TiB), and speed (refer to the USB section)
+
+> NAND types
++ The number of bits in a cell determine how long it has to live. If any of the bits burns out, the whole cell is unusable.
+* SLC (1 bit) single-level cell; will have the longest lifespan. No longer used for entire disks, only as cache
+* MLC (2 bits) multi-level cell; no longer made.
+* TLC (3 bits) tri-level cell; a common configuration for flash-SSDs, associated with V-NAND (3D-stacking) manufacturing
+* QLC (4 bits) quad-level cell; these cells die more frequently, but the higher density fits well for storage (write once, read as many times as you want)
+
+> DRAM and cache
++ Great-performance drives should have both of those. Especially the dedicated DRAM.
+* DRAM Buffer - space dedicated for a lookup-table (~0.1% of disk volume). Having a dedicated DRAM chip improves performance by a lot.
+*   There are 2 types of dedicated DRAM buffers: a DRAM module on the drive (best), or SLC-cache storage. 
+*   Without a dedicate DRAM buffer, the memorization of addresses within the SSD falls onto parts unfitting of the responsibility. Either:
+*       the SSD's storage space (everything will be slower and the disk degrades faster)
+*       your system's RAM (which creates accessibility and bandwidth/latency issues, especially during concurrent disk usages).
+* Cache - a fast-retrieve space that accelerates read/write - you read from it faster, or make a fast write which gets transferred (slower) to the main storage.
+*   Make sure it's SLC (single cell), i.e. dedicated. Not a direct write to the TLC.
+*   If you want to read/write large files, make sure that the cache-buffer is large enough.
+*   In case the SSD's storage space is used for DRAM/Cache, it'd degrade the storage space faster, require more free space on disk, and anyway the data there is slower-access which is counter-productive to the purpose of DRAM/Cache
+
+> Speeds
+* For PCI 3, expect 3.5 to 4 GB/s
+* For PCI 4, you should have ~7 GB/s
+
+> Brand
++ Notice that some brands add a "plus" to their models' names, and the throughput difference there could be multiple times more than non-plus version while only costing 10% more.
++ Note: There are 3 companies (not counting subsidiaries) that create DRAM: Samsung, Micron, SK Hynix. They also make NAND. It factors into the price and quality control.
+* You should pick from a known reputable brand, they're not much more expensive than their smaller competitors, and they have better support (drivers/software)
+*  Samsung [Flash/NAND manufacturer] - possibly the strongest SSD vendor, they have a lot of great products with good software
+*  Micron [Flash/NAND manufacturer] - sells to other businesses B-to-B; the SSDs you can buy from them are at huge volumes (and accordingly expensive)
+*  WD - a known company, but uses deceptive naming to sometimes sell inferior products using model names that sound more advanced; you need to check the specs carefully
+*  Crucial (a subsidiary of Micron; mostly budget-oriented) - Should be mentioned that they allegedly "pulled an ADATA" trick, by stealthily downgrading the controller of their MX500 models 
+*  SK Hynix [Flash/NAND manufacturer] - has some high-end drives
+*  Sabrent
+*  ADATA - be careful of them (buy only if there's a really good deal), as they quietly downgraded the quality of one of their models once, and also declared having a DRAM buffer on some models that didn't. Also some of their drives terribly underperformed despite having great specs listed.
+*  Sandisk (bought out by WD) - mediocre at best. Did the same shady parts-swap trick as ADATA.
+
+
+
+>> USB
++ Relevant for USB drives, USB-to-SATA adapters, Android file-transfer (and charging), video-feed (including streaming to a VR headset), and any external peripheral.
++ USB 4 (any gen) is only provided by USB-C
++ Some USB-C cables are merely supporting USB 2.0
++ When a USB-device supports a protocol, it's not inferred that it runs on it at full speed; it's just above the speed of previous tier.
+* The confusing terminology:
+~>  USB_version  Aliases                         Transfer-Rate_(Speed)
+~<  1.0          -                                            187 kB/s             
+~<  1.1          "Full-Speed"                                 1.5 MB/s             
+~<  2.0          "High-Speed"                                  60 MB/s              
+~<  3.x_Gen_1    "SuperSpeed"  (was: "USB 3.0")               625 MB/s             
+~<  3.x_Gen_2    "SuperSpeed+" (was: "USB 3.1")              1.25 GB/s            
+~<  3.2_Gen_2x2  -                                            2.5 GB/s             
+~<  4_Gen_3x2    -                                              5 GB/s               
+~<  4_Gen_4      "USB 4 V2.0"                                  10 GB/s    
+
+
+
+>> PCI
+* PCIe (PCI Express) connections have a different number of connectors (lanes): x1 / x4 / x8 / x16.
+*   x2 exists, but isn't common. Sometimes M.2 has 2 lanes (though usually it's 4)
+* PCI is universal and interchangeable: older-gen devices can use newer-gen slots, and newer-gen devices can use older-gen slots.
+*   The performance is by the lowest of the two. If one is only Gen 3, it wouldn't matter that the other is Gen 5, they'll run at Gen 3 speeds.
+*   You can use a slot with "too many" lanes for a device that connects to only a few of them. It'll work.
+*   Most devices (including GPUs) would even work on too-few lanes!
+*       if the PCIe header is close off at the end, blocking the rest of your device, you can really just cut-out the obstructing piece (carefully). Some motherboards have open-ended PCIe slots for this reason.
+~>  Table: PCIe Transfer Speeds (in GB/s) ;
+~>  PCIe_Generation      per-lane_(x1)  x2   x4  x8   x16
+~<                  1.0           0.25  0.5   1    2    4
+~<                  2.0            0.5    1   2    4    8
+~<                  3.0              1    2   4    8   16
+~<                  4.0              2    4   8   16   32
+~<                  5.0              4    8  16   32   64
+~<    6.0 (future-impl)              8   16  32   64  128
+~<  7.0 (future-design)             16   32  64  128  256
++ Like in USB, each generation roughly doubles the transfer rate of previous generation
++   Like in USB, these are "max speeds" - the PCIe slots won't maximize the above-listed potential, but they should be above previous generation's promise
+
+
+
+>> GPU
+
+> Reasons to pick AMD cards:
+* As of the time of writing, AMD (Radeon) cards are the budget-oriented options; better overall performance/price. Maybe Intel would become as relevant in the future.
+*   AMD cards have more VRAM in mid-tiers, and often more cores. As their drivers get better, their full potential gets realized years after launch, making them great long-term picks
+* Still as of current date, 2024 Q1, AMD is better for Linux (fewer issues of various sorts), though NVIDIA cards are perfectly workable
+
+> Reasons to pick NVIDIA cards
+* If you want to use CUDA for AI, you'd have to pick NVIDIA
+* If you want NVIDIA's "Ray Tracing" feature, you'd have to pick NVIDIA (AMD have their own, but it's not as developed)
+* If you have a G-SYNC monitor, you can't make use of that feature (G-SYNC) unless you use an NVIDIA GPU
+
+> Reasons to pick Intel cards:
+* Sometimes available for low price, for their performance.
+
+> Flaws
+* AMD's drivers are often reported as problematic, more than NVIDIA's
+* NVIDIA's latest highest-end cards have voltage problems; there are numerous reports of their high-power requirement practically melting connections
+* Intel's drivers are still lacking, as does the hardware (has a lot of potential, which might not ever get materialized). Basically buying them is still a gamble, if not a mere novelty.
+* Intel's cards are far behind AMD and NVIDIA in capabilities, for now.
+
+> Heatsink styles
+* There are 2 available styles: You can look at the heatsink's fin-orientation to tell which one it is:
+*   "Blower" cooler: takes air from the case, through the whole length of the aluminium fins of its heatsink, and extracts it out at the back of the case, below the monitor-connection ports
+*   "Open Air" cooler: takes air from the case, passing it perpendicular to the card's length, extracting it back into the case
+*       Some old cards have a circular heatsink that still dumps heat back into its surroundings; it's still open-air design.
+* Some cards have 2-sided cooling, as they specifically have memory modules are located at their back and are in need of extra cooling.
+*   Most cards just have a metal-backplate which passively spreads the heat to more area within the case
+* Fan area-size matters, so usually 3 fans are just better than 2 fans
+* Heatsink-mass matters; more (=denser) metal grates means more surface-area to exchange the heat through
++ GPU-cooling is often a major bottleneck. So practically, "Open-Air" is the better (and more-commonly available) choice, as it's better at cooling it (the air I/O is better as there's more surface-area for it to leave through)
++   If your case has heating issues, or the extra-heat is problematic to the CPU or the voltage modules around it, maybe you'd prefer a blower-style
+
+> Tiers
+* Vaguely the tiers go like this:
+*   low-tier: an (almost?) extinct tier of ~$100 cards, good enough to just-run AAA games on low-mid settings at 30-60 FPS.
+*       Modern APUs are about on-par with 8-year-old low-tier GPUs
+*       low-tier cards often require no extra power connections (they run just off the PCIe's power), and that makes them convenient to use in various situations, or upgrades of very-old computers
+*   mid-tier: cards that can run AAA games well up to 1440p (a few years ago, the standard for mid was 1080p). These days, in the range of $300-$600
+*   high-end: cards that run games at 4K, or render your 3D model projects and animations significantly faster than mid-tier. These days, in the range of $700-$1800
+*       Realistically, this tier is needed for quality-VR experience
+*       If you want to mine (GPU-based) Cryptocurrency, you basically need a card at this tier to have better value-per-watt (if you can have net gains at all...)
+*       AI workloads require cards of the higher-end of this tier, especially considering that the bottleneck is the amount of VRAM and that AI mainly uses CUDA (which is NVIDIA's, who skimp on VRAM in mid-range)
++ If you just want to game with your GPU, remember that some gains are meaningless; there's very little difference in experience between 140 FPS and 180 FPS at the same quality (number of polygons and same visual effects)
+*   A reasonable jump in capabilities is supposed to make gaming feasible on 1440p instead of 1080p, or 4K instead of 1440p. If you consider improving at hard-to-notice areas like between 90 and 96 FPS, just save your money.
+*       You should have a margin of just 10-20% beyond what you consider a good experience at the quality-tier you're aiming for. Beyond that, yet below the next quality-tier, there's no point.
++ Generally, you shouldn't waste a lot of money on the "Gaming"/"OC" edition cards (basically for the brand's stylized although maybe-bit-better cooler). If you get into a 250-300 dollar difference that could get you a higher-tier card, just get the higher-tier one.
++ NVIDIA selles "FE" ("Founders' Edition") cards, which have their own (somewhat shitty) heatsink applied. Quality-wise, FE cards are high-binned, and at a usually-lower price; they're often a better deal than 3rd-party NVIDIA cards.
++   An especially-good choice if you want to replace the heatsink with a waterblock
+
+> PCIe versions
+* There's no big uplift in GPUs' performance in most workloads between PCI Gen 5 over Gen 4. Some decent cards won't even be very limited by Gen 3.
+*   Expect 10-25% of performance difference between Gen3 and Gen4 for high-end cards (mildly significant, but not the full potential 100% difference in the generations' bandwidth-difference)
+
+
+
+>> CPU
+* As of the time of writing, AMD makes the best CPUs in both performance and efficiency.
+* AMD's CPUs are now the more expensive option, especially when factoring how pricier their motherboard are over Intel's
+TODO - focus on integrated graphics (APU)
+TODO - G / X / K / KF GPUs.
+
+
+
+>> RAM
+> Terminology
+* A desktop memory "stick" (or "card") is "DIMM". Laptop's is "SO-DIMM".
+* MT vs MHz: There's a RAM misconception for DDR (Double Data Rate); Products are specified as X MHz but measure at X/2 MHz in diagnostic tools. That's because this X refers to M.Transfers, not M.Hertz, since DDR (being true to its name) performs 2 transfer operations per cycle.
+* RAM has its own "split" in memory allocation - there's single-rank ("SR") and dual-rank ("DR"). Usually, but not always, a DR RAM card would have memory modules on both sides. and SR would only have them on one.
+*   SR isn't putting as big a load on the memory controller.
+* Memory controller is part of the CPU 
+* Your RAM-speed is also limited by the CPU and motherboard. Putting a bigger load on the memory controller results in having lower max-frequencies
+
+> Timing: There are 4-5 different timings: CL-tRCD-tRP-tRAS-(maybe)CMD  # for more details, read: https://hardwaresecrets.com/understanding-ram-timings/
+* CAS latency: "C" or "CL" or "Clock" is the most significant factor; num of cycles the memory controller takes to retrieve data
+*   So the latency of RAM is: (CL * 2 / transfer_rate) instructions/s.  The result is in the order of 1/10^8 instructions/s, so latency is typically around 10 nanoseconds.
+* RAS to CAS delay: "tRCD"; num of cycles it takes to access ready memory (time between "RAS"; row activation, and "CAS"; column activation in the data-matrix)
+* RAS precharge: "tRP"; num of cycles between row reads (disabling access to one line, and beginning access to another line)
+* Active to Precharge Delay: "tRAS"; minumum waiting-cycles a row (in data-matrix) has to go through until next memory access
+* Command rate: "CMD"; Sometimes not announced. Usually 1 or 2 cycles, which the memory chip requires to get ready after activation
+
+> Topologies: Your motherboard may have either of these RAM layouts:
+* "1DPC" (1 dimm per channel; usually on boards with 2 RAM slots) - the CPU has 2 channels, and each is connected to one RAM slot
+* "Daisy-Chain" (aka "fly-by") - slots from left to right 1,2 (typically "A1","A2") and 3,4 (typically "B1","B2") are daisy-chained together so the CPU accesses 2 with each channel
+*   When using only 2 of the slots, prefer using A2 and B2 (each RAM stick gets a channel to the CPU), i.e. the ones further away from the CPU
+*       Why A2, B2 and not A1, B1? For complicated electrical-engineering reasons (unknown to me)
+*   If you only have one stick (not ideal), use A2.
+* "T-topology" - the RAM slots are connected in pairs (like DaisyChain), but in parallel, so their distance to the CPU is the same. The bus-connections are at 90 degrees, which looks like "T"
+*   The paths are longer than in Daisy chain, expect lower frequency than DaisyChain for 2 sticks
+*   Less difference (if at all) between 2 RAM sticks and 4, due to the same-distances (bus-lengths) to CPU).
+*       You should still use A2, B2 as is custom, though technically you can be weird and put 2 sticks in A1, B2 or A1, B1 or A2, B1 or A1, B2. You wouldn't even need to retrain (re-determine timings for frequency).
++ These topologies' performance also depends on how well they were implemented; You should unerstand their limitations, but also consider how much your vendor cares for quality.
+
+> Buying / installing
+* As of the beginning of 2024, DDR4 is already unsupported by latest AMD/Intel generations. It's on its way out. DDR5 is about 1.5 times faster than DDR4, and consumes less power.
+* Don't mix different models of RAM - use multiple of the same kind of stick
+* Use 2 or 4 sticks of RAM (just not an odd number) to avoid latency issues.
+* Prefer 2 RAM sticks instead of 4 to lower the load on the memory controller (2x16 GiB 3600MT will sometimes have better response rate than 4x8 GiB 3600MT)
+*   There *is* more bandwidth in using 4. It factors in at some niche workloads.
+*   As mentioned, for 2 sticks, DaisyChain generally gets better frequencies
+*   If you really want to use 4, you're slightly better-off doing it in T-topology motherboard
+*       Generally, if it works out better for you (price or storage volume), just go for 4...
+* You can ignore the QVL (qualified vendors list) of motherboards, RAM rarely works exclusively with the listed vendors.
+* You can ignore the CPUs' and motherboards' listed compatible memory speeds - those are base-specs, not limits.
+* Remember that motherboards typically run RAM at 2666 MHz by default. You need to enter BIOS/UEFI configuration (press DEL or some other key while booting) to specify the target intended speed through "XMP" or "EXPO". If your calibration fails, try slightly lower frequency (or different voltage if you know what you're doing)
+*   You need to find how fast your RAM really goes through trial and error. For you, it may end-up higher or lower than what's mentioned on the product's box.
+* Repeating a past bullet to make it clear: the most important factor when buying RAM is the ratio of the frequency (desired higher) to Clock (desired lower)
+*   Example: 3600MHz* at C18 is lesser to 3200MHz* at C14.   (*MT, not MHz, but store-pages will display them wrong, so I'm playing along...)
+*   Example: 3600MHz* at C18 is about the same as 3200MHz* at C16. Generally, at equal frequency-to-clock ratios, the higher-frequency option is slightly better. (*see above remark)
+
+
+
+>> Motherboard
+> TODO: form factors
+TODO - refer to RAM in regards to topology
+TODO - refer to PCI in regards to possible allocations
+*   The top one (if not the only one) is usually x16, sometimes the only x16 on the board, and the only one connected to the CPU directly, so if you use a GPU, it should go there to maximize its bandwidth and performance
+TODO - specify chipset: PCI lanes and which ones go to CPU or chipset
+
+
+
+>> PSU
+* PSUs are most efficient (min. amount of power-loss) at around 50% utility. Of-course it's also important that it's able to power the entire system (PC) on full-load 
+* An old 1200W PSU is about as good and long-lasting as a modern-built one: computing evolves but physics doesn't; capacitors aren't built in much better quality than in the past
+*   Unless Nvidia would change the basic-wattage-requirement perception again, and your once-overkill PSU would be relatively underpowered in modern standards
+*   Generally buying a PSU that's "too good" in terms of wattage-supply is a generally a good idea - you won't need to buy a new one for your next PC, and it'd save a bit on your electricity as it'd run closer to the mentioned 50% point.
+* You should pick a PSU from a reputable vendor that uses Japanese capacitors, those are the best. The best-by-quality PSU companies by descending order:
+*   Seasonic
+*   EVGA / Corsair
+*   PC-case companies like Antec / be-quiet! / Cooler-Master / Fractal-Design
+*   motherboard companies like MSi / ASUS
+*   other known brands, such as XFX
+*   Gigabyte - knowingly shipped power supplies that 
+* Don't buy the following; Besides having to replace them sooner, your other more-expensive computer parts would be in danger:
+*   Unknown brands
+*       Aresgames [obscure brand] (Lied to become top PSU-seller in Amazon, for model "AGS850", claiming it was 80+ Gold, while it was 80+ Bronze at best)
+*   Gigabyte (purposely shipped faulty PSUs in the past. Look up "exploding power supplies" and you'll see them mentioned first.)
+* Try to pick a PSU with a better 80+ certification of efficiency, to minimize power-loss.
+*   This is just an efficiency-rating, don't think of it as a general-quality grade
+*   Be aware that this isn't monitored/enforced, and some companies have been caught lying about it
+~> Table: "80+'s efficiency per workload"
+~>  _             115V_internal*_____  230V**_____________  230V_EU*___________
+~>        load->  10%  20%  50%  100%  10%  20%  50%  100%  10%  20%  50%  100%
+~<  80+             -  80%  80%   80%    -    -    -     -    -  82%  85%   82%
+~<  80+_Bronze      -  82%  85%   82%    -  81%  85%   81%    -  85%  88%   85%
+~<  80+_Silver      -  85%  88%   85%    -  85%  89%   85%    -  87%  90%   87%
+~<  80+_Gold        -  87%  90%   87%    -  88%  92%   88%    -  90%  92%   89%
+~<  80+_Platinum    -  90%  92%   89%    -  90%  94%   91%    -  92%  94%   90%
+~<  80+_Titanium  90%  92%  94%   90%  90%  94%  96%   91%  90%  94%  96%   94%
+*:  internal_non-redundant
+**: internal redundant
+
+
+
+>> Air-coolers
+TODO
+
+
+
+>> Fans
+TODO
+
+
+
+>> Peripherals
+
+> Game-controllers
+* Gulikit has good magnetic-sticks controllers.
+*   Their most famous controller is the "KingKong2 Pro", which handles like the official Nintendo Switch's "Pro Controller"
+*       Has swappable thumb-buttons (XBOX or other console configuration), Amiibo reader, rumble, motion (orientation) sensor, and recordable/repeatable input
+*       Some of those come with buttons that start to squeak or get stuck, requiring a full teardown for oiling/greasing the keys' switches
+*       The buttons feel like MX Blue or Brown, very clicky. Supposedly rotating the switches' housing by 90 degrees would cause the bump to be ignored, acting more like MX Red
+*   Their later model, KK3 Max, is basically the same as the KingKong2 Pro, with some upgrades
+*       Includes a downgrade: regular/cheap silicone membrane instead of switches. Those could tear over time. But at least they won't get squeaky or stuck.
+*       Has 4 optional back-peddals that allow extra inputs.
+*       Not sure if previous models were this good at recording, but the playback has exact stick vectors (usually not the case in controllers' playback) 
+* 8bitdo - Nintendo-styled controllers of various sizes and looks
+
+
+
+
+
+
+TODO?
+DAC + AMP
+VR
+
+
+
+

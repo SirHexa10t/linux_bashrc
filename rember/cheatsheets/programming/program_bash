@@ -6,40 +6,42 @@
 *   linux-admin cheatsheet for common usage of Bash and basic OS operations
 
 
+
 >> Basic terminal tricks
 >> =====================
 
 > Command "decorators" (just prepend to a command, no need for quotes)
-* watch -n <int/float number> <command>     # rerun command on a cleared terminal every n (default: 2) seconds
-* time <command>                            # get time measurement for command runtime.
-* pv <args> | commad                        # "pipe viewer" - get a progress-bar for your command. Basically a "cat" command with an extra feature
-*   pv file1 > file2                        # works as `cat`
-*   while true; do sleep 1; done | pv       # puts a progress bar (with elapsed time) even if the job is endless or unknown in size
-* eval <command-string>                     # runs given string as a Bash command. Doesn't need to be a single string.
-* sudo <command>                            # run the command as superuser (root), unhindered by permission issues
+``` watch -n <int/float number> <command>     # rerun command on a cleared terminal every n (default: 2) seconds
+``` time <command>                            # get time measurement for command runtime.
+``` pv <args> | commad                        # "pipe viewer" - get a progress-bar for your command. Basically a "cat" command with an extra feature
+```     pv file1 > file2                      # works as `cat`
+```     while true; do sleep 1; done | pv     # puts a progress bar (with elapsed time) even if the job is endless or unknown in size
+``` eval <command-string>                     # runs given string as a Bash command. Doesn't need to be a single string.
+``` sudo <command>                            # run the command as superuser (root), unhindered by permission issues
 
 > Save time
-* !!        # basically means "last command"
-* sudo !!   # rerun last command with sudo permissions
+``` !!        # basically means "last command"
+``` sudo !!   # rerun last command with sudo permissions
 
 > Usage instructions
-* man <command>  # read the manual of the command
-*   help  # list built-in Bash commands
+``` man <command>  # read the manual of the command
+```     help  # list built-in Bash commands
+
 
 
 >> bash basic utility commands
 >> ===========================
 
-* compgen -c  # get list of current commands
+``` compgen -c  # get list of current commands
 * Use $ to reference variables
-*   "$my_var": value of variable my_var
-*   "$1": first arg in current scope (and so on for each num accordingly)
-*   "$@": all args in current scope as separate items ; "$*": all args in current scope concatenated into a unified string ; "$#": args count
-*   "$$": current PID
-*   "$?": the return code of last operation (can be used to check if it ran successfully)
-*   "$(<cmd here>)": run commands within commands (can also be done like so: `<cmd here>`)
-*   "${FUNCNAME[0]}": name of current function
-*   "${PIPESTATUS[0]}": return-status of first item in pipeline (if previous command has pipes)
+* "$my_var": value of variable my_var
+* "$1": first arg in current scope (and so on for each num accordingly)
+* "$@": all args in current scope as separate items ; "$*": all args in current scope concatenated into a unified string ; "$#": args count
+* "$$": current PID
+* "$?": the return code of last operation (can be used to check if it ran successfully)
+* "$(<cmd here>)": run commands within commands (can also be done like so: `<cmd here>`)
+* "${FUNCNAME[0]}": name of current function
+* "${PIPESTATUS[0]}": return-status of first item in pipeline (if previous command has pipes)
 * add `& disown` after a command to have it run in its own thread (thats the "&"), disconnected from current terminal-run process (thats the "disown") to prevent termination when the terminal closes
 * Use "<" to redirect a file. Example; to use file-contents as input: "./my_script.sh < input.txt"
 * Use "<<" ("here-document") to specify on what word (alone, not as an internal part of line) to stop reading text.
@@ -48,7 +50,8 @@
 * Use ">" to write output into a file (no truncate); if file doesn't exist, it's created. Example: echo 'add me as last line' >> file.txt 
 * add "<0/1/2> > <filename>" after a command to write input(0)/output(1)/error(2) streams to a file. Specify `&` to write both 1 and 2. You can also use numbers 3 to 9, those are free descriptors for you to use as you like.
 *   add "2> /dev/null" after a command to throw away warning/error messages it might bring up
-* declare -p <variable>  # Note: no use of $. Print the variable to check data / data-type
+``` declare -p <variable>  # Note: no use of $. Print the variable to check data / data-type
+
 
 
 >> PIPES
@@ -58,77 +61,80 @@
 * echo 'hello world ' | sed 's/[[:space:]]*$//'  # some commands (here it's sed, removing trailing spaces) expect possible input through std-in (piped input)
 
 > reading into input in the middle of pipeline
-* echo "Hello, World" | { read input; printf "${input%'World'}"; }  # use "read" to assign input to a variable, so it could be used in things like Parameter Expansion.
-* cat myfile | while IFS= read -r line; do [[ -z "${found_map["$line"]}" ]] && echo "$line"; done  # If you're piping more than one line, you need more than "read" (which ignores anything after first line).
+``` echo "Hello, World" | { read input; printf "${input%'World'}"; }  # use "read" to assign input to a variable, so it could be used in things like Parameter Expansion.
+``` cat myfile | while IFS= read -r line; do [[ -z "${found_map["$line"]}" ]] && echo "$line"; done  # If you're piping more than one line, you need more than "read" (which ignores anything after first line).
 
 > pasting contents of pipe
-* echo "my_string" | echo "the string is '$(cat)' and it was passed in stdin"  # reading reading the data into a specific location
+``` echo "my_string" | echo "the string is '$(cat)' and it was passed in stdin"  # reading reading the data into a specific location
 
 > checking if data is being piped into current function
-* [ ! -t 0 ]  # condition that says "stdin isn't empty". You can consume it with `cat`.
+``` [ ! -t 0 ]  # condition that says "stdin isn't empty". You can consume it with `cat`.
 
 > mid-pipe ret values
 + read above note about PIPESTATUS
+
 
 
 >> Expressions
 >> ===========
 
 > Calculate
-* age=21
-  next_age=$((age+1))       # next_age=22. Using double parentheses makes bash evaluate the expression with math. And you don't need "$" to reference vars (though you can use it anyway)
-* i=$(( (i+1) % 4 ))        # you can write more than one math operation within
-* (($1 <= 0)) && return     # can be used to evaluate expressions
-* echo "3.14/2" | bc        # result is 1
-* echo "3.14/2" | bc -l     # result is 1.57000000000000000000
+``` age=21
+    next_age=$((age+1))       # next_age=22. Using double parentheses makes bash evaluate the expression with math. And you don't need "$" to reference vars (though you can use it anyway)
+``` i=$(( (i+1) % 4 ))        # you can write more than one math operation within
+``` (($1 <= 0)) && return     # can be used to evaluate expressions
+``` echo "3.14/2" | bc        # result is 1
+``` echo "3.14/2" | bc -l     # result is 1.57000000000000000000
 
 > Inline
-* file_text="$(cat "$1")"   # using $() causes the evaluation of everything within, and saving the output into var. You can freely use quotes within, it won't interfere with external quotes
-* myvar=`my_cmd arg1 arg2`  # same as using $(), though less elegant
+``` file_text="$(cat "$1")"   # using $() causes the evaluation of everything within, and saving the output into var. You can freely use quotes within, it won't interfere with external quotes
+``` myvar=`my_cmd arg1 arg2`  # same as using $(), though less elegant
+
 
 
 >> Parameter Expansion
 >> ===================
 
 > Default to (pick)
-* num_of_threads=${1-$(nproc)}   # "-":  Default to right-side if left arg ($1) is unset
-* extra=${somevar:-$defaultvar}  # ":-": Default to right-side if left arg ($1) is unset or empty
-* ${parameter:+word}             # ":+": if the variable on the left is unset, leave it be. If it IS set, overwrite it with arg on right
-* a="${b:=some_value}"           # ":=": if b is unset, assign some_value. Eventually assign b's value to a 
+``` num_of_threads=${1-$(nproc)}   # "-":  Default to right-side if left arg ($1) is unset
+``` extra=${somevar:-$defaultvar}  # ":-": Default to right-side if left arg ($1) is unset or empty
+``` ${parameter:+word}             # ":+": if the variable on the left is unset, leave it be. If it IS set, overwrite it with arg on right
+``` a="${b:=some_value}"           # ":=": if b is unset, assign some_value. Eventually assign b's value to a 
 
 > Checks/Conditionals
-* ${param:?}                     # ":?": if param is unset, exit and output: "bash: param: parameter null or not set"
-* ${param:?word}                 # ":?": if param is unset, exit and output: "bash: word: parameter null or not set"
+``` ${param:?}                     # ":?": if param is unset, exit and output: "bash: param: parameter null or not set"
+``` ${param:?word}                 # ":?": if param is unset, exit and output: "bash: word: parameter null or not set"
 
 > Substrings
-* result="${hello_world_str:2}"  # ":":  returns substring from nth char onward. In this case if the string is "hello world" it'll return "llo world"
-*   "${@:2}"                     #          can return whole args by index, not just strings
-* result="${hello_world_str:2:5}"# ":":  returns substring starting at first index, at the length of second. In this case if the string is "hello world" it'll return "llo w"
-*   "${str:0:3}${str:7}"         #          pick string at ranges; this basically removes the substring between index 3 and 7 (exclusive)
-*   "${list[@]:$start:$count}"   #          get a <count> items, starting from <start> index 
-* "${filename%.*}"               # "%":  remove string from end; if removing pattern: shortest possible - in this example only last ".<thing>" gets erased, not all chain of ".<other>.<thing>".
-* "${multi_suffixed%%.txt}"      # "%%": remove string from end; if removing pattern: longest possible - in this example there's no pattern. It's the same as using a single '%'
-* "${filename#*_}"               # "#":  remove string from start; if removing pattern: shortest possible - in this example only first "<thing>_" gets erased, not all chain of "<thing>_<other_thing>_".
-* "${file%%"encrypted - "}"      # "##": remove string from start; if removing pattern: longest possible - in this example there's no pattern. It's the same as using a single '%'
+``` result="${hello_world_str:2}"    # ":":  returns substring from nth char onward. In this case if the string is "hello world" it'll return "llo world"
+```     "${@:2}"                     #          can return whole args by index, not just strings
+``` result="${hello_world_str:2:5}"  # ":":  returns substring starting at first index, at the length of second. In this case if the string is "hello world" it'll return "llo w"
+```     "${str:0:3}${str:7}"         #          pick string at ranges; this basically removes the substring between index 3 and 7 (exclusive)
+```     "${list[@]:$start:$count}"   #          get a <count> items, starting from <start> index 
+``` "${filename%.*}"                 # "%":  remove string from end; if removing pattern: shortest possible - in this example only last ".<thing>" gets erased, not all chain of ".<other>.<thing>".
+``` "${multi_suffixed%%.txt}"        # "%%": remove string from end; if removing pattern: longest possible - in this example there's no pattern. It's the same as using a single '%'
+``` "${filename#*_}"                 # "#":  remove string from start; if removing pattern: shortest possible - in this example only first "<thing>_" gets erased, not all chain of "<thing>_<other_thing>_".
+``` "${file%%"encrypted - "}"        # "##": remove string from start; if removing pattern: longest possible - in this example there's no pattern. It's the same as using a single '%'
 
 > Replacement/substitution (get a "fixed" copy, original doesn't get modified)
-* "${text/pattern/replacement}"  # "/":  replace first match of a string with a different string
-* "${text//pattern/replacement}" # "//": replace all matches of a string with a different string
-* "${hworld/#hello/hi}"          # "/#": replace a single leading-text (if) matched
-* "${hworld/%world/universe}"    # "/%": replace a single trailing-text (if) matched
+``` "${text/pattern/replacement}"   # "/":  replace first match of a string with a different string
+``` "${text//pattern/replacement}"  # "//": replace all matches of a string with a different string
+``` "${hworld/#hello/hi}"           # "/#": replace a single leading-text (if) matched
+``` "${hworld/%world/universe}"     # "/%": replace a single trailing-text (if) matched
 
 > Formatting
-* in_lower="${hworld_var,,}"     # ",,": to lower case
-* in_upper="${hworld_var^^}"     # "^^": to upper case
-* in_upper="${hworld_var,}"      # ",":  make first letter lower case
-* in_upper="${hworld_var^}"      # "^":  make first letter upper case
-* ${my_var@Q}                    # "@Q": make usable as input by putting in single quotes and escaping the exising single quotes
-* ${my_var@E}                    # "@E": make a predefined string usable as regex  - TODO: verify
+``` in_lower="${hworld_var,,}"     # ",,": to lower case
+``` in_upper="${hworld_var^^}"     # "^^": to upper case
+``` in_upper="${hworld_var,}"      # ",":  make first letter lower case
+``` in_upper="${hworld_var^}"      # "^":  make first letter upper case
+``` ${my_var@Q}                    # "@Q": make usable as input by putting in single quotes and escaping the exising single quotes
+``` ${my_var@E}                    # "@E": make a predefined string usable as regex  - TODO: verify
 
 > Measures and completion
-* ${#text}                       # get length
-* ${#list[@]}                    # get size of list
-* "${prefix@}"                   # list vars that begin with specified string - literal, not var; this example would print vars whose name starts with "prefix"
+``` ${#text}                       # get length
+``` ${#list[@]}                    # get size of list
+``` "${prefix@}"                   # list vars that begin with specified string - literal, not var; this example would print vars whose name starts with "prefix"
+
 
 
 >> Data Types
@@ -137,35 +143,36 @@
 > Strings
 + By default everything is string
 + Single quotes and double quotes are the same except double quotes allow referencing with "$". If you're using a simple string, it's a good habit to use single-quotes, it tells the reader that things are static.
-* echo hi               # echos 'hi'
-*   echo "hi"           # echos 'hi'
-*   echo 'hi'           # echos 'hi'
-* username='Mr. Andersen'
-  echo "hi $username"   # echos 'hi Mr. Andersen'
-  echo 'hi $username'   # echos 'hi $username'
-* ext='txt'
-  prefix='2022_08_'
-  my_path="/home/smith/${prefix}blood_pressure.${ext}"  # my_path="/home/smith/2022_08_blood_pressure.txt" . The curly braces are necessary for the prefix, so that the variable-name won't mix in with the text
-* mystr="${mylist[@]}"                                  # unite multiple elements to a single string (separated with spaces)
+``` echo hi                  # echos 'hi'
+```     echo "hi"            # echos 'hi'
+```     echo 'hi'            # echos 'hi'
+``` username='Mr. Andersen'
+    echo "hi $username"      # echos 'hi Mr. Andersen'
+    echo 'hi $username'      # echos 'hi $username'
+``` ext='txt'
+    prefix='2022_08_'
+    my_path="/home/smith/${prefix}blood_pressure.${ext}"  # my_path="/home/smith/2022_08_blood_pressure.txt" . The curly braces are necessary for the prefix, so that the variable-name won't mix in with the text
+``` mystr="${mylist[@]}"                                  # unite multiple elements to a single string (separated with spaces)
 
 > local vars
-* local i debug                 # the vars would exist without "local", but it'd be accessible (and changeable) globally. Use "local" within your functions.
-  debug="$(ask_user_if_debug)"
-  for i in "${numbers[@]}"; do 
+``` local i debug                 # the vars would exist without "local", but it'd be accessible (and changeable) globally. Use "local" within your functions.
+    debug="$(ask_user_if_debug)"
+    for i in "${numbers[@]}"; do 
 
 > Lists
-* list=("${@:2}")           # create list of all args from 2nd onwards
-  list+=("another_one")     # append another element to list
-* "$(declare -p mylist)"    # get as indexed array; basically conversion to hashmap. Turns (apple, banana, orange) to [0]="apple" [1]="banana" [2]="orange"
+``` list=("${@:2}")               # create list of all args from 2nd onwards
+    list+=("another_one")         # append another element to list
+``` "$(declare -p mylist)"        # get as indexed array; basically conversion to hashmap. Turns (apple, banana, orange) to [0]="apple" [1]="banana" [2]="orange"
 
 > Associative Arrays (similar to hashmap)
 + Don't use "local" - "declare -A" takes care of the scope issues.
-* declare -A colors=( [red]='\033[31m' [green]='\033[32m' [blue]='\033[34m' )   # declaration and assignment
-  colors[cyan]='\033[36m'                                                       # assign to key (overwrite if exists) 
-  echo -e "${colors[red]}The text is red\033[0m"                                # read via key through ${map[key]}
-* num_of_items=${#mymap[@]}                                                     # get count of items
+``` declare -A colors=( [red]='\033[31m' [green]='\033[32m' [blue]='\033[34m' )   # declaration and assignment
+    colors[cyan]='\033[36m'                                                       # assign to key (overwrite if exists) 
+    echo -e "${colors[red]}The text is red\033[0m"                                # read via key through ${map[key]}
+``` num_of_items=${#mymap[@]}                                                     # get count of items
 + for looping over hashmap, refer to Loops section
 + see iteration on "hashmaps" in loops section
+
 
 
 >> Conditions
@@ -192,47 +199,51 @@
 * extra_dist=$(( (a > b) ? (a - b) : 0 ))  # example for ternary in bash (use the "&&", "||" ternary instead when you have a condition in "[]"). The double-parentheses mean you don't need "$" to reference variables and that the math operations get evaluated
 
 
+
 >> Loops
 >> =====
 
 + Some of the following examples are collapsed into single lines so they'd be compact:
-  * while <condition>; do <command>; done
+``` while <condition>; do <command>; done
 + You CAN (and often should) do it like this :
-  * while <condition>; do
+``` while <condition>; do
         # code here
     done
 
 > while
-  * while true; do                                                      # infinite loop (needs to exit with "break" within)
-  * while IFS= read -r line; do <command>; done < "$some_file"          # read file line by line (each line saved into var "line")
-  * while IFS= read -r cmde; do <command>; done <<< "$text_block"       # read line by line from text. Can also do: << <<< "${text_list[@]}"
-  * while [[ $# -gt 0 ]]; do                                            # iterate while there are still args (contents of loop using "shift" to consume the args)
-  * while [ -z "$found" ]; do                                           # any condition would do.
-  *     while [ ! -e "$iso_file_path" ]; do                             # you can also use "not"
+``` while true; do                                                      # infinite loop (needs to exit with "break" within)
+``` while IFS= read -r line; do <command>; done < "$some_file"          # read file line by line (each line saved into var "line")
+``` while IFS= read -r cmde; do <command>; done <<< "$text_block"       # read line by line from text. Can also do: << <<< "${text_list[@]}"
+``` while [[ $# -gt 0 ]]; do                                            # iterate while there are still args (contents of loop using "shift" to consume the args)
+``` while [ -z "$found" ]; do                                           # any condition would do.
+```     while [ ! -e "$iso_file_path" ]; do                             # you can also use "not"
 
 > for
-  * for i in {1..20}; do echo "$i"; done                        # go through numbers 1 to 20 (inclusive)
-  * for protocol in tcp udp; do                                 # iterate on given strings. You might want to put the strings in quotes (for protocol in 'tcp' 'udp'; do) so that your IDE would color-code them as such. 
-  *     for protocol in 'tcp' 'udp'; do                         # Same. You might want to put the strings in quotes so that your IDE would color-code them as such. 
-  * mylist=('apples' 'oranges' 'lemons')
+``` for i in {1..20}; do echo "$i"; done                        # go through numbers 1 to 20 (inclusive)
+``` for arg in "$@"; do                                         # iterate on args
+``` for protocol in tcp udp; do                                 # iterate on given strings. You might want to put the strings in quotes (for protocol in 'tcp' 'udp'; do) so that your IDE would color-code them as such. 
+```     for protocol in 'tcp' 'udp'; do                         # Same. You might want to put the strings in quotes so that your IDE would color-code them as such. 
+``` mylist=('apples' 'oranges' 'lemons')
     for item in ${mylist[@]}; do                                # iterate on list items
-  * numbers1="1 2 3"; numbers2="2 4 6"; numbers2="10 20 30"; 
+``` numbers1="1 2 3"; numbers2="2 4 6"; numbers2="10 20 30"; 
     for number in $numbers1 $numbers2 $numbers3; do             # iterate on all elements (separated by whitespace) within all strings  
-  * for key in "${!myHashMap[@]}"; do echo "k: $key v: ${myHashMap[$key]}"; done  # iterate on "hashmap" keys
-  * for value in "${myHashMap[@]}"; do                          # iterate on "hashmap" values
-  * for ((i=0; i<$num_of_threads; i++)); do                     # c-style for-loop.
-  *     for ((i=0; i<$num_of_threads; ++i)); do                 # also works
-  *     for ((i=0, j=1; i<$num_of_threads; i++, j++)); do       # also works
+``` for key in "${!myHashMap[@]}"; do echo "k: $key v: ${myHashMap[$key]}"; done  # iterate on "hashmap" keys
+``` for value in "${myHashMap[@]}"; do                          # iterate on "hashmap" values
+``` for ((i=0; i<$num_of_threads; i++)); do                     # c-style for-loop.
+```     for ((i=0; i<$num_of_threads; ++i)); do                 # also works
+```     for ((i=0, j=1; i<$num_of_threads; i++, j++)); do       # also works
+
 
 
 >> String operations
 >> =================
 
 > Join
-* joined="$(IFS=$sep; echo "${arr[*]}")"                                            # ONLY if your separator is a single char
-* joined="$(printf "%s$separator" "${arr[@]}")"; joined="${joined%"$separator"}"    # print separated string with any separator. There's always a trailing separator at the end, so it needs to be removed explicitly
-*   printf -v joined "%s$separator" "${arr[@]}" ; joined="${joined%"$separator"}"   # same thing
-*   joined="$(printf "%s$separator" "${arr[@]}" | sed "s/${separator}$//")"         # ONLY if you don't have special characters in separator
+``` joined="$(IFS=$sep; echo "${arr[*]}")"                                             # ONLY if your separator is a single char
+``` joined="$(printf "%s$separator" "${arr[@]}")"; joined="${joined%"$separator"}"     # print separated string with any separator. There's always a trailing separator at the end, so it needs to be removed explicitly
+```     printf -v joined "%s$separator" "${arr[@]}" ; joined="${joined%"$separator"}"  # same thing
+```     joined="$(printf "%s$separator" "${arr[@]}" | sed "s/${separator}$//")"        # ONLY if you don't have special characters in separator
+
 
 
 >> shortcuts
@@ -245,5 +256,5 @@
 * ALT+BACKSPACE : delete cursor's last word (instead of holding backspace for a while)
 * CTRL+L : clear screen
 * CTRL+Z : send to background (leave any interactive UI for a while).
-*   fg  # return process to foreground (resume the UI of the process). If you have several stuff in the background stack, this pops the last one
+```     fg  # return process to foreground (resume the UI of the process). If you have several stuff in the background stack, this pops the last one
 

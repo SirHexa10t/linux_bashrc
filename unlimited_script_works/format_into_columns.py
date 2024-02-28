@@ -24,8 +24,8 @@ def strip_ansi(text):
     return ansi_escape.sub('', text)
 
 
-def is_number(input):
-    pattern = r'^[+-]?[0-9]+(\.[0-9]+)?\s?[KkMmGgTt]?i?[bB]?%?$'
+def is_number_maybe_w_unit(input):
+    pattern = r'^[+-]?[0-9]+(\.[0-9]+)?\s?[KkMmGgTt]?i?[bB]?(/s)?%?$'
     return bool(re.match(pattern, input))
 
 
@@ -41,14 +41,14 @@ def format_table(text: str, align_left=True):
         for j, word in enumerate(row):
             col_word_lengths[j] = max(col_word_lengths.get(j, 0), len(strip_ansi(word)))
             if word != NUMERICALLY_NEUTRAL:  # ignore word if it could be either a number or not
-                col_numerical_majority[j] = col_numerical_majority.get(j, 0) + (1 if is_number(word) else -1)
+                col_numerical_majority[j] = col_numerical_majority.get(j, 0) + (1 if is_number_maybe_w_unit(word) else -1)
 
     def pad_word(a_word, index):
         removed_chars_count = len(a_word) - len(strip_ansi(a_word))  # char-count ignores colors and other unseen chars
         padding_total = col_word_lengths.get(index, 0) + removed_chars_count
         # numbers need to be RTL, because it makes the MSB (most significant bit) stand out rather than the LSB.
         # the config doesn't matter; if a number/neutral-char is in a majority-numerical column, align it right
-        is_align_right_anyway = col_numerical_majority.get(index, 0) > 0 and (is_number(a_word) or a_word == NUMERICALLY_NEUTRAL)
+        is_align_right_anyway = col_numerical_majority.get(index, 0) > 0 and (is_number_maybe_w_unit(a_word) or a_word == NUMERICALLY_NEUTRAL)
         return a_word.rjust(padding_total) if not align_left or is_align_right_anyway else a_word.ljust(padding_total)
 
     # pad all words to make columns uniform
@@ -199,13 +199,14 @@ num       word  a  b  long_word
 
     def test_is_number(self):
         numerical_inputs = ["123", "123K", "123.45M", "2MB", "-1.23Gi", "5TiB", "1K", "1k", "2.5G", "10MiB",  "4.5",
-                            "2.000", "5 TiB", "+12.5", "10%", "2k%", ]
+                            "2.000", "5 TiB", "+12.5", "10%", "2k%", "1.3 k", "2 MB/s", "4.4GB/s", ]
         anumerical_inputs = ["abc", "1.2X", "1.2.3", "1 0", "2/2", "kB", "2%k", ]
 
         for num in numerical_inputs:
             print(f"testing num: {num}")
-            self.assertTrue(is_number(num))
+            self.assertTrue(is_number_maybe_w_unit(num))
 
         for non_num in anumerical_inputs:
             print(f"testing non-num: {non_num}")
-            self.assertFalse(is_number(non_num))
+            self.assertFalse(is_number_maybe_w_unit(non_num))
+
