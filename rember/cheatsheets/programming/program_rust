@@ -47,6 +47,9 @@
 ``` let num = 12;
     println!("number is: {num}.");
 
+> You can print items of type "Display"
+``` println!("value = {}", value);  // T is of type "Display"    
+
 > Debug-printing. Prints collections.
 ``` println!("{:?}", my_vector);
 
@@ -69,80 +72,80 @@
 
 + Everything is immutable by default. You have to specify "&mut" to have mutability
 
++ Start an arg-name with an underscore ('_') to signify "unused" 
+
+> Declaration / Assignment
 ``` let x: i32 = 42;  // Assign a variable. The type-declaration is optional
 
-> Strings
+> String Declaration / Assignment
 ``` let repeated_string: String = "-=".repeat(100);  // repeats the string
 
 ``` let s = String::from("hello world");
     let hello = &s[0..5];  // string "slice"
     let world = &s[6..11];
 
-
-> Arrays
+> Array Declaration / Assignment
 ``` let pair = ('a', 17);  // tuple - a fixed-size list
     pair.0;  // access at index 0 of a tuple, as if it were a field
 ``` let long_array: [i32; 100] = [42; 100];  // construct an array of 100 items, all of which are the number "42".
     let arr: [&str; 100] = ["hi" ; 100];  // construct an array of 100 items, all of which are the string "hi"
 
-
 > blocks evaluate values
-let x = { 
-    let y = 1;
-    let z = 2;
-    y + z  // the final line is "tail", and it's what the block will evaluate to. It's the same as writing: `return y+z;`
-};  
+``` let x = { 
+        let y = 1;
+        let z = 2;
+        y + z  // the final line is "tail", and it's what the block will evaluate to. It's the same as writing: `return y+z;`
+    };  
 
 > function definition
-fn ret_four() -> i32 {
-    4
-}
+``` fn ret_four() -> i32 {
+        4
+    }
 
 
 > returning multiple values
-* let (_, right) = slice.split_at(middle);  // save tuple return into 2 variables, throw the first one (meaning of underscore)
-* let DeriveInput {id, data, .. } = some_query_macro!(input as DeriveInput);  // save returned stream into 2 variables, and throw away the rest
+``` let (_, right) = slice.split_at(middle);  // save tuple return into 2 variables, throw the first one (meaning of underscore)
+``` let DeriveInput {id, data, .. } = some_query_macro!(input as DeriveInput);  // save returned stream into 2 variables, and throw away the rest
 
+> Variables can be functions
+``` let operation: fn(&i32) = do_something;  // do_something is a function. Calling `operation(&x)` is the same as calling `do_something(&x)`
 
-> You can go into namespaces using ::
-let least = std::cmp::min(3, 8); // this is 3
-let x = "amos".len(); // this is 4
-let x = str::len("amos"); // this is also 4
+> You can access functions in various ways.
+``` let least = std::cmp::min(3, 8); // this is 3
+``` let x = "amos".len(); // this is 4
+``` let x = str::len("amos"); // this is also 4
 
 
 > instantiating:
-let v3 = MyStruct {
-    x: 14.0,
-    ..v2  // "all the rest from var v2" - all fiels which haven't been specified yet are copied over. Must be specified in last line, and only once
-};
+``` let v3 = MyStruct {
+        x: 14.0,
+        ..v2  // "all the rest from var v2" - all fiels which haven't been specified yet are copied over. Must be specified in last line, and only once
+    };
 
 > creating variables from an object's fields
-let Vec2 { x, y } = v2;  // declare x and y which have the same value as v2 had
-let Vec2 { x, .. } = v2;  // declare x which has the value of v.x , and the rest is ignored
+``` let Vec2 { x, y } = v2;  // declare x and y which have the same value as v2 had
+``` let Vec2 { x, .. } = v2;  // declare x which has the value of v.x , and the rest is ignored
 
 
 > generic function
-fn foobar<L, R>(left: L, right: R) {
-    // do something with `left` and `right`
-}
-fn print<T: Display>(value: T) {
-    println!("value = {}", value);
-}
-fn print<T: Debug>(value: T) {
-    println!("value = {:?}", value);
-}
-fn compare<T>(left: T, right: T) where T: Debug + PartialEq, {  // use "where" to define traits for generics
-    println!("{:?} {} {:?}", left, if left == right { "==" } else { "!=" }, right);
-}
+``` fn foobar<L, R>(left: L, right: R) {
+        // do something with `left` and `right`
+    }
+``` fn print<T: Debug>(value: T) {
+        println!("value = {:?}", value);
+    }
+``` fn compare<T>(left: T, right: T) where T: Debug + PartialEq, {  // use "where" to define traits for generics
+        println!("{:?} {} {:?}", left, if left == right { "==" } else { "!=" }, right);
+    }
 
 > Closures (basically defining a lambda)
-let add = |a, b| a + b;  // call like so: `add(3, 5);`
+``` let add = |a, b| a + b;  // call like so: `add(3, 5);`
 
 
 > Passing arguments by reference
-fn read_vector(mut v: &Vec<i32>) -> Vec<i32> {  // v is passed by reference, i.e. read-only. Ownership isn't transferred to the function (original is still accessible)
-fn consume_vec(mut v: Vec<i32>) -> Vec<i32> {  // ownership is transferred (original becomes inaccessible), v can be consumed but it's still immutable, so the elements can't be modified
-fn modify_vector(v: &mut Vec<i32>) -> Vec<i32> {  // modify the contents of a vector, WITHOUT transferring ownership
+``` fn read_vector(mut v: &Vec<i32>) -> Vec<i32> {  // v is passed by reference, i.e. read-only. Ownership isn't transferred to the function (original is still accessible)
+``` fn consume_vec(mut v: Vec<i32>) -> Vec<i32> {  // ownership is transferred (original becomes inaccessible), v can be consumed but it's still immutable, so the elements can't be modified
+``` fn modify_vector(v: &mut Vec<i32>) -> Vec<i32> {  // modify the contents of a vector, WITHOUT transferring ownership
 + of course, it's not possible to do `mut v: &Vec<i32>`
 
 for element in v.iter_mut() { *element *= 2; }  // editing elements within mutable vector v
@@ -482,12 +485,22 @@ struct Number {
 
 
 
->> VARIABLE LIFETIME, REFERENCE/CLONE/COPY
->> =======================================
+>> VARIABLE LIFETIME/OWNERSHIP, REFERENCE/CLONE/COPY
+>> =================================================
 
-+ Copy is just bitwise Clone (for simple objects)
+> Clone vs Copy
+* Copy is just bitwise Clone (for simple objects)
 
-+ Like in C/C++, '&' means "address of" (reference), and '*' means "value at pointed address".
+> Ownership
+* Variables have ownership - they're deleted when their owning-scope closes
+*   If you send a var as an arg, it changes ownership, and so you lose the var after sending it over
+*       You can "borrow" a variable by specifying '&'. This makes the variable a reference-arg, in read-only mode
+* Like in C/C++, '&' means "address of" (reference), and '*' means "value at pointed address".
+
+> Lifetime
+* The lifetime of objects is denoted with "'".
+* Functions have defined lifetimes for borrowed objects. The compiler defines them for you if you don't.
+    ``` fn do_something<'a>(vec: &'a Vec<i32>) {  // the arg "vec" is a reference that lasts a lifetime of 'a' to a vector of integers. You can also write `for<'a>` instead of `<'a>` to specify "for any lifetime" (dynamic)
 
 > "mutable aliasing" rule: only one mutable reference at a time (ensures memory safety)
 let mut x = 100;
@@ -508,7 +521,7 @@ let o = n; // error: use of moved value: `n`
 + Rust has a 1-owner rule; every object can have only 1 variable pointing to it.
 +   Passing object as arg transfers ownership, unless "&" is added to pass it as "borrowed"
 + Rust has a 1-writer rule; An object can be edited by a function only once
-+   Passing an object with "&mut" (within the function-call) allows the modification of the object. You can't do it twice in a row, as stated.
++   Passing an object with `&mut` (within the function-call) allows the modification of the object. You can't do it twice in a row, as stated.
 
 > Use & to pass an object to a function as "borrowed", to prevent moving the pointer permanently
 fn print_number(n: &Number) {

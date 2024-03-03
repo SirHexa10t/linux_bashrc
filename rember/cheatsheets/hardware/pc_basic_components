@@ -30,55 +30,11 @@
 *   A guide for that is in a separate page
 
 
->> PC Desktop Screen/Monitor
-+ If you only want another screen for a TTY prompt or to display a playlist or a git manager or such, only resolution/size should concern you. 
-# Not discussing how things work; only the effects of used technologies
 
-> Type of LCD panel; Almost all monitors are made of LCD, lit by LEDs. The LCD is arranged in one of the following 3 configurations
-* IPS (In-Plane Switching): Good colors and angles, most common type as of this writing
-* VA (Vertical alignment; basically IPS but different crystal orientation): Similar to IPS, slightly better in some aspects
-* TN (Twisted Nematic): Worst at most (especially at color display), but has better refresh/response time (though the gap has been largely narrowed). Often the cheapest option.
-+ There's also OLED, which has "true black" (since it's self-illuminating, no extra backpanel illumination) and is growing in popularity over LCD types. OLED oxidises and experiences burn-ins (localized heating issues), so its lifespan is generally shorter than LED.
-+ Future technology: Micro-(O)Led. Can be assembled at much higher density and survives longer than OLED. For now it still has "ghosting" issues (previous frames still being visible, can make a "smearing" effect)
-+   Mini-LED is a transitionary technology. Just bigger (worse) MicroLED.
-
-> Response time
-* 5 ms response should be the most you accept at this point
-* 1 ms is the high standard and is becoming very common
-
-> Frequency
-* 60Hz is the standard garbage-extra-monitor. You can easily see which frames your monitor couldn't draw your mouse at.
-* 120Hz / 144Hz is a noticeable improvement over 60
-* 240 is about the best you can find but is still largely a TN-screen niche
-
-> Resolution
-+ You should already know what resolution you're after (and remember that your computer requires a certain amount of power to drive the according amount of pixels)
-+ There's 720p and 1366x768 ("WXGA HD"), but they're not worth looking into. 1080p is already a low bar at this age.
-* "1080p": 1920x1080 ("Full HD"). You can call it "1K".
-*   same category: 1920x1200 ("WUXGA"), and the x2 wider: 2560x1080
-* "1440p": 2560x1440 ("QHD" / "WQHD"). You can call it "2K"
-*   same category: 3440x1440 ("Ultra Wide QHD"/"UWQHD"), and the x2 wider: 5120x1440 ("Dual QHD")
-* "4K": 3840x2160 ("4K UHD")
-*   same category: the wider 5120x2160
-* "5K": 5120x2880 ("5K UHD")
-* "8K": 7680x4320 ("8K UHD")
-
-> HDR (color vibrance adjustment/improvement)
-* HDR 400: 400 nits of brightness; 8-bit colors (sRGB). Considered garbage quality, but it's still HDR...
-* HDR 10: 10-bit colors (Wide color gamut). A group of types that forms the vast majority of displays. If a monitor is just mentioned as "HDR 10", assume it's of the lowest quality of this group.
-* HDR 600: 600 nits of brightness; 10-bit colors
-* HDR 1000: 1000 nits of brightness; 10-bit colors. The high-standard of quality HDR with noticable improvement over the lesser options
-* HDR 1600: 1600 nits of brightness; 10-bit colors.
-
-> Freesync/G-sync
-* G-SYNC ("True GSYNC", NOT "GSYNC-Compatible") means that unlike Freesync, there's an actual processor within the screen that does 2-way communication with the video card 
-* Some great monitors don't have G-SYNC, but having G-SYNC is an assurance of a great monitor 
-
-> Brands
-* LG's highest-quality line of products: "UltraGear"
-* Acer's highest-quality line of products: "Predator"
-* ASUS's highest-quality line of products: "ROG Strix"
-
+>> Buying
+* PC hardware Prices are generally best around the end of the year, by Black Friday, and towards the holidays (Christmas, New Years...)
+* CPU / GPU announcements and launches are around Q3, which factors into price-drops by the end of the year (especially of year beginning's leading-edge hardware)
+* Some vendors
 
 
 >> Desktop PC case
@@ -90,19 +46,21 @@
 
 >> SSD (flash)
 + No notes about Intel Optane (non-flash SSD), because as of the time of writing, it's discontinued
-+ No comparison with HDDs, it's a slowly-dying technology. Longer waiting time, no tolerance to movement, bit-rot (magnetic flip of some bits after some time), higher electricity consumption and heat, larger physical space taken... Do yourself a favor and avoid those whenever you can. Get a QVO SSD if you want cheaper bulk-storage.
++ No comparison with HDDs, it's a slowly-dying technology. Longer waiting time, no tolerance to movement, bit-rot (magnetic flip of some bits after some time), higher electricity consumption and heat, larger physical space taken... Do yourself a favor and avoid those whenever you can. Just get a QVO SSD if you want cheaper bulk-storage.
 
 > NVMe is better than SATA
-+ Notice, on M.2 connections (or the SSD sticks) you can identify the supported protocol: 1 notch (hole, no bus) means it's NVMe, 2 notches means it's SATA
-* SATA is both the physical interface and the protocol. SATA III's bandwidth caps at 600 GB/s
-*  Notice that because of this, a USB 3.0 port (or better) can properly substitute a SATA port (with a proper adapter)
-* NVMe is a protocol optimized for SSDs, and requires a PCIe connection (M.2 is most common; there's also U.2)
-*  Throughput of NVMe on PCI gen.3: each lane supports 985 MB/s -- x1: 985 MB/s , x2: 1970 MB/s , x4: 3940 MB/s , x8: 7880 MB/s , x16: 15800 MB/s
-*  Throughput of NVMe on PCI gen.4: each lane supports 1970 MB/s -- x1: 1970 MB/s , x2: 3940 MB/s , x4: 7880 MB/s , x8: 15800 MB/s , x16: 31600 MB/s
++ Notice, on M.2 connections (or the SSD sticks) you can identify the supported protocol: 1 notch (hole on disk-drive, no bus) means it's NVMe, 2 notches means it's SATA
+* NVMe is a protocol optimized for SSDs, and requires a PCIe connection
+* M.2 is most common. There's also U.2 (mostly enterprise, it's rare in the consumer market), which looks a bit like SATA connection on the drives, though it works on NVMe.
+* M.2 connections provide 4 PCI lanes (less often, only 2), their max transfer speeds; PCI Gen-3: 3940 MB/s , PCI Gen-4: 7880 MB/s. See the PCI topic for more details.
 
 > SATA
-+ The largest volume SSDs are in SATA or U.2 form. SATA is the more common and affordable options
-* If you need large storage-volume
++ SATA is both the physical interface and the protocol (not limited by interface; can use the M.2 header).
+* SATA III's bandwidth caps at 600 GB/s
+*   Notice that because of this, a USB 3.0 port (or better) can properly substitute a SATA port (with a proper adapter). It's even convenient, as you don't need to route power
+*       You DO need to do power-cable routing if you want to run an HDD (generally: don't), since it needs the extra power for physical movement of the discs and head
+* If storage-volume is by-far your first priority, it makes sense to buy 2.5" SATA SSD drives. It's very cost-effective.
+* The largest volume SSDs are in SATA or U.2 form. SATA is the more common and affordable.
 
 > USB
 * USB drives are usually used as temporary/transfer-storage, or as an easily-carried backup. They usually have very simple controllers, not meant for constant operation with concurrent requests
@@ -127,10 +85,6 @@
 *   Make sure it's SLC (single cell), i.e. dedicated. Not a direct write to the TLC.
 *   If you want to read/write large files, make sure that the cache-buffer is large enough.
 *   In case the SSD's storage space is used for DRAM/Cache, it'd degrade the storage space faster, require more free space on disk, and anyway the data there is slower-access which is counter-productive to the purpose of DRAM/Cache
-
-> Speeds
-* For PCI 3, expect 3.5 to 4 GB/s
-* For PCI 4, you should have ~7 GB/s
 
 > Brand
 + Notice that some brands add a "plus" to their models' names, and the throughput difference there could be multiple times more than non-plus version while only costing 10% more.
@@ -166,8 +120,8 @@
 
 
 >> PCI
-* PCIe (PCI Express) connections have a different number of connectors (lanes): x1 / x4 / x8 / x16.
-*   x2 exists, but isn't common. Sometimes M.2 has 2 lanes (though usually it's 4)
+* PCIe (PCI Express) connections have a different number of connectors (lanes): x1 / x2 / x4 / x8 / x16.
+*   x2 isn't common. Sometimes M.2 has 2 lanes (though usually it's 4)
 * PCI is universal and interchangeable: older-gen devices can use newer-gen slots, and newer-gen devices can use older-gen slots.
 *   The performance is by the lowest of the two. If one is only Gen 3, it wouldn't matter that the other is Gen 5, they'll run at Gen 3 speeds.
 *   You can use a slot with "too many" lanes for a device that connects to only a few of them. It'll work.
@@ -241,6 +195,9 @@
 * There's no big uplift in GPUs' performance in most workloads between PCI Gen 5 over Gen 4. Some decent cards won't even be very limited by Gen 3.
 *   Expect 10-25% of performance difference between Gen3 and Gen4 for high-end cards (mildly significant, but not the full potential 100% difference in the generations' bandwidth-difference)
 
+> When to buy
+* Best prices are usually around the end of the year, by Black Friday
+
 
 
 >> CPU
@@ -305,6 +262,7 @@ TODO - refer to RAM in regards to topology
 TODO - refer to PCI in regards to possible allocations
 *   The top one (if not the only one) is usually x16, sometimes the only x16 on the board, and the only one connected to the CPU directly, so if you use a GPU, it should go there to maximize its bandwidth and performance
 TODO - specify chipset: PCI lanes and which ones go to CPU or chipset
+TODO - 3rd-party pressure plates for some types of CPU sockets, for even mounting
 
 
 
@@ -342,8 +300,70 @@ TODO - specify chipset: PCI lanes and which ones go to CPU or chipset
 
 
 >> Air-coolers
-TODO
++ Cheapest, simplest (reliable; not prone to breaking, but can be replaced easily regardless) cooling solution - air is conducted through the metal sitting on top of a component, which get vented by fan(s)
++ Rule of thumb: Metal mass determines cooling rate. The more metal and surface area, the better
++ Being a long-lasting product, a good cooler can serve you for many builds over the years. You can't argue with thermodynamics; products that were really good 10 years ago will still be good 10 years from now
++ Usually meant for CPU coolers; you wouldn't normally buy a GPU air-cooler because those always come bundled, and at better performance than stock CPUs' coolers (if any).
++   You can use a CPU-cooler on a GPU; it's quite effective. If you can mount it.
+TODO - mention RAM clearance
 
+> Leading products by avg temperature [fans x size] (descending order):
+* Thermalight Peerless Assassin [2x120]
+* Deepcool AK620 [2x120]
+* Zalman CNPS20X [2x140]
+* Noctua NH-D15 [2x140]
+*+  excellent support; Noctua even ships (on their expense!) brackets to new CPU sockets so you'll be able to keep using their good-old product
+* Deepcool Assassin III [2x140]
+* Scyte FUMA 2 [2x120]
+
+
+
+>> AIO
++ "All-in-One"; Liquid cooling "in-a-can"; includes a water-block, a couple of soft tubes, a small pump and a radiator. Comes pre-filled with water
+
+> Air-cooler similarities:
+* Metal mass matters a lot; i.e. bigger size and density of radiator are make noticeable improvement.
+* Almost always used on CPU, rather than GPU. Though you can (and maybe should), if you'll find a way to mount it to the GPU.
+* Eventually dumps the heat onto the case's (and eventually room's) air, using fans
+
+> Difference from air-coolers:
+*-Not as long-lasting or easy to replace parts as air-coolers
+*%Pricier, though superior at cooling
+*   If you bought a very expensive CPU, you may as well use an AIO to realize the CPU's potential
+*+Big radiators allow cooling at lower fan-spin, resulting in less noise
+*-Doesn't cool the VRMs and mosfets near the CPU the way air-coolers do
+*   Some AIOs have a fan embedded aat the water-block to solve this issue
+*+No RAM-clearance issues
+
+> Difference from custom liquid-cooling loop:
+*+Not quite as good (naturally, since AIO has just one "medium-sized" radiator and a small pump)
+*-Not nearly as much of a hassle or as expensive as custom.
+
+> Tube typtes
+* Rubber (could have braided externals) - flexible, but slight liquid loss over time
+* Teflon - more rigid, much less liquid loss, but could crack
+
+> Case-mounting
+* Make sure your case can accomodate the radiator (usually that means cases with space for a 360mm radiator on top)
+* The liquid inside isn't filled to 100%, and with time you'd accumulate more air within. That air can degrade the pump (pumps should not run on air, only liquid), so make sure that the pump isn't at the highest in the AIO
+*   If your pump is on the water-block (most common), your radiator should be at the top of the case, or to the side (front-intake) with part of it being higher than the CPU
+*       If you put the radiator to the side, the tubes should connect to the top part of the ratidator, to allow the escape of air from the CPU-block
+*   If your pump is embedded in the radiator, either put the radiator at the bottom of the case (if there's air-intake there), or vertically while pump area is at the bottom.
+
+> Leading products by avg temperature [fans x size]:
+* Arctic Liquid Freezer III 360 [3x120] (best while noise-normalized)
+*   modular CPU-block; the VRM-fan comes off easily for easy maintenance/replacement
+* Arctic Liquid Freezer II 420 [3x140]
+* Arctic Liquid Freezer II 360 [3x120]
+* EK AIO Elite 360 [3x120]  (best cooling at 100% fan speed)
+* Lian Li Galahad 360 [3x120]
+* EK AIO 240 [2x120]
+* Lian Li Galahad 240 [2x120]
+
+
+
+>> Thermal paste
+TODO
 
 
 >> Fans
@@ -351,27 +371,96 @@ TODO
 
 
 
->> Peripherals
 
-> Game-controllers
-* Gulikit has good magnetic-sticks controllers.
-*   Their most famous controller is the "KingKong2 Pro", which handles like the official Nintendo Switch's "Pro Controller"
-*       Has swappable thumb-buttons (XBOX or other console configuration), Amiibo reader, rumble, motion (orientation) sensor, and recordable/repeatable input
-*       Some of those come with buttons that start to squeak or get stuck, requiring a full teardown for oiling/greasing the keys' switches
-*       The buttons feel like MX Blue or Brown, very clicky. Supposedly rotating the switches' housing by 90 degrees would cause the bump to be ignored, acting more like MX Red
-*   Their later model, KK3 Max, is basically the same as the KingKong2 Pro, with some upgrades
-*       Includes a downgrade: regular/cheap silicone membrane instead of switches. Those could tear over time. But at least they won't get squeaky or stuck.
-*       Has 4 optional back-peddals that allow extra inputs.
-*       Not sure if previous models were this good at recording, but the playback has exact stick vectors (usually not the case in controllers' playback) 
-* 8bitdo - Nintendo-styled controllers of various sizes and looks
+=============================
+-------- Peripherals --------
+=============================
 
+
+
+>> PC Desktop Screen/Monitor
++ If you only want another screen for a TTY prompt or to display a playlist or a git manager or such, only resolution/size should concern you. 
+# Not discussing how things work; only the effects of used technologies
+
+> Type of LCD panel; Almost all monitors are made of LCD, lit by LEDs. The LCD is arranged in one of the following 3 configurations
+* IPS (In-Plane Switching): Good colors and angles, most common type as of this writing
+* VA (Vertical alignment; basically IPS but different crystal orientation): Similar to IPS, slightly better in some aspects
+* TN (Twisted Nematic): Worst at most (especially at color display), but has better refresh/response time (though the gap has been largely narrowed). Often the cheapest option.
++ There's also OLED, which has "true black" (since it's self-illuminating, no extra backpanel illumination) and is growing in popularity over LCD types. OLED oxidises and experiences burn-ins (localized heating issues), so its lifespan is generally shorter than LED.
++ Future technology: Micro-(O)Led. Can be assembled at much higher density and survives longer than OLED. For now it still has "ghosting" issues (previous frames still being visible, can make a "smearing" effect)
++   Mini-LED is a transitionary technology. Just bigger (worse) MicroLED.
+
+> Response time
+* 5 ms response should be the most you accept at this point
+* 1 ms is the high standard and is becoming very common
+
+> Frequency
+* 60Hz is the standard garbage-extra-monitor. You can easily see which frames your monitor couldn't draw your mouse at.
+* 120Hz / 144Hz is a noticeable improvement over 60
+* 240 is about the best you can find but is still largely a TN-screen niche
+
+> Resolution
++ You should already know what resolution you're after (and remember that your computer requires a certain amount of power to drive the according amount of pixels)
++ There's 720p and 1366x768 ("WXGA HD"), but they're not worth looking into. 1080p is already a low bar at this age.
+* "1080p": 1920x1080 ("Full HD"). You can call it "1K".
+*   same category: 1920x1200 ("WUXGA"), and the x2 wider: 2560x1080
+* "1440p": 2560x1440 ("QHD" / "WQHD"). You can call it "2K"
+*   same category: 3440x1440 ("Ultra Wide QHD"/"UWQHD"), and the x2 wider: 5120x1440 ("Dual QHD")
+* "4K": 3840x2160 ("4K UHD")
+*   same category: the wider 5120x2160
+* "5K": 5120x2880 ("5K UHD")
+* "8K": 7680x4320 ("8K UHD")
+
+> HDR (color vibrance adjustment/improvement)
+* HDR 400: 400 nits of brightness; 8-bit colors (sRGB). Considered garbage quality, but it's still HDR...
+* HDR 10: 10-bit colors (Wide color gamut). A group of types that forms the vast majority of displays. If a monitor is just mentioned as "HDR 10", assume it's of the lowest quality of this group.
+* HDR 600: 600 nits of brightness; 10-bit colors
+* HDR 1000: 1000 nits of brightness; 10-bit colors. The high-standard of quality HDR with noticable improvement over the lesser options
+* HDR 1600: 1600 nits of brightness; 10-bit colors.
+
+> Freesync/G-sync
+* G-SYNC ("True GSYNC", NOT "GSYNC-Compatible") means that unlike Freesync, there's an actual processor within the screen that does 2-way communication with the video card 
+* Some great monitors don't have G-SYNC, but having G-SYNC is an assurance of a great monitor 
+
+> Brands
+* LG's highest-quality line of products: "UltraGear"
+* Acer's highest-quality line of products: "Predator"
+* ASUS's highest-quality line of products: "ROG Strix"
+
+
+
+* TODO - Keyboards (and switches)
+
+* TODO - Mice
+
+* TODO - headphones
+
+
+
+>> Game-controllers
+
+> Gulikit has good magnetic-sticks controllers.
+* Their most famous controller is the "KingKong2 Pro", which handles like the official Nintendo Switch's "Pro Controller"
+*   Has swappable thumb-buttons (XBOX or other console configuration), Amiibo reader, rumble, motion (orientation) sensor, and recordable/repeatable input
+*   Some of those come with buttons that start to squeak or get stuck, requiring a full teardown for oiling/greasing the keys' switches
+*   The buttons feel like MX Blue or Brown, very clicky. Supposedly rotating the switches' housing by 90 degrees would cause the bump to be ignored, acting more like MX Red
+* Their later model, KK3 Max, is basically the same as the KingKong2 Pro, with some upgrades
+*   Includes a downgrade: regular/cheap silicone membrane instead of switches. Those could tear over time. But at least they won't get squeaky or stuck.
+*   Has 4 optional back-peddals that allow extra inputs.
+*   Not sure if previous models were this good at recording, but the playback has exact stick vectors (usually not the case in controllers' playback) 
+
+> 8bitdo - Nintendo-styled controllers of various sizes and looks
+
+
+
+* TODO - UPS (on-line and not, longevity, wattage according to PSU...)
 
 
 
 
 
 TODO?
-DAC + AMP
+DAC + AMP (and maybe speakers)
 VR
 
 

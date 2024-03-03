@@ -3,3 +3,5 @@ utility_files/*
 external_programs/*
 
 */.idea/
+
+*/__pycache__/

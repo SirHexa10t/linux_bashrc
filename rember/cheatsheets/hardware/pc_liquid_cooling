@@ -1,6 +1,8 @@
 # A guide/brief-overview of the parts involved in PC Watercooling / Liquid-cooling
 + An expensive hobby, but gets the best thermal results and thus also the best performance out of your system.
 + Does NOT cover Immersion Cooling, i.e. Mineral-oil cooling (mineral oil is thermally conductive, but not electrically-conductive); with 3M Novac or just plain baby-oil.
++ Does NOT cover cooling with Liquid Nitrogen (LN2). That's not even sustainable for usage.
++ While AIO is liquid cooling, the usage is closer to regular air-cooling, so it's in the regular PC parts note
 
 
 
@@ -31,11 +33,6 @@
 +       It's even better if it connects to the line that returns water to the reservoir within the loop.
 +           That way you leave the reservoir's other fill-port free, and can refill in 2 directions of the loop (rather than just fill one side and force the liquid around back to the other end)
 *   Having a reservoir helps fill the whole loop as it gives an extra water-volume buffer that aids with the displacement of trapped air (so you won't need to make too many refilling sessions)
-
-
-
->> AIO
-* TODO
 
 
 

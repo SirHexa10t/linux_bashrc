@@ -1,156 +1,175 @@
 # Notable Linux distros and their origin + usecase
 
 >> Distros:
++ A version of Linux (could be a branch of a branch of a branch...) with its own Release Cycle
 + Basically there are 3 primary groups of desktop distros (which use different package managers): Debian (apt), Arch (pacman), Fedora (dnf)
 *   Some distros come with specially-made UI and customization options, and of-course the maintainers (and their servers) differ too
 
-# TODO - reformat the lines
+> Debian
+* Debian - operating simplicity. Has a large community and common program support/compatibility. Debian itself isn't (or just wasn't?) easy to install.
+*   Ubuntu - user-friendly, basic/beginner experience on GNOME
+*       Mint - customized with a lot of tools and a few distinct systems, mainly used with Cinnamon (GNOME based)
+*       Pop!OS - like mint, stylized on its own, made by a laptop seller
+*       Tuxedo OS - great KDE system ("best KDE distro I ever saw" -The Linux Experiment), made by a laptop seller
+*       Elementary OS - stylish. Mouse (non-terminal) oriented. Requires recent hardware and at-least medium-spec hardware. Runs its own unique Desktop Environment that's in many ways like Mac
+*       Zorin OS - comes with some common software like Mint (and a bit beyond). Updates rather slow, every 2 years
+*       Kubuntu - flavor rather than distro; running on KDE Plasma (instead of GNOME)
+*       Lubuntu - flavor rather than distro; runinng on LXQt (instead of GNOME). Very lightwedight 
+*       Xubuntu - flavor rather than distro; runinng on Xfce (instead of GNOME). Very lightwedight 
+*   Deepin (formerly "Hiweed") - Chinese distro with telemetry, based on old Debian version
+*   SteamOS 1 / 2 - a game library/player
+*   Kali - basically a network and penetration-testing platform
+*   Parrot - same as Kali but less bloated
+*   Tails - Security/privacy-focused OS that runs off of a USB drive, and doesn't persist information
+*   Raspberry Pi OS - runs RaspberryPi devices
 
->> Debian
-Debian - operating simplicity. Has a large community and common program support/compatibility. Debian itself isn't (or just wasn't?) easy to install.
-    Ubuntu - user-friendly, basic/beginner experience on GNOME
-        Mint - customized with a lot of tools and a few distinct systems, mainly used with Cinnamon (GNOME based)
-        Pop!OS - like mint, stylized on its own, made by a laptop seller
-        Tuxedo OS - great KDE system ("best KDE distro I ever saw" -The Linux Experiment), made by a laptop seller
-        Elementary OS - stylish. Mouse (non-terminal) oriented. Requires recent hardware and at-least medium-spec hardware. Runs its own unique Desktop Environment that's in many ways like Mac
-        Zorin OS - comes with some common software like Mint (and a bit beyond). Updates rather slow, every 2 years
-        Kubuntu - flavor rather than distro; running on KDE Plasma (instead of GNOME)
-        Lubuntu - flavor rather than distro; runinng on LXQt (instead of GNOME). Very lightwedight 
-        Xubuntu - flavor rather than distro; runinng on Xfce (instead of GNOME). Very lightwedight 
-    Deepin (formerly "Hiweed") - Chinese distro with telemetry, based on old Debian version
-    SteamOS 1 / 2 - a game library/player
-    Kali - basically a network and penetration-testing platform
-    Parrot - same as Kali but less bloated
-    Tails - Security/privacy-focused OS that runs off of a USB drive, and doesn't persist information
-    Raspberry Pi OS - runs RaspberryPi devices
-
-
->> Red Hat
+> Red Hat
 + stable; business-oriented. Incorporates "SELinux" - Security Enhanced Linux developed by Red Hat and used by the NSA, which has a complicated user-access system.
-    Fedora - Highly polished, just works. Solid choice in most ways. Linus Tovalds's choice!
-        QubesOS - privacy-focused; everything is in its own VM. Touted as the best for security by Edward Snowden.
-        Nobara - Gaming-oriented (shortens a bit some simple steps you'd have to do in Fedora), with some slight improvements in performance over Fedora. No SELinux.
-    CentOS - stability/security-focused (on expense of updates). Used often on servers
-    RHEL - Enterprise Linux, used often on servers. NOT free.
+* Fedora - Highly polished, just works. Solid choice in most ways. Linus Tovalds's choice!
+*   QubesOS - privacy-focused; everything is in its own VM. Touted as the best for security by Edward Snowden.
+*   Nobara - Gaming-oriented (shortens a bit some simple steps you'd have to do in Fedora), with some slight improvements in performance over Fedora. No SELinux.
+* CentOS - stability/security-focused (on expense of updates). Used often on servers
+* RHEL - Enterprise Linux, used often on servers. NOT free.
 
+> Arch
+* Arch - Custom-tailored, meant to be personally-configured and run the latest software. Less bloat, as it's meant to run specifically with your hardware. Updates often, known to be less stable
+*   EndeavourOS - possibly the best Arch distro, according to someone on youtube. It's close to vanilla-Arch, with some slight tweaks.
+*   Garuda - use-friendly and polished with pre-selected programs and features. Includes a gaming-specific flavor.
+*   Manjaro - (was) relatively-convenient Arch; it detects your hardware and installs the necessary drivers for you. But they're not updating their certificates properly, and replaced open-source software with proprietary, and used alpha/beta version of apps as "stable". And some packages on AUR break Manjaro due to versioning. The focus is higher on stability (over bleeding-edge) than other Arch OSs, but that's probably your focus if you go for Arch.
+*   Arco Linux - similar to Manjaro?
+*       Big Linux - has a lot of convenient GUI configurations, and an easy way to switch the Desktop Environment
+*   SteamOS 3 - Steam Deck's OS, used for gaming, runs with KDE Plasma 5 and has a Windows-compatibility layer
+*       HoloISO - SteamOS, adapted to run on Desktop (naturally for gaming)
 
->> Arch
-Arch - Custom-tailored, meant to be personally-configured and run the latest software. Less bloat, as it's meant to run specifically with your hardware. Updates often, known to be less stable
-    EndeavourOS - possibly the best Arch distro, according to someone on youtube. It's close to vanilla-Arch, with some slight tweaks.
-    Garuda - use-friendly and polished with pre-selected programs and features. Includes a gaming-specific flavor.
-    Manjaro - (was) relatively-convenient Arch; it detects your hardware and installs the necessary drivers for you. But they're not updating their certificates properly, and replaced open-source software with proprietary, and used alpha/beta version of apps as "stable". And some packages on AUR break Manjaro due to versioning. The focus is higher on stability (over bleeding-edge) than other Arch OSs, but that's probably your focus if you go for Arch.
-    Arco Linux - similar to Manjaro?
-        Big Linux - has a lot of convenient GUI configurations, and an easy way to switch the Desktop Environment
-    SteamOS 3 - Steam Deck's OS, used for gaming, runs with KDE Plasma 5 and has a Windows-compatibility layer
-        HoloISO - SteamOS, adapted to run on Desktop (naturally for gaming)
+> Enoch
+* Gentoo - Like Arch but somehow more extreme. You have to compile everything yourself. Absolute minimalism and specialization, a good choice for a vending machine or a restaurant's menu.
+*   Chromium OS - for people who don't want a computer, just Google Chrome
 
->> Enoch
-    Gentoo - Like Arch but somehow more extreme. You have to compile everything yourself. Absolute minimalism and specialization, a good choice for a vending machine or a restaurant's menu.
-        Chromium OS - for people who don't want a computer, just Google Chrome
+> Alpine
+* Alpine - very light and minimalistic (supports run-from-RAM), great for microservices and dockerized server stuff
 
+> SuSE Linux 
++ "Software- und System-Entwicklung" (Software and Systems Development) [pronounced "suza"]
+* OpenSUSE Tumbleweed - rolling versions, but still stable. Can switch flavors easily! Has some GUI admin-tools that other distros don't have. OpenSUSE is meant for IT and productivity (comes with preinstallations)
+* OpenSUSE Leap - Enterprise-focuse. Slower than Tumbleweed.
 
->> Alpine
-Alpine - very light and minimalistic (supports run-from-RAM), great for microservices and dockerized server stuff
+> NixOS
+* NixOS - supports a lot of packages, has a reproducible-build system - writing packages and upgrade in specs, and you can go to previous versions if something broke. The Nix package manager is available for other distros.
 
+> Android
+* Android - a mobile-device OS mainly maintained and developed by Google
+*   LineageOS - a privacy-centered fork of CyanogenMod
 
->> SuSE Linux 
-+ "Software- und System-Entwicklung" (Software and Systems Development)
-    OpenSUSE Tumbleweed - rolling versions, but still stable. Can switch flavors easily! Has some GUI admin-tools that other distros don't have. OpenSUSE is meant for IT and productivity (comes with preinstallations)
-    OpenSUSE Leap - Enterprise-focuse. Slower than Tumbleweed.
+> OSs meant to run on media attachments; lightweight
+* Porteus - Works off SD/DVD/USB... Light and fast
+* Puppy - Works off SD/DVD/USB...
+* Tails (already mentioned above)
 
+> Linux From Scratch
++ a project that takes you through creation and customization of your own Linux OS.
 
->> NixOS
-NixOS - supports a lot of packages, has a reproducible-build system - writing packages and upgrade in specs, and you can go to previous versions if something broke. The Nix package manager is available for other distros.
+> LatticeOS
++ I don't know which distro it forks from. Lightweight system with convenient docker-exported Restful APIs. Used in some drones.
 
-
->> Android
-    LineageOS - a privacy-centered fork of CyanogenMod
-
-
-
-Meant to run on media attachments. Lightweight
-    Porteus - Works off SD/DVD/USB... Light and fast
-    Puppy - Works off SD/DVD/USB...
-    Tails (already mentioned above)
-
-
-Linux From Scratch - a project that takes you through creation and customization of your own Linux OS.
-
-
-OpenBSD/FreeBSD isn't Linux, but it's still Unix-like. Entirely free and highly secure (network security).
-
-Horizon (Nintendo Switch OS) - Derivative of "Nintendo 3DS system software", but has parts from FreeBSD's code, and Android elements
-
-LatticeOS - I don't know which distro it forks from. Lightweight system with convenient docker-exported Restful APIs. Used in some drones.
-
-
-
-Desktop Environments / flavors: 
-Remember that those can be swapped; those are just system configurations / packages
-
-    Qt-based:
-        KDE (Neon) - Entirely free-software based. Stylish/modern and highly modifiable. Has a large (well-made) applications bundle. [Kool Desktop Environment]
-            KDE Plasma - Has a lot of flare to it.
-            KDE Lite - ?
-        LXDE - a barebones lightweight environment
-        LXQt - lightweight fork of LXDE, (about twice heavier the LXDE). Negligibly lighter than Xfce; relatively new (for better/worse). Looks like an amalgamation of old Windows and Mac, seems to have its own quirks
-        Qtile - ?
-
-    GTK(+)-based: (GTK 3)
-        GNOME - Very common, but the progression from GNOME 2 to GNOME 3 (a bit more Mac-like) was controvertial.
-            Cinnamon - Stylized, but still decently snappy. A fork of GNOME 3 but the layout is like GNOME 2 (Windows-7 like).
-            MATE - Lighter than Cinnamon. The primary continuation of GNOME 2. Looks like Windows Vista.
-        Xfce - Minimal on features and with crude graphics, works for weak or old hardware. Looks like flat Windows XP [abbreviation: XForms Common Environment]
-        Pantheon - ?
-        Unity - used to be the environment of Ubuntu, but they're long-gone
-        Budgie - ?
-
-    i3 - keyboard-only window manager
-        TODO - see what it's based on
-    DWM - another window manager (just terminal windows)
-    
-    DDE (Desktop Deepin Environment) - all I know is that it's a "beautiful" environment, maybe the best at that.
-    i3WM - ?
-    Wayfire - ?
-    Awesome - ?
-    Xmonad
-    BSPWM
-    
-
-Visuals:
-GTK - open source toolkits and GUI elements. Everything uses it.
-Qt - a cross platform (for every common OS) GUI creator  [pronounced "cute"]
-X11 - a display server. Extremely common, very old, somewhat bloated.
-Wayland - a display server newer and lighter than X11. Many programs still don't support it. Accepts laptop trackpad gestures.
-
-
-File Managers:
-Nautilus - built on GNOME 2
-Nemo - A fork of Nautilus
-Caja - A fork of Nautilus
-Dolphin - built on KDE
-Terminal (tiling-ish) file managers:
-    Midnight Commander (mc) - the same kind of look and control you get in old BIOS menus
-    Ranger - vim-like, with file-preview functionality
-    Last Files (lf) - a mimic of Ranger with a few extra features; written in Go
-    CFiles Fast Terminal - similar to Ranger
-    Vi File Manager (vifm) - similar to Ranger, but with 2 panes like mc
-    Last File Manager (lfm) - like mc but more colorful; written in Python 3.4
-    Nnn - very fast and lightweight
-    TMux - session-based, with options to split into panes differently in each session
-    Sway - i3 but meant to be used with Wayland
-    Hyperland - fast-moving Wayland tiling manager
+> Meme distros:
+* AmogOS (among us, unknown to me what it forks off)
+* Ubuntu Satanic Edition (satanic Ubuntu, comes with free Metal music)
+* Moebuntu (moe Ubuntu. Anime styled)
+* Uwuntu (UwU Ubuntu. Anime styled)
+* Suicide Linux (Debian-based? incorrect commands get translated to "rm -rf /")
+* Red Star OS (North Korea's OS, unknown to me what it forks off. An opressive malware OS)
 
 
 
-Meme distros:
-AmogOS (among us, unknown to me what it forks off)
-Ubuntu Satanic Edition (satanic Ubuntu, comes with free Metal music)
-Moebuntu (moe Ubuntu. Anime styled)
-Uwuntu (UwU Ubuntu. Anime styled)
-Suicide Linux (Debian-based? incorrect commands get translated to "rm -rf /")
-Red Star OS (North Korea's OS, unknown to me what it forks off. An opressive malware OS)
+>> Non-Linux, but almost (Unix/Unix-like)
 
+> OpenBSD/FreeBSD
++ isn't Linux, but it's still Unix-like. Entirely free and highly secure (network security).
+
+> Horizon (Nintendo Switch OS)
++ Derivative of "Nintendo 3DS system software", but has parts from FreeBSD's code, and Android elements
+
+
+
+>> GUI toolkit
+* Qt - a cross platform (including for Windows) GUI creator  [pronounced "cute"]
+* GTK+ - open source toolkits, common in Unix-like systems. Used to write Desktop Environments but not Window-managers(?)
+
+
+
+>> Display Servers
+* X11 - a display server. Extremely common, very old, somewhat bloated.
+* Wayland - a display server newer and lighter than X11. Many programs still don't support it. Notably, accepts laptop trackpad gestures.
+
+
+
+>> Window-manager
++ The main visual component of a Desktop Environment (if included). Determines display of windows, screen-interaction, effects like snapping and tiling, GUI elements like the taskbar... 
+
+> Tiling Managers
++ Keyboard-driven managers that automatically snap windows without overlap
+* i3 - keyboard-only window manager  # TODO - see what it's based on
+*   Sway - i3 but meant to be used with Wayland
+* DWM - another window manager (just terminal windows)
+* Awesome - can be used in tiling / floating mode, can use Wayland
+* Xmonad - ?
+* Hyperland - uses Wayland
+* BSPWM - uses Wayland
+* Wayfire - uses Wayland
+* Mosaic - uses Wayland
+* Qtile - Qt-based
+* River - ?
+* Cutefish - ?
+
+> Stacking Managers
+* KWin - KDE Plasma implementation that uses Wayland
+* Mutter - GNOME Shell that uses Wayland
+
+
+
+>> Desktop Environments / flavors: 
++ Desktop environment is a complete interface that consists of a Window Manager, File Manager, Applications, Themes...
++ Flavors are variants of pre-configured distro-installations. Basically further-tweaked/personalized (if at all) Desktop Environments
++ Remember that those can be swapped; they're just system configurations / packages
+
+> Qt-based:
+* KDE (Neon) - Entirely free-software based. Stylish/modern and highly modifiable. Has a large (well-made) applications bundle. [Kool Desktop Environment]
+*   KDE Plasma - Has a lot of flare to it.
+*   KDE Lite - ?
+* LXDE (discontinued) - a barebones lightweight environment
+*   LXQt - lightweight fork of LXDE, (about twice heavier the LXDE). Negligibly lighter than Xfce; relatively new (for better/worse). Looks like an amalgamation of old Windows and Mac, seems to have its own quirks
+* DDE (Desktop Deepin Environment) - a "beautiful" environment, maybe the best at that.
+
+> GTK(+)-based: (GTK 3)
+* GNOME - Very common, but the progression from GNOME 2 to GNOME 3 (a bit more Mac-like) was controvertial.
+*   Cinnamon - Stylized, but still decently snappy. A fork of GNOME 3 but the layout is like GNOME 2 (Windows-7 like).
+*   MATE - Lighter than Cinnamon. The primary continuation of GNOME 2. Looks like Windows Vista.
+*   Budgie - used in Solus, featuring a modern and customizable interface
+* Xfce - Minimal on features and with crude graphics, works for weak or old hardware. Looks like flat Windows XP [abbreviation: XForms Common Environment]
+* Pantheon - used in elementary OS, simple/user-friendly
+* Unity (discontinued) - used to be the environment of Ubuntu, but they're long-gone
+
+
+
+>> File Managers
+
+> Graphical
+* Nautilus - started on GNOME 2, evolved since 
+* Nemo - A fork of Nautilus
+* Caja - A fork of Nautilus
+* Dolphin - built on KDE, for KDE Plasma
+
+> Terminal-based
+* Midnight Commander (mc) - the same kind of look and control you get in old BIOS menus
+* Ranger - vim-like, with file-preview functionality
+* Last Files (lf) - a mimic of Ranger with a few extra features; written in Go
+* CFiles Fast Terminal - similar to Ranger
+* Vi File Manager (vifm) - similar to Ranger, but with 2 panes like mc
+* Last File Manager (lfm) - like mc but more colorful; written in Python 3.4
+* Nnn - very fast and lightweight
+
+> honorable-mention:
+* TMux - basically the experience of a terminal-based file-manager, in a package. It's session-based, with options to split into panes differently in each session
 
 
 

@@ -3142,9 +3142,11 @@ function commecho () {  ###tags: text-coloring
     local ny='\(.*\)'  # "n-ything"
     local n_e='\(.*$\)'  # "en-ee"; "ANYthing until End". The braces need to be escaped, but not the dollar sign, it means "end"
     local cs='^``` '  # code-start (line starts with: '``` '), used to identify if later code-comment is applicable
-    local cm="$tilted_quote_color"  # code-marking (the color-coding at the start of a code-line)
+    local cm="$(_tag_persist "$tilted_quote_color")"  # code-marking (the color-coding at the start of a code-line)
     
     # formatted=$(echo "$formatted" | sed -E "s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-input). Needs to run first, to not modify the color tags
+    
+    #  TODO - add coloring for tables (in table rows, color-code numericals/units, and the words "yes" and "no")
     
         
     formatted="$(echo "$formatted" | awk '
