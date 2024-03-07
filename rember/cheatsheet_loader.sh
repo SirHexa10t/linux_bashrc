@@ -2,8 +2,8 @@
 
 # Cheatsheet management file
 
-CHEATSHEETS_FILE="$(realpath "$BASH_SOURCE")"  # not necessary if main script already has it, but with this the file is more independent
-CHEATSHEETS_PATH="$(dirname "$CHEATSHEETS_FILE")/cheatsheets"
+CHEATSHEETS_INIT_FILE="$(realpath "$BASH_SOURCE")"  # not necessary if main script already has it, but with this the file is more independent
+CHEATSHEETS_PATH="$(dirname "$CHEATSHEETS_INIT_FILE")/cheatsheets"
 CHEATSHEET_PREFIX='howdoi_'
 
 declare -A CHSH_FLAGS
@@ -23,6 +23,7 @@ function _get_chsh_edit_conditions () {
     echo "$final_contents"
 }
 CHSH_FUNCTION_CONTENTS="$(_get_chsh_edit_conditions)"
+CHSH_FLAGS_SPECIFICATION="$( for flag in "${!CHSH_FLAGS[@]}"; do echo -n "$(wecho "$flag"): open/print file using $(orecho "${CHSH_FLAGS[$flag]}") ;  "; done )"
 
 
 # Synonymous to "cheatsheets".
@@ -32,16 +33,6 @@ alias list_cheatsheets='cheatsheets'
 function _get_cheatsheet_files () { find "$CHEATSHEETS_PATH" -type f; }
 # get command name that opens cheatsheet ; arg1: cheatsheet file
 function _derive_chsh_cmd_name () { echo "${CHEATSHEET_PREFIX}$(basename "${1:-$(cat)}")"; }
-
-
-function _load_cheatsheets () {
-    local chsh_file
-    while IFS= read -r chsh_file; do
-        local cmd_name="$(_derive_chsh_cmd_name "$chsh_file")"
-        eval "function $cmd_name () { "${CHSH_FUNCTION_CONTENTS//$CHEATSHEET_PLACEHOLDER/$chsh_file}"; }"
-    done <<< "$(_get_cheatsheet_files)" 
-}
-_load_cheatsheets
 
 
 function _list_cheatsheets_api () {
@@ -77,17 +68,19 @@ function cheatsheets () {
         _get_cheatsheet_files | while IFS= read -r file; do grep -e "$1" -i "$file" -C 2 --color=always | _print_if_stream "Matches within $(wecho $(_derive_chsh_cmd_name "$file"))" ; done        
     else    # general info
         orecho "To search within cheatsheets, rerun this command, followed by string-to-search."
-        orecho "To edit a cheatsheet you can run its \"$CHEATSHEET_PREFIX\" command, followed by a flag. \
-    $( for flag in "${!CHSH_FLAGS[@]}"; do echo -n "$(wecho "$flag"): open/print file using $(orecho "${CHSH_FLAGS[$flag]}")  "; done )"
+        orecho "To edit a cheatsheet you can run its \"$CHEATSHEET_PREFIX\" command, followed by a flag. $CHSH_FLAGS_SPECIFICATION"
         echo 
         tree --dirsfirst "$CHEATSHEETS_PATH"  # paste files, tree style
         echo
         echo "${command_list[@]}" | _print_if_stream "Commands:"
     fi
-    
 }
 
 
+# load cheatsheets
+while read -r chsh_file; do
+    eval "function $(_derive_chsh_cmd_name "$chsh_file") () { "${CHSH_FUNCTION_CONTENTS//$CHEATSHEET_PLACEHOLDER/$chsh_file}"; }"
+done <<< "$(_get_cheatsheet_files)"   && unset chsh_file
 
 
 
@@ -103,14 +96,14 @@ function cheatsheets () {
 
 function _howdoi_rember () {
     
-    local br='<=very_light_red=>'  # eyes-inner, tongue
+    local br='<=very_light_red=>'       # eyes-inner, tongue
     local r='<=red=><=bold=>'           # eyes outer
-    local m='<=red=>'           # inner-mouth
-    local o='<=dark_brown_2=>'  # outline and brows and borders
-    local c='<=skin_pink_2=>'   # cheeks
-    local s='<=skin_light=>'    # skin ; maybe use <=b_yellow=> 
-    local h='<=medium_green=>'  # hair ; maybe use <=b_green=>
-    local w='<=light_grey=><=bold=>'     # reflections and background
+    local m='<=red=>'                   # inner-mouth
+    local o='<=dark_brown_2=>'          # outline and brows and borders
+    local c='<=skin_pink_2=>'           # cheeks
+    local s='<=skin_light=>'            # skin ; maybe use <=b_yellow=> 
+    local h='<=medium_green=>'          # hair ; maybe use <=b_green=>
+    local w='<=light_grey=><=bold=>'    # reflections and background
     local writings='<=h_green=> '
     local y='*'                 # not a color, just an almost-outline char that counts on the background to "darken" the color
 
@@ -157,8 +150,8 @@ ${writings}
 ${writings}wen day is dark alway rember happy day      
 "
 
-_draw_formatted "$ascii_gyate_yuuka_inverted"
-
+    _draw_formatted "$ascii_gyate_yuuka_inverted"
+}
 
 
 

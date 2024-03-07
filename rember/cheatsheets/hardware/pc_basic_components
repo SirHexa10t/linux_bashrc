@@ -14,6 +14,8 @@
 
 
 >> Desktop PC requirements
+
+> Components
 * A standard desktop computer should includes the following:
 *   Motherboard
 *   CPU
@@ -25,9 +27,19 @@
 *   PSU
 *   Case
 +   Also cables, like DP/HDMI for monitor, or SATA cables for SATA devices
-+   Optionally other peripherals (if needed) that do a better job than your motherboard at audio or networking
-* You can do liquid-cooling (not for beginners) and forego some of the air-coolers.
-*   A guide for that is in a separate page
+
+> Building aids
+* TODO - Thermal paste
+* TODO - screwdriver
+
+> Optional upgrades
+* PCIe cards that do a better job than your motherboard:
+*   audio card
+*   networking (NIC)
+*       You might want to output the audio through digital (binary) signals like USB, or optical: TosLink (Toshiba Link) or S/PDIF (Sony/Philips Digital Interface)
+*   more USB ports
+*   WiFi
+* You can do liquid-cooling (not for beginners) and forego some of the air-coolers (a guide for that is in a separate page)
 
 
 
@@ -210,7 +222,8 @@ TODO - G / X / K / KF GPUs.
 
 >> RAM
 > Terminology
-* A desktop memory "stick" (or "card") is "DIMM". Laptop's is "SO-DIMM".
+* A desktop memory "stick" (or "card") is "DIMM". For laptop and most mini-PCs, it's "SO-DIMM".
+*   The 2 are different in physical form. Make sure you buy the right one!
 * MT vs MHz: There's a RAM misconception for DDR (Double Data Rate); Products are specified as X MHz but measure at X/2 MHz in diagnostic tools. That's because this X refers to M.Transfers, not M.Hertz, since DDR (being true to its name) performs 2 transfer operations per cycle.
 * RAM has its own "split" in memory allocation - there's single-rank ("SR") and dual-rank ("DR"). Usually, but not always, a DR RAM card would have memory modules on both sides. and SR would only have them on one.
 *   SR isn't putting as big a load on the memory controller.

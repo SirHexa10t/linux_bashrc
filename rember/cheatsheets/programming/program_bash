@@ -211,12 +211,15 @@
     done
 
 > while
-``` while true; do                                                      # infinite loop (needs to exit with "break" within)
-``` while IFS= read -r line; do <command>; done < "$some_file"          # read file line by line (each line saved into var "line")
-``` while IFS= read -r cmde; do <command>; done <<< "$text_block"       # read line by line from text. Can also do: << <<< "${text_list[@]}"
-``` while [[ $# -gt 0 ]]; do                                            # iterate while there are still args (contents of loop using "shift" to consume the args)
-``` while [ -z "$found" ]; do                                           # any condition would do.
-```     while [ ! -e "$iso_file_path" ]; do                             # you can also use "not"
+``` while true; do                                              # infinite loop (needs to exit with "break" within)
+``` while IFS= read -r line; do <command>; done < "$some_file"  # read file line by line (each line saved into var "line")
+``` while read -r cmde; do <command>; done <<< "$text_block"    # read line by line from text. Can also do: << <<< "${text_list[@]}"
+``` while [[ $# -gt 0 ]]; do                                    # iterate while there are still args (contents of loop using "shift" to consume the args)
+``` while [ -z "$found" ]; do                                   # any condition would do.
+```     while [ ! -e "$iso_file_path" ]; do                     # you can also use "not"
+``` find "$current_dir" -type f | while read -r file; do        # iterate on the results of a different command
+``` cat "$file" | while IFS= read -r line; do                   # iterate on lines from pipe
++ Be aware that using a pipe opens a new subshell (so you can't source files, for example), but using `<<<` doesn't present that issue
 
 > for
 ``` for i in {1..20}; do echo "$i"; done                        # go through numbers 1 to 20 (inclusive)
@@ -232,6 +235,10 @@
 ``` for ((i=0; i<$num_of_threads; i++)); do                     # c-style for-loop.
 ```     for ((i=0; i<$num_of_threads; ++i)); do                 # also works
 ```     for ((i=0, j=1; i<$num_of_threads; i++, j++)); do       # also works
+``` shopt -s extglob
+    for line in +(/path/to/your/file); do echo "$line"; done    # Using extended globbing; perform actions on each line within file
+    shopt -u extglob
+``` for file in '/sys/kernel/iommu_groups/'*'/devices/'*; do    # loop on matching file/dir paths within filesystem with globbing (asterisks need to be outside the string)
 
 
 

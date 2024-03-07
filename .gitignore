@@ -5,3 +5,7 @@ external_programs/*
 */.idea/
 
 */__pycache__/
+
+unlimited_script_works/scripts/__pycache__/
+
+unlimited_script_works/scripts/.idea/
