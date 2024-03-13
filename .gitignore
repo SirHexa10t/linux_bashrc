@@ -9,3 +9,5 @@ external_programs/*
 unlimited_script_works/scripts/__pycache__/
 
 unlimited_script_works/scripts/.idea/
+
+unlimited_script_works/scripts/pyproject.toml

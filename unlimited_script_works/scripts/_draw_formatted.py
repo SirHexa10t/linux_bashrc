@@ -5,108 +5,176 @@ recolors text by replacing color tags with their appropriate color-codes
 arg 1: tagged text ; unless it's "--print_available_colors" (print available tags)
 """
 
+# TODO - handle streamed data, and/or file-descriptor data (in case it's streamed with '<<<')
+
 import sys
 import re
-
-colors_map = {
-    # less standard colors
-    '<=orange=>': '\033[38;5;208m', '<=brown=>': '\033[38;5;130m', 
-    '<=pink=>': '\033[38;5;213m', '<=light_pink=>': '\033[38;5;219m', '<=very_light_red=>': '\033[38;5;210m',
-    '<=skin_light=>': '\033[38;5;223m', '<=skin_pink=>': '\033[38;5;225m', '<=skin_pink_2=>': '\033[38;5;217m',
-    '<=dark_brown=>': '\033[38;5;58m', '<=dark_brown_2=>': '\033[38;5;94m',
-    '<=light_grey=>': '\033[38;5;254m',
-    '<=neon_green=>': '\033[38;5;118m', '<=medium_green=>': '\033[38;5;77m',
-    # colors
-    '<=black=>': '\033[30m', '<=red=>': '\033[31m', '<=green=>': '\033[32m', '<=yellow=>': '\033[33m',
-    '<=blue=>': '\033[34m', '<=purple=>': '\033[35m', '<=cyan=>': '\033[36m', '<=grey=>': '\033[37m',
-    # bright colors (work like regular when stylized bold)
-    '<=b_black=>': '\033[90m', '<=b_red=>': '\033[91m', '<=b_green=>': '\033[92m', '<=b_yellow=>': '\033[93m',
-    '<=b_blue=>': '\033[94m', '<=b_purple=>': '\033[95m', '<=b_cyan=>': '\033[96m', '<=b_grey=>': '\033[97m',
-    # highlights / markers (can be switched with text color using 7m). If you want to "hide" text as a solid block of color run the same colors for both (i.e. \033[43m\033[33m)
-    '<=h_black=>': '\033[40m', '<=h_red=>': '\033[41m', '<=h_green=>': '\033[42m', '<=h_yellow=>': '\033[43m',
-    '<=h_blue=>': '\033[44m', '<=h_purple=>': '\033[45m', '<=h_cyan=>': '\033[46m', '<=h_grey=>': '\033[47m',
-    # bright backgrounds (highlights)
-    '<=bh_black=>': '\033[100m', '<=bh_red=>': '\033[101m', '<=bh_green=>': '\033[102m', '<=bh_yellow=>': '\033[103m',
-    '<=bh_blue=>': '\033[104m', '<=bh_purple=>': '\033[105m', '<=bh_cyan=>': '\033[106m', '<=bh_grey=>': '\033[107m',
-    # stylizing
-    '<=bold=>': '\033[1m', '<=dark=>': '\033[2m', '<=italic=>': '\033[3m', '<=uline=>': '\033[4m',
-    '<=flicker=>': '\033[5m', '<=fast_flicker=>': '\033[6m', '<=switch_fg_bg=>': '\033[7m', '<=hidden=>': '\033[8m',
-    '<=crossed=>': '\033[9m',
-    # resets
-    '<=bold_reset=>': '\033[22m', '<=italics_reset=>': '\033[23m',
-    # differently-tagged resets for tag-processing logic
-    '<=reset=>': '\033[0m', '<=hard_reset=>': '\033[0m', '<=total_reset=>': '\033[0m',
-}
-
-reset_tag = '<=reset=>'
-processed_reset = colors_map[reset_tag].replace('\033', '\x1b')  # resets placed in previous runs
-reset_either_regex = f'({reset_tag}|\x1b\[0m)'
+from collections import deque, OrderedDict
 
 
-def draw_formatted(text: str):
-    whitespace_regex_raw = r'<=([0-9]+)WS=>'  # for picking out the number
-    color_tag_regex = r'<=[a-zA-Z_]+=>'
-    persistence_regex = rf'<=persist(({color_tag_regex})+)this=>'  # contains at least one tag
+class Persistence:
 
-    color_tag_chain_regex = r'(<=[a-zA-Z_]+=>)+'
-    processed_tag_chain_regex = '(\x1b\[[0-9]+m)+'
-    persistence_regex = rf'<=persist({color_tag_chain_regex})this=>'
-    whitespace_regex_raw = r'<=([0-9]+)WS=>'  # for picking out the number
-    whitespace_regex_sub_raw = r'<=\d+WS=>'  # for picking out the entire tag
+    # persistence name to string signifier in tags
+    PERSISTENCE_EOL = 'eol'
+    PERSISTENCE_EOF = 'eof'
+    PERSISTENCE = OrderedDict([
+        (PERSISTENCE_EOL, '^^'),
+        (PERSISTENCE_EOF, '^^^'),
+    ])
 
-    lines = text.splitlines()
-    processed_lines = []
-    for line in lines:
-        # apply whitespaces (replace tag with number-of-spaces)
-        line = re.compile(whitespace_regex_raw).sub(lambda match: ' ' * int(match.group(1)), line)
+    @classmethod
+    def _encompass_with_persisting_substr(cls, tagging, persistence, escaped=False):
+        substr = cls.PERSISTENCE[persistence]
+        if escaped:
+            substr = re.escape(substr)
+        return f"<{substr}{tagging}{substr}>"
 
-        # tag persistence support (tag activates by default for the rest of the line)
-        after_persistence_match = re.search(f'({persistence_regex})(.+)(?=$)', line)
-        if after_persistence_match:
-            matched_str = after_persistence_match.group()
-            persisted_chain = re.search(f'{persistence_regex}', matched_str).group(0).removeprefix('<=persist').removesuffix('this=>')
-            line = re.sub(f'({reset_either_regex})(?!.*{persisted_chain})', rf'{reset_tag}{persisted_chain}', line)  # attach the persisting tag after each reset tag, after the match
-            line = re.sub(f'{persistence_regex}', persisted_chain, line, count=1)  # remove the matched persistence tagging
+    @classmethod
+    def to_persisting_eol(cls, tagging, escaped=False):
+        """turns tag or chain of tags, including reset, to persisting tags"""
+        return cls._encompass_with_persisting_substr(tagging, cls.PERSISTENCE_EOL, escaped)
 
-        # add resets, but only if there are tags involved
-        if re.match(color_tag_chain_regex, line):
-            # line = f'{reset_tag}{line}'
-            prepend_res = ( lambda some_tag: some_tag in colors_map and f"{reset_tag}{some_tag}" or some_tag )
-            def preres(tag):
-                return f"{reset_tag}{tag}"
+    @classmethod
+    def to_persisting_eof(cls, tagging, escaped=False):
+        """turns tag or chain of tags, including reset, to persisting tags"""
+        return cls._encompass_with_persisting_substr(tagging, cls.PERSISTENCE_EOF, escaped)
+
+    @classmethod
+    def identify_persistence(cls, tagging):
+        for persist, substr in reversed(cls.PERSISTENCE.items()):  # from end to start
+            start = f"<{substr}"
+            end = f"{substr}>"
+            if tagging.startswith(start) and tagging.endswith(end):
+                return persist
+
+        return None
+
+    @classmethod
+    def strip(cls, tagging):
+        """remove the persisting part (like wire stripping)"""
+        identified = cls.identify_persistence(tagging)
+        if identified:
+            substr = cls.PERSISTENCE[identified]
+            return tagging.removeprefix(f"<{substr}").removesuffix(f"{substr}>"), identified
+        return tagging, None
 
 
-            # line = re.sub(f'({color_tag_chain_regex})',
-            #     lambda match: f'{reset_tag}{match.group(1)}' if match.group(1) in colors_map else match.group(1),
-            #     line
-            # )
-            line = re.sub(f'({color_tag_chain_regex})', lambda match: preres(match.group(1)), line)  # add resets before (groups of) color tags
-            line = re.sub(f'({processed_tag_chain_regex})', rf'{reset_tag}\1', line)  # add resets before (groups of) applied color tags
+class TagIndex:
 
-            # TODO - remove? WS is its own thing, handled way-earlier
-            # line = re.sub(f'({whitespace_regex_sub_raw})', rf'{reset_tag}\1', line)  # add resets before whitespace tags
+    # used \033 in the past, then moved to \x1b . Not sure if it breaks anything. Can also write instead: 
+    color_map = {
+        # less standard colors
+        '<=orange=>': '\x1b[38;5;208m', '<=brown=>': '\x1b[38;5;130m',
+        '<=pink=>': '\x1b[38;5;213m', '<=light_pink=>': '\x1b[38;5;219m', '<=very_light_red=>': '\x1b[38;5;210m',
+        '<=skin_light=>': '\x1b[38;5;223m', '<=skin_pink=>': '\x1b[38;5;225m', '<=skin_pink_2=>': '\x1b[38;5;217m',
+        '<=dark_brown=>': '\x1b[38;5;58m', '<=dark_brown_2=>': '\x1b[38;5;94m',
+        '<=light_grey=>': '\x1b[38;5;254m',
+        '<=neon_green=>': '\x1b[38;5;118m', '<=medium_green=>': '\x1b[38;5;77m',
+        # colors
+        '<=black=>': '\x1b[30m', '<=red=>': '\x1b[31m', '<=green=>': '\x1b[32m', '<=yellow=>': '\x1b[33m',
+        '<=blue=>': '\x1b[34m', '<=purple=>': '\x1b[35m', '<=cyan=>': '\x1b[36m', '<=grey=>': '\x1b[37m',
+        # bright colors (work like regular when stylized bold)
+        '<=b_black=>': '\x1b[90m', '<=b_red=>': '\x1b[91m', '<=b_green=>': '\x1b[92m', '<=b_yellow=>': '\x1b[93m',
+        '<=b_blue=>': '\x1b[94m', '<=b_purple=>': '\x1b[95m', '<=b_cyan=>': '\x1b[96m', '<=b_grey=>': '\x1b[97m',
+        # highlights / markers (can be switched with text color using 7m).
+        # If you want to "hide" text as a solid block of color run the same colors for both (i.e. \x1b[43m\x1b[33m)
+        '<=h_black=>': '\x1b[40m', '<=h_red=>': '\x1b[41m', '<=h_green=>': '\x1b[42m', '<=h_yellow=>': '\x1b[43m',
+        '<=h_blue=>': '\x1b[44m', '<=h_purple=>': '\x1b[45m', '<=h_cyan=>': '\x1b[46m', '<=h_grey=>': '\x1b[47m',
+        # bright backgrounds (highlights)
+        '<=bh_black=>': '\x1b[100m', '<=bh_red=>': '\x1b[101m', '<=bh_green=>': '\x1b[102m',
+        '<=bh_yellow=>': '\x1b[103m', '<=bh_blue=>': '\x1b[104m', '<=bh_purple=>': '\x1b[105m',
+        '<=bh_cyan=>': '\x1b[106m', '<=bh_grey=>': '\x1b[107m',
+        # stylizing
+        '<=bold=>': '\x1b[1m', '<=dark=>': '\x1b[2m', '<=italic=>': '\x1b[3m', '<=uline=>': '\x1b[4m',
+        '<=flicker=>': '\x1b[5m', '<=fast_flicker=>': '\x1b[6m', '<=switch_fg_bg=>': '\x1b[7m', '<=hidden=>': '\x1b[8m',
+        '<=crossed=>': '\x1b[9m',
+        # partial resets
+        '<=bold_reset=>': '\x1b[22m', '<=italics_reset=>': '\x1b[23m',
+    }
 
-            # clean up excess: delete resets from line start (they don't help there)  # TODO - remove? No longer the case.
-            # while line.startswith(reset_tag): line = line.removeprefix(reset_tag)
+    resets_map = {  # differently-tagged resets for tag-processing logic
+        '<=reset=>': '\x1b[0m',  # regular reset
+    }
 
-            line = re.sub(f'{color_tag_chain_regex}$', '', line)  # delete tags at end of line - they're useless.
+    reset_tag = list(resets_map.keys())[0]  # get the default value dynamically (no code duplication / magic strings)
+    reset_eol_tag = Persistence.to_persisting_eol(reset_tag)
+    reset_processed = resets_map[reset_tag]
 
-            # add EOL reset
-            if line and not line.endswith(reset_tag): line += reset_tag  # add reset before EOL (but not if it's already there)
+    @staticmethod
+    def _construct_persistent_dict(some_dict):
+        return dict(
+            **some_dict,
+            **{Persistence.to_persisting_eol(key): value for key, value in some_dict.items()},
+            **{Persistence.to_persisting_eof(key): value for key, value in some_dict.items()},
+        )
 
-        # apply the colors by swapping tags with their respective color-coding
-        for k, v in colors_map.items():
-            line = line.replace(k, v)
+    persisting_colors_map = _construct_persistent_dict(color_map)
+    resets_map = _construct_persistent_dict(resets_map)
+    resets_map[reset_processed] = reset_processed  # adding for the quick lookup...
 
-        # remove duplicate reset tags (both regular and processed - here they're all processed)
-        while f'{processed_reset}{processed_reset}' in line:
-            line = line.replace(f'{processed_reset}{processed_reset}', processed_reset)  # remove reset duplications
 
-        processed_lines.append(line)
+    @classmethod
+    def is_valid_tag(cls, tag: str):
+        return tag in cls.persisting_colors_map
 
-    text = "\n".join(processed_lines)
+    @classmethod
+    def is_valid_reset(cls, tag: str):
+        return tag in cls.resets_map
 
-    return text
+
+class Matcher:
+
+    @staticmethod
+    def _create_w_persist_search(regex_loolup):
+        return [
+            regex_loolup,
+            Persistence.to_persisting_eol(regex_loolup, escaped=True),
+            Persistence.to_persisting_eof(regex_loolup, escaped=True),
+        ]
+
+    whitespace_regex_raw = r'<=([0-9]+)WS=>'  # for picking out the number in space-tags
+
+    single_tag_regex = r"<=[a-zA-Z_]+=>"
+    tag_chain_regexes = _create_w_persist_search(f"({single_tag_regex})+")
+    reset_regexes = _create_w_persist_search(TagIndex.reset_tag) + ['\\x1b\\[0m']  # work with already-processed resets
+
+    escaped_reset_processed = re.escape(TagIndex.reset_processed)
+    repeating_reset_regex = rf"{escaped_reset_processed}({escaped_reset_processed})+"
+
+    @staticmethod
+    def _contain_str_in_list(maybe_string):
+        return [maybe_string] if isinstance(maybe_string, str) else maybe_string
+
+    @staticmethod
+    def split_by_matches(patterns, text):
+        """Splits the text based on matches of the pattern, returning a list of segments."""
+
+        if not text:
+            return []
+
+        patterns = Matcher._contain_str_in_list(patterns)  # support multiple patterns by order, but also allow just one
+
+        segments = []
+        iter_index = 0
+        matches = True  # just here to get the loop started.
+        while matches:
+            # match all patterns the rest of the text (handled one by one, in case of overlapping substring shenanigans)
+            matches = [match for pattern in patterns if (match := re.search(pattern, text[iter_index:])) is not None]
+            if matches:  # if found anything, pick the earliest match
+                earliest_match = min(matches, key=lambda m: m.start())
+                if text_before_match := text[iter_index:iter_index + earliest_match.start()]:  # could be ''
+                    segments.append(text_before_match)
+                segments.append(earliest_match.group())  # Add the matched text
+                iter_index += earliest_match.end()  # for next iteration
+
+        segments.append(text[iter_index:])  # Add the remains after last match
+
+        return segments
+
+    @staticmethod
+    def exact_match(patterns, text):
+        patterns = Matcher._contain_str_in_list(patterns)  # support multiple patterns by order, but also allow just one
+        return any(re.fullmatch(pattern, text) for pattern in patterns)
 
 
 class TagChain:
@@ -115,90 +183,140 @@ class TagChain:
     allowing efficient addition of unique tags and conversion to/from string.
     """
 
-    def __init__(self):
-        from collections import deque
-
+    def __init__(self, tag_string):
         self.tag_queue = deque()
-        self._tag_set = set()  # Private, added for efficient lookup/retrieval
+        self.rejects_queue = deque()  # tag-like but not tags  TODO - better finding, rather than rejecting late-stage
+        _tag_set = set()  # Private, added for efficient lookup/retrieval
 
-    def add_tag(self, new_tag):
-        """
-        Add a new tag to the chain if it is a valid tag.
-
-        Parameters:
-            new_tag (str): The tag to be added.
-
-        Note:
-            If the tag already exists in the chain, it won't be added again.
-            Only valid tags present in the colors_map dictionary will be added.
-        """
-        if new_tag not in self._tag_set and new_tag in colors_map:
-            self.tag_queue.append(new_tag)
-            self._tag_set.add(new_tag)
-
-    def to_string(self):
-        """
-        Convert all contained tags to a single "tag-chain" string.
-
-        Returns:
-            str: A string representation of all tags in the tag queue.
-        """
-        return "".join(self.tag_queue)
-
-    @classmethod
-    def from_string(cls, tag_string):
-        """
-        Create a TagChain instance from a string containing tags enclosed in '<=' and '=>'.
-
-        Parameters:
-            tag_string (str): The string containing tags.
-
-        Returns:
-            TagChain: An instance of TagChain containing tags from the input string.
-        """
-        instance = cls()
-        tags = re.findall(r'(<=[a-zA-Z_]+=>)', tag_string)
+        stripped, persist = Persistence.strip(tag_string)
+        tags = re.findall(f"({Matcher.single_tag_regex})", stripped)
         for tag in tags:
-            instance.add_tag(tag)
-        return instance
+            if tag not in _tag_set:
+                if TagIndex.is_valid_tag(tag):
+                    self.tag_queue.append(tag)
+                    _tag_set.add(tag)
+                else:
+                    self.rejects_queue.append(tag)
+        self.persist = persist
+        self.encoded = ''.join([TagIndex.color_map.get(key, "") for key in self.tag_queue])
 
 
-def draw_formatted2(text: str):
+    # A "singleton" session
+class ChainsStack:
 
-    whitespace_regex_raw = r'<=([0-9]+)WS=>'  # for picking out the number
-    color_tag_regex = r'<=[a-zA-Z_]+=>'
-    persistence_regex = rf'<=persist(({color_tag_regex})+)this=>'  # contains at least one tag
+    def __init__(self):
+        self.stack: deque[TagChain] = deque()
+
+    def append_and_get_signature(self, chain_string):
+        self.stack.append(TagChain(chain_string))
+        return self.current_signature_or_empty()
+
+    def _peek_stack(self):
+        if self.stack:
+            return self.stack[-1]
+        return None
+
+    def _current_not_persisting(self):
+        return self._peek_stack() and not self._peek_stack().persist
+
+    def _is_current_w_persist(self, persistence):
+        return self._peek_stack() and self._peek_stack().persist == persistence
+
+    def current_encoded_or_empty(self):
+        if self.stack:
+            return self.stack[-1].encoded
+        return ''
+
+    def current_signature_or_empty(self):
+        """get post-process (dropped duplications) signature
+        Includes the rejected tags (won't be in effect), and the coded version of the tags,
+        preceded by reset for a clean start; so that different styles won't blend (like italics and red-color)"""
+        ret_str = ''
+        if self.stack and self.stack[-1].rejects_queue:
+            ret_str = ''.join(self.stack[-1].rejects_queue)  # whatever it is, have it sent too, don't "swallow" it
+        if self.stack and self.stack[-1].tag_queue:
+            ret_str = TagIndex.reset_processed + ret_str + self.stack[-1].encoded
+        return ret_str
+
+    def persist_on_reset(self, reset_string=None) -> str:
+        """get the current reset possibly with persisting tag-chain, according to stack-status and reset type"""
+        reset_persist_level = Persistence.identify_persistence(reset_string)
+
+        if reset_persist_level == Persistence.PERSISTENCE_EOF:  # total reset, dump stack, return empty
+            self.stack.clear()
+        elif reset_persist_level == Persistence.PERSISTENCE_EOL:  # hard-reset; pop until (incl.) first EOL-persistent
+            # dump all non-persistent, then one EOL-persistent (if any)
+            while self._current_not_persisting():
+                self.stack.pop()
+            if self._is_current_w_persist(Persistence.PERSISTENCE_EOL):
+                self.stack.pop()
+        elif reset_string == TagIndex.reset_tag:  # regular reset, doesn't affect persistent chains
+            if self._current_not_persisting():  # no persistence - "reset" last (else, any persistence means no change)
+                self.stack.pop()
+        elif reset_string == TagIndex.reset_processed:  # Other run's reset. Shouldn't affect our stack.
+            pass
+        # otherwise, no reset was given, no more popping. Return what's relevant.
+        return f"{TagIndex.reset_processed}{self.current_encoded_or_empty()}"
+
+
+def draw_formatted(text: str):
 
     # handle whitespace-tags (like <=13WS=>)
-    text = re.compile(whitespace_regex_raw).sub(lambda match: ' ' * int(match.group(1)), text)
+    text = re.compile(Matcher.whitespace_regex_raw).sub(lambda match: ' ' * int(match.group(1)), text)
 
+    chain_stack = ChainsStack()  # handles persistence
     lines = text.splitlines()
-    processed_lines = []
+    processed_text = []
 
-    def apply_next_tag(line: str):
-        pass
+    def editing_at_eol(line):
+        # add reset at the end of the line, but not in empty lines
+        if line and processed_text and processed_text[-1] != TagIndex.reset_processed:
+            # line ended, that's basically a EOL reset
+            encoded = chain_stack.persist_on_reset(TagIndex.reset_eol_tag)
+            processed_text.append(encoded)
+        processed_text.append('\n')  # add newlines between lines
 
-    def process_line(line: str):
-        if re.search("", text):
-            pass
-        processed_lines.append(line)
+    def post_processing_cleanup():
+        if processed_text and processed_text[-1] == '\n':  # remove last-added newline
+            processed_text.pop()
 
-    for current_line in lines:  # the formatting is per-line, so there's no real reason not to make this separation
-        # Find persistent tags and implant their copies wherever applicable
+        # add reset at the end (if it's not there); the marking stops past this function's output (always)
+        if len(processed_text) == 0 or (processed_text and processed_text[-1] != TagIndex.reset_processed):
+            processed_text.append(TagIndex.reset_processed)
 
-        # for each chain-find, call a (recursive) function that looks for another chain (for recursive
-        # chance, building the stack), and then for resets (including hard-resets, total-resets)
-        process_line(current_line)
+        # TODO - do tag-duplication elimination here
 
+    for current_line in lines:  # formatting is (mostly) per-line, so there's no real reason not to make this separation
+        # first separate all the rests, so they won't blend with other adjacent tags within chains
+        for reset_segmented in Matcher.split_by_matches(Matcher.reset_regexes, current_line):
+            # check here rather than after further separations, for efficiency
+            if TagIndex.is_valid_reset(reset_segmented):  # is reset
+                processed_text.append(chain_stack.persist_on_reset(reset_segmented))
+                continue
 
-    return '\n'.join(processed_lines)
+            # find coloring/stylizing tags (including chains of them)
+            for tag_segmented in Matcher.split_by_matches(Matcher.tag_chain_regexes, reset_segmented):
+                if Matcher.exact_match(Matcher.tag_chain_regexes, tag_segmented):  # a bunch of tags (no reset)
+                    encoded = chain_stack.append_and_get_signature(tag_segmented)
+                    processed_text.append(encoded)
+                else:  # some text... nothing to do with it
+                    processed_text.append(tag_segmented)
 
+        editing_at_eol(current_line)
+
+    post_processing_cleanup()
+
+    final = ''.join(processed_text)
+    # cleaning duplications - reset tags
+    final = re.sub(Matcher.repeating_reset_regex, TagIndex.reset_processed, final)
+
+    return final
 
 
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1]:  # arg 1 is this file
         if sys.argv[1] == '--print_available_colors':
-            print(*colors_map.keys())
+            print(*TagIndex.color_map.keys())
         else:   # regular run
             text_result = draw_formatted(sys.argv[1])
             print(f'{text_result}')  # "return" result (bash)
@@ -206,21 +324,29 @@ if __name__ == "__main__":
     exit(1)
 
 
+
+
+
+
+
+
+
+
+
+
 # Add tests below this line
 import unittest
 
-
 class TestYourFunction(unittest.TestCase):
 
-    # same dictionary, but with "final results"; active coloring after being applied
-    final_color_coding = {k: v.replace('\033', '\x1b') for k, v in colors_map.items()}
-    # final-form reset
-    fin_rst = final_color_coding[reset_tag]
+    some_tag = '<=green=>'
+    pers_eol = Persistence.PERSISTENCE[Persistence.PERSISTENCE_EOL]
+    pers_eof = Persistence.PERSISTENCE[Persistence.PERSISTENCE_EOF]
 
     # calculate final form
     def fin(self, *args) -> str:
         strs = list(args)
-        return ''.join([self.final_color_coding[f'<={tagstr}=>'] for tagstr in strs])
+        return ''.join([TagIndex.color_map[f'<={tagstr}=>'] for tagstr in strs])
 
     def asrt(self, input_str: str, expected_output_str: str):
         result = draw_formatted(input_str)
@@ -241,81 +367,168 @@ class TestYourFunction(unittest.TestCase):
 
     def test_tag_chain(self):
         test_tag_string = "<=b_blue=><=bold=><=b_blue=><=uline=><=5WS=><=not_a_color=><=uline=>"
-        tag_chain = TagChain.from_string(test_tag_string).to_string()
-        self.assertEqual('<=b_blue=><=bold=><=uline=>', tag_chain)
+        tag_chain = TagChain(test_tag_string)
+        self.assertEqual('<=b_blue=><=bold=><=uline=>', ''.join(tag_chain.tag_queue))
+        self.assertEqual('\x1b[94m\x1b[1m\x1b[4m', ''.join(tag_chain.encoded))
+
+    def test_persistence_functions(self):
+
+        eol_pers_tag = f"<{self.pers_eol}{self.some_tag}{self.pers_eol}>"
+        eof_pers_tag = f"<{self.pers_eof}{self.some_tag}{self.pers_eof}>"
+
+        self.assertEqual(eof_pers_tag, Persistence.to_persisting_eof(self.some_tag))
+        self.assertEqual(eol_pers_tag, Persistence.to_persisting_eol(self.some_tag))
+
+        self.assertEqual(Persistence.PERSISTENCE_EOL, Persistence.identify_persistence(eol_pers_tag))
+        self.assertEqual(Persistence.PERSISTENCE_EOF, Persistence.identify_persistence(eof_pers_tag))
+        self.assertIsNone(Persistence.identify_persistence(eof_pers_tag + '>'))
+        self.assertIsNone(Persistence.identify_persistence(''))
+        self.assertIsNone(Persistence.identify_persistence('something'))
+        self.assertIsNone(Persistence.identify_persistence(self.some_tag))
+
+        self.assertEqual((self.some_tag, Persistence.PERSISTENCE_EOL), Persistence.strip(eol_pers_tag))
+        self.assertEqual((self.some_tag, Persistence.PERSISTENCE_EOF), Persistence.strip(eof_pers_tag))
+        self.assertEqual(('', None), Persistence.strip(''))
+        self.assertEqual((self.some_tag, None), Persistence.strip(self.some_tag))
+
+    def test_tag_validation(self):
+        def strip_and_validate(tag_str):
+            stripped, _ = Persistence.strip(tag_str)
+            return TagIndex.is_valid_tag(stripped)
+
+        self.assertTrue(TagIndex.is_valid_tag(self.some_tag))
+        self.assertTrue(TagIndex.is_valid_tag(f"<{self.pers_eol}{self.some_tag}{self.pers_eol}>"))
+        self.assertTrue(TagIndex.is_valid_tag(f"<{self.pers_eof}{self.some_tag}{self.pers_eof}>"))
+
+        self.assertFalse(TagIndex.is_valid_tag(f"{self.some_tag}<=blue=>"))
+        self.assertFalse(TagIndex.is_valid_tag(f"{self.some_tag}{self.some_tag}"))
+        self.assertFalse(TagIndex.is_valid_tag(f"<{self.pers_eof}{self.pers_eof}{self.some_tag}{self.pers_eof}{self.pers_eof}>"))
+        self.assertFalse(TagIndex.is_valid_tag(f"<{self.pers_eof}{self.some_tag}{self.pers_eol}>"))
+        self.assertFalse(TagIndex.is_valid_tag(f"<{self.pers_eol}{self.some_tag}{self.pers_eof}>"))
+        self.assertFalse(TagIndex.is_valid_tag('<==red=>'))
+        self.assertFalse(TagIndex.is_valid_tag('<==red===>'))
+        self.assertFalse(TagIndex.is_valid_tag('<==red==><=blue=>'))
+
+    def test_matcher(self):
+        literal = Persistence.to_persisting_eol(TagIndex.reset_tag, escaped=False)
+        regex = Persistence.to_persisting_eol(TagIndex.reset_tag, escaped=True)
+        self.assertTrue(literal in Matcher.split_by_matches(regex, f"aaaa{literal}bbbb"))
+
+        literal = Persistence.to_persisting_eof(TagIndex.reset_tag, escaped=False)
+        regex = Persistence.to_persisting_eof(TagIndex.reset_tag, escaped=True)
+        self.assertTrue(literal in Matcher.split_by_matches(regex, f"aaaa{literal}bbbb"))
+
+        literal = TagIndex.reset_tag
+        regex = TagIndex.reset_tag
+        self.assertTrue(literal in Matcher.split_by_matches(regex, f"aaaa{literal}bbbb"))
+
+        literal = '\x1b[0m'
+        regex = '\x1b\[0m'
+        self.assertTrue(literal in Matcher.split_by_matches(regex, f"aaaa{literal}bbbb"))
 
     def test_formatting(self):
-        fin_rst = self.fin_rst
+        rst = TagIndex.reset_tag
+        fin_rst = TagIndex.reset_processed  # final-form reset
         # get translation of tags (tag chains). starts with reset.
-        fin = (lambda *args: fin_rst + ''.join([self.final_color_coding[f'<={tagstr}=>'] for tagstr in list(args)]))
+        fin = (lambda *args: ''.join([TagIndex.color_map[f'<={tagstr}=>'] for tagstr in list(args)]))
+        rfin = (lambda *args: fin_rst + fin(*args))
+        pl = Persistence.to_persisting_eol
+        pf = Persistence.to_persisting_eof
 
         chain_tags = '<=green=><=bold=>'
-        chain_values = f"{fin('green','bold')}"
+        chain_encoded = f"{fin('green','bold')}"
+
+        #     TODO - remove tags right before reset-tag
+        #           Should start developing a pair-node system (instead of list of strings, list of pairs)
+        #           there, the 2nd item would state whether the idem is color-tag, reset, or text
+        #               the color-tag enum should be associated with persistence level
+
+
 
         tests = {
-            'nothing': (
+            'nothing': (  # default behavior - always end with a return to default style
                 f"",
-                f""),
-            'no_tag': (  # see that text with no tags is left alone  # TODO
+                f"{fin_rst}"),
+            'no_tag': (
                 f"a b c d e F g h i j k lmnop",
-                f"a b c d e F g h i j k lmnop"),
+                f"a b c d e F g h i j k lmnop{fin_rst}"),
             'one_word': (
-                f"<=bold=><=green=>AAAAA<=reset=>",
-                f"{fin('bold', 'green')}AAAAA{fin_rst}"),
+                f"<=bold=><=green=>AAAAA{rst}",
+                f"{rfin('bold', 'green')}AAAAA{fin_rst}"),
+            'simple_no_reset': (
+                f"<=green=>AAAAA",
+                f"{rfin('green')}AAAAA{fin_rst}"),
+            'previously_scanned': (  # an existing reset in the middle, probably from previous usage of this tool
+                f"aa {'<=bold=>'}AAAAA{fin_rst}BBBBB{rst}CCCC",
+                f"aa {rfin('bold')}AAAAA{rfin('bold')}BBBBB{fin_rst}CCCC{fin_rst}"),
+            'persist_over_previously_scanned': (
+                f"aa {pl('<=bold=>')}AAAAA{fin_rst}BBBBB",
+                f"aa {rfin('bold')}AAAAA{rfin('bold')}BBBBB{fin_rst}"),
             'deceptive_nontag_no_rst': (
                 f"<=notapropertag=>AAAAA",
-                f"<=notapropertag=>AAAAA"),
-            'deceptive_nontag': (
-                f"<=notapropertag=>AAAAA<=reset=>",
                 f"<=notapropertag=>AAAAA{fin_rst}"),
+            'deceptive_nontag': (
+                f"<=notapropertag=>AAAAA{rst}",
+                f"<=notapropertag=>AAAAA{fin_rst}"),
+            'switching_color': (  # make sure that every new styling gets a "clean start"
+                f"<=green=> a b c d <=bold=> e f g h <=blue=> i j k l",
+                f"{rfin('green')} a b c d {rfin('bold')} e f g h {rfin('blue')} i j k l{fin_rst}",),
             'mid_txt': (
-                f"aa <=bold=><=italic=><=green=>AAAAA<=reset=>",
-                f"aa {fin('bold', 'italic', 'green')}AAAAA{fin_rst}"),
+                f"aa <=bold=><=italic=><=green=>AAAAA{rst}",
+                f"aa {rfin('bold', 'italic', 'green')}AAAAA{fin_rst}"),
             'mid_text+reset_at_beginning': (  # there might be a reason for that reset at start. Let it stay in result.
-                f"aa <=reset=><=bold=><=italic=><=green=>AAAAA<=reset=>",
-                f"aa {fin('bold', 'italic', 'green')}AAAAA{fin_rst}"),
-            # 'preprocessed': (  # see that past-processed text is left alone  # TODO - currently adds an extra reset at the end...
-            #     f"aa {fin_rst}{fin('bold', 'italic', 'green')}AAAAA{fin_rst}"
-            #     f"aa {fin_rst}{fin('bold', 'italic', 'green')}AAAAA{fin_rst}"),
+                f"aa {rst}<=bold=><=italic=><=green=>AAAAA{rst}",
+                f"aa {rfin('bold', 'italic', 'green')}AAAAA{fin_rst}"),
+            'color_right_after_reset': (
+                f"<=blue=>bla bla{rst}<=red=>bli bli",
+                f"{rfin('blue')}bla bla{rfin('red')}bli bli{fin_rst}",),
+            'only_a_reset': (
+                f"{rst}",
+                f"{fin_rst}",),
+            'multi_reset': (
+                f"aaaa{rst}{rst}{rst}{rst}{rst}{rst}bbbb",
+                f"aaaa{fin_rst}bbbb{fin_rst}",),
+            'preprocessed': (  # see that past-processed text is left alone, and no extra reset at the end
+                f"aa {rfin('bold', 'italic', 'green')}AAAAA{fin_rst}",
+                f"aa {rfin('bold', 'italic', 'green')}AAAAA{fin_rst}",),
             'just_resets': (  # see that multiple consecutive resets are evaluated as one
-                f"only one {reset_tag}{reset_tag}{reset_tag}{reset_tag} reset",
+                f"only one {rst}{rst}{rst}{rst} reset",
                 f"only one {fin_rst} reset{fin_rst}"),
-            # 'just_several_of_same_color': (  # see that multiple consecutive colors are evaluated as one  # TODO
-            #     f"only one <=green=><=green=><=green=><=green=><=green=> color",
-            #     f"only one {fin_rst}{fin('green')} color{fin_rst}"),
+            'just_several_of_same_color': (  # see that multiple consecutive colors are evaluated as one
+                f"only one <=green=><=green=><=green=><=green=><=green=> color",
+                f"only one {rfin('green')} color{fin_rst}"),
             # TODO - same color, but some are pre-processed
-            'repeating_several_of_same_color': (  # see that multiple consecutive colors are evaluated as one  # TODO
+            'repeating_several_of_same_color': (  # see that multiple consecutive colors are evaluated as one
                 f"only one <=green=><=blue=><=green=><=blue=><=green=> color",
-                f"only one {fin('green', 'blue')} color{fin_rst}"),
+                f"only one {rfin('green', 'blue')} color{fin_rst}"),
             'multi-line': (  # see that reset is added at the end of each line
                 f"\n\nline1\n\nline2",
                 f"\n\nline1{fin_rst}\n\nline2{fin_rst}"),
             'multi-line_tagged': (  # see that reset is added at the end of each line
                 f"\n\n<=red=>line1\n\nline2",
-                f"\n\n{fin('red')}line1{fin_rst}\n\nline2{fin_rst}"),
-            'switching_styles': (  # switching style with no explicit reset in input
-                f"this text is <=red=>red , <=green=>green<=reset=> , regular",
-                f"this text is {fin('red')}red , {fin('green')}green{fin_rst} , regular{fin_rst}"),
+                f"\n\n{rfin('red')}line1{fin_rst}\n\nline2{fin_rst}"),
+            'switching_styles_and_reset': (  # switching style with no explicit reset in input
+                f"this text is <=red=>red , <=green=>green{rst} , regular",
+                f"this text is {rfin('red')}red , {rfin('green')}green{rfin('red')} , regular{fin_rst}"),
             'switching_styles2': (  # several tags, has tag right at beginning
                 f"<=red=>this text has <=blue=>few tags.",
-                f"{fin('red')}this text has {fin('blue')}few tags.{fin_rst}"),
+                f"{rfin('red')}this text has {rfin('blue')}few tags.{fin_rst}"),
             'switching_styles3': (
                 f"<=red=>this text has <=bold=><=blue=>few tags.",
-                f"{fin('red')}this text has {fin('bold', 'blue')}few tags.{fin_rst}"),
+                f"{rfin('red')}this text has {rfin('bold', 'blue')}few tags.{fin_rst}"),
             'whitespaces': (
                 f"this text is has \"<=22WS=>\" 22 whitespaces",
-                f"this text is has \"{fin_rst}                      \" 22 whitespaces{fin_rst}"),
+                f"this text is has \"                      \" 22 whitespaces{fin_rst}"),
             'whitespaces_w_reset': (  # seeing that the reset tag gets merged post spacing
-                f"this text is has \"<=reset=><=22WS=>\" 22 whitespaces",
+                f"this text is has \"{rst}<=22WS=>\" 22 whitespaces",
                 f"this text is has \"{fin_rst}                      \" 22 whitespaces{fin_rst}"),
             'whitespaces_at_line_start': (
                 f"<=2WS=><-2 spaces",
                 f"  <-2 spaces{fin_rst}"),
-            'persistence': (
-                f"<=red=>R <=persist<=green=>this=>G {fin('blue')}B{fin_rst} G\nno_color",
-                f"{fin('red')}R {fin('green')}G {fin('blue')}B{fin('green')} G{fin_rst}\nno_color{fin_rst}"),
+            'persistence_eol_over_preprocessed': (
+                f"<=red=>R <^^<=green=>^^>G {rfin('blue')}B{fin_rst} G\nno_color",
+                f"{rfin('red')}R {rfin('green')}G {rfin('blue')}B{rfin('green')} G{fin_rst}\nno_color{fin_rst}"),
         }
-
         for k, v in tests.items():
             print(f"running test \"{k}\"")
             self.asrt(input_str=v[0], expected_output_str=v[1])
@@ -323,14 +536,15 @@ class TestYourFunction(unittest.TestCase):
 
 
 
-        # self.asrt(input_str=f"<=red=>R <=persist{chain_tags}this=>G <=blue=><=dark=>B<=reset=> G\nno_color",
+        # self.asrt(input_str=f"<=red=>R <^^{chain_tags}^^>G <=blue=><=dark=>B{rst} G\nno_color",
         #           outpt_str=f"{fin('red')}R {fin_rst}{chain_values}G {fin_rst}{fin('blue', 'dark')}B{fin_rst}{chain_values} G{fin_rst}\nno_color{fin_rst}")
-        # self.asrt(input_str=f"<=persist<=bold=><=green=>this=>aaa {fin('blue')}BBBBBB{fin_rst} ccc",
+        # self.asrt(input_str=f"<^^<=bold=><=green=>^^>aaa {fin('blue')}BBBBBB{fin_rst} ccc",
         #           outpt_str=f"{fin('bold', 'green')}aaa {fin_rst}{fin('blue')}BBBBBB{fin_rst}{fin('bold', 'green')} ccc{fin_rst}")
-        # self.asrt(input_str=f"<=persist<=bold=><=green=>this=>aaa {fin('blue')}bbb{fin_rst} ccc<=reset=>",
+        # self.asrt(input_str=f"<^^<=bold=><=green=>^^>aaa {fin('blue')}bbb{fin_rst} ccc{rst}",
         #           outpt_str=f"{fin('bold', 'green')}aaa {fin_rst}{fin('blue')}bbb{fin_rst}{fin('bold', 'green')} ccc{fin_rst}")
         # self.asrt(input_str=f"unnecessary color at end <=bold=>",
         #           outpt_str=f"unnecessary color at end {fin_rst}")
-        # self.asrt(input_str=f"<=green=>*<=reset=> ip addr  <=persist<=yellow=>this=># display own networking interfaces",
+        # self.asrt(input_str=f"<=green=>*{rst} ip addr  <^^<=yellow=>^^># display own networking interfaces",
         #           outpt_str=f"{fin('green')}*{fin_rst} ip addr  {fin_rst}{fin('yellow')}# display own networking interfaces{fin_rst}")
 
+        # TODO - test hard-reset

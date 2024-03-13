@@ -1,7 +1,33 @@
 # Reminders how to approach sketchy executables
-+ disassembly can be done through "IDA" (Interactive DisAssembler), or "Ghidra"
-+ you can test-run an executable on: "https://any.run"
+
+
+
+>> Disassembly
+* IDA (Interactive DisAssembler)
+* Ghidra    : a very commonly used NSA tool  [ https://github.com/NationalSecurityAgency/ghidra  ,   ]
+* dotPeek   : .NET decompiler and Asm browswer from JetBrains 
+
+
+
+>> Services
+* "https://any.run"  : test-run executables
+
+
+
+>> Scanning / diagnostic tools/packages
 * strings <my_executable.exe> | less  # list used strings. See if any URLs are being used.
 * objdump -d -Minterl <program_file>  # using Intel syntax, describe the program as a list of assembly instructions
 * checksec --file=<file_to_check> --output=json | jq  # check which security features (if any) are active for the specified file, for things like buffer overflow
+
+
+
+>> Live-testing 
+* x64dbg        : program for monitoring runtime (during usage)   [ https://x64dbg.com/ , https://github.com/x64dbg/x64dbg ]
+* CheatEngine   : find values and addresses, and replace function references and code  [ https://cheatengine.org/  ,  https://github.com/cheat-engine/cheat-engine ]
+
+
+
+>> Tutorials
+* Kali Linux tools  : https://www.kali.org/docs/
+
 

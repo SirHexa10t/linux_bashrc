@@ -28,8 +28,23 @@
 *   Case
 +   Also cables, like DP/HDMI for monitor, or SATA cables for SATA devices
 
+> Cross-compatibility
+* The motherboard and the CPU need to fit each-other; it's a factor of generation and CPU-maker
+* Anything else is cross-compatible. Even GPU; any would go along with your build - you can put an NVIDIA card on an AMD motherboard 
+
+> Budgeting
+* Use case: consider that a lot of things aren't cost-effective a lower prices, or only cost-effective at very-low prices (but unsatisfactory performance)
+*   Need something, right now: look for deals on ebay and get slower disk, weaker GPU. You can make-do without most of the features that turn parts expensive (and could get those in 2 years realatively cheap)
+*   Plan to use long-term: if you want to save money by not buying a new PC more often, consider what you need and buy by parts' value retention. Usually it means buying almost-highest-end.
+*       The things that don't improve exponentially over time (coolers/PSU/case) should be bought "right" from the start, so you won't need to re-buy them at all.
+*       It's a generally good strategy. You'll also enjoy higher-than-average performance until your next upgrade. 
+* For a gaming/heavy-workload PC, your GPU should cost about 1/3 of the total build
+* If you're looking for ultra-budget;
+*   A media mini-PC (a box that comes with motherboard and CPU (usually with APU) pre-installed) would cost 150-500 dollars (varying by hardware and purpose, mostly an extra expense on disk(s)).
+*   A micro-ATX small-form PC (just 2 slots of RAM, 1 slot for GPU, small case) would get most of what you want done. Would cost around 500-1000 dollars.
+
 > Building aids
-* TODO - Thermal paste
+* TODO - Thermal paste (or liquid metal)
 * TODO - screwdriver
 
 > Optional upgrades
@@ -43,22 +58,120 @@
 
 
 
->> Buying
+>> General Knowledge
+
+> Advice on buying
 * PC hardware Prices are generally best around the end of the year, by Black Friday, and towards the holidays (Christmas, New Years...)
 * CPU / GPU announcements and launches are around Q3, which factors into price-drops by the end of the year (especially of year beginning's leading-edge hardware)
-* Some vendors
+* There's a "best-tax"; you pay extra for buying the best, just because there's nothing better to compete with it. So it often makes sense to buy 2nd-best thing. A previous series rather than current, or 2nd best card in the recent series...
+* Try to buy from a shop that has good refund/return policy, in case you get a defective product (NewEgg is problematic at that regard)
+
+> Bottlenecks
+* In any system, the slowest component slows down the whole chain. So make sure that the components are around parity in terms of throughput
+*   Example: a relatively weak GPU in a system with a powerful CPU (the result is low-FPS; images won't be rendered at a fast pace though the information gets passed to it fast enough)
+*   Example: CPU waits for longer periods of time to receive a response from some low-quality RAM
+* When accruing heat, PC components slow down in order to maintain some work, but not overheat/burn
+*   Often caused by poor ventilation issues: lousy heatsinks, blockage of air-intakes to of the case, accumulation of dust, and more
+* Power output might not match the workload
+*   Usually an issue of a weak PSU. The components ask for more power, but don't get it.
+* Software aspect
+*   Drivers can make components run non-optimally
+*   Programs may have built-in limits which the hardware is capable of surpassing
+*       Some programs are single-threaded, and take longer to finish just beccause all cores but one are not doing anything
+*   Configurations (especially BIOS/UEFI) which limit the parts' performance 
+
+
+
+>> Data Transfer Formats
+
+> USB
++ Relevant for USB drives, USB-to-SATA adapters, Android file-transfer (and charging), video-feed (including streaming to a VR headset), and any external peripheral.
++ USB 4 (any gen) is only provided by USB-C
++ Some USB-C cables are merely supporting USB 2.0
++ When a USB-device supports a protocol, it's not inferred that it runs on it at full speed; it's just above the speed of previous tier.
+* The confusing terminology:
+~>  USB_version  Aliases                         Transfer-Rate(B/s)  Transfer-Rate(b/s)
+~<  1.0          -                                         187 kB/s            1.5 Mb/s
+~<  1.1          "Full-Speed"                              1.5 MB/s             12 Mb/s
+~<  2.0          "High-Speed"                               60 MB/s            480 Mb/s
+~<  3.x_Gen_1    "SuperSpeed"  (was: "USB 3.0")            625 MB/s              5 Gb/s
+~<  3.x_Gen_2    "SuperSpeed+" (was: "USB 3.1")           1.25 GB/s             10 Gb/s
+~<  3.2_Gen_2x2  -                                         2.5 GB/s             20 Gb/s
+~<  4_Gen_3x2    -                                           5 GB/s             40 Gb/s
+~<  4_Gen_4      "USB 4 V2.0"                               10 GB/s             80 Gb/s
+
+> PCI
++ If for some reason you want to lower the PCI compatibility of your PCIe slots (maybe for testing, and considering moving your hardware to an older board), you can do so through your BIOS/UEFI menu.
+* PCIe (PCI Express) connections have a different number of connectors (lanes): x1 / x2 / x4 / x8 / x16.
+*   x2 isn't common. Sometimes M.2 has 2 lanes (though usually it's 4)
+* PCI is universal and interchangeable: older-gen devices can use newer-gen slots, and newer-gen devices can use older-gen slots.
+*   The performance is by the lowest of the two. If one is only Gen 3, it wouldn't matter that the other is Gen 5, they'll run at Gen 3 speeds.
+*   You can use a slot with "too many" lanes for a device that connects to only a few of them. It'll work.
+*   Most devices (including GPUs) would even work on too-few lanes!
+*       if the PCIe header is close off at the end, blocking the rest of your device, you can really just cut-out the obstructing piece (carefully). Some motherboards have open-ended PCIe slots for this reason.
+~>  Table: PCIe Transfer Speeds (in GB/s) ;
+~>  PCIe_Generation      per-lane_(x1)  x2   x4  x8   x16
+~<                  1.0           0.25  0.5   1    2    4
+~<                  2.0            0.5    1   2    4    8
+~<                  3.0              1    2   4    8   16
+~<                  4.0              2    4   8   16   32
+~<                  5.0              4    8  16   32   64
+~<    6.0 (future-impl)              8   16  32   64  128
+~<  7.0 (future-design)             16   32  64  128  256
++ Like in USB, each generation roughly doubles the transfer rate of previous generation
++   Like in USB, these are "max speeds" - the PCIe slots won't maximize the above-listed potential, but they should be above previous generation's promise
+
+TODO - GDDR
+
+> HDMI
++ HDMI is proprietary, owned by a bunch of tech companies.
++   They exercise their power to disallow implementation of advanced features for Linux (AMD asked, was denied)
++ There's the Standard HDMI (Type A), Mini HDMI (Type C), and Micro HDMI (Type D). All have 19 pins and support the same performance
++   Type B is defined with 29 pins, but isn't used anywhere
+~>  HDMI_Version  Name                Max_Resolution          Max_Transmission  HDR  Compression          Audio_Support                 
+~<  1.0           Standard                        1080p@60Hz          0.6 GB/s   No                    -  8 audio channels              
+~<  1.1-1.2a      Standard                        1440p@30Hz          0.6 GB/s   No                    -  DVD-Audio, One-Bit Audio      
+~<  1.3-1.4b      High-Speed                         4K@60Hz         1.25 GB/s   No                    -  ARC, Dolby TrueHD, DTS-HD     
+~<  2.0-2.0b      Premium_High-Speed       4K@50Hz / 5K@30Hz         2.25 GB/s  Yes                    -  HE-AAC, DRA, 32 audio channels
+~<  2.1-2.1b      Ultra_High-Speed    8K@30Hz / DCS:8K@120Hz          5.3 GB/s  Yes  DSC 1.2a (optional)  eARC                          
+*4K=3840×2160 , 5K=5120×2880 , 8K=7680×4320
+
 
 
 >> Desktop PC case
 > TODO: form factors
 * TODO: Motherboard, GPU and maybe PSU size limitations
 > TODO: airflow
+Montech
+Fractal
+Corsair
+Antec
+CoolerMaster
 
 
 
->> SSD (flash)
-+ No notes about Intel Optane (non-flash SSD), because as of the time of writing, it's discontinued
-+ No comparison with HDDs, it's a slowly-dying technology. Longer waiting time, no tolerance to movement, bit-rot (magnetic flip of some bits after some time), higher electricity consumption and heat, larger physical space taken... Do yourself a favor and avoid those whenever you can. Just get a QVO SSD if you want cheaper bulk-storage.
+>> SSD (flash) / Disk
++ "Solid State Drive" (solid meaning non-volatile) doesn't have to be Flash, but it usually is.
++ Be aware that unpowered SSDs should be stored in extreme temperatures (not above 30C and not freezing either) to avoid/slow-down data degradation over a year or two.
+
+> SSD vs alternatives
+* Intel's Optane (non-flash SSD), is discontinued (true to the time of writing this).
+*+  Used to be slightly faster than Flash-SSD
+*-  Used to be more expensive than Flash-SSD
+* HDD is generally inferior; it's a slowly-dying technology. Avoid those. HDD's downsides:
+*-  Longer data-retrieval/write time (slow)
+*-  low tolerance to movement while operating
+*-  bit-rot (magnetic flip of some bits after some time) requires rewriting the data!
+*-  higher electricity consumption and heat
+*-  larger physical space taken
+*-  Device dies out faster
+*       Especially Seagate's drives. From personal experience, and the experience of various acquaitences. Look up HDD failure graphs and you'll see them failing most; over twice as often as the next competitor.
+*           HGST used to be the best HDD maker in terms of failure rates. Now it's WDC.
+*+  Technically cheaper than SSD, by a factor of around 2.5.
+*-      Expensive long-run: the flaws cost you money (electricity consumption, general cooling, rate of replacement, storage space, data maintenance)
+*       Just get a Samsung 870 QVO (a QLC SSD) if you want cheap(ish) bulk-storage.
+* Hybrid (part-HDD, part-SSD): a drive that tries to optimize save-location of files to either the SSD part or the HDD part, by the frequency of access to them
+*-  You get most of the downsides of HDD, and not all advantages of SSD (yet all disadvantages of it). Just don't bother, get a full-SSD. 
 
 > NVMe is better than SATA
 + Notice, on M.2 connections (or the SSD sticks) you can identify the supported protocol: 1 notch (hole on disk-drive, no bus) means it's NVMe, 2 notches means it's SATA
@@ -74,6 +187,10 @@
 * If storage-volume is by-far your first priority, it makes sense to buy 2.5" SATA SSD drives. It's very cost-effective.
 * The largest volume SSDs are in SATA or U.2 form. SATA is the more common and affordable.
 
+> E1.S / E3.S
+* Enterprise PCIe connector that looks like M.2
+* Will reach consumer market at some point (soon™. Current note from is 2024 Q1). Until this happens, there's no point to elaborate here
+
 > USB
 * USB drives are usually used as temporary/transfer-storage, or as an easily-carried backup. They usually have very simple controllers, not meant for constant operation with concurrent requests
 *   You can use it for a few operating systems, notoriously Tails-OS which is built for privacy and content-ownership deniability
@@ -81,10 +198,10 @@
 
 > NAND types
 + The number of bits in a cell determine how long it has to live. If any of the bits burns out, the whole cell is unusable.
-* SLC (1 bit) single-level cell; will have the longest lifespan. No longer used for entire disks, only as cache
-* MLC (2 bits) multi-level cell; no longer made.
-* TLC (3 bits) tri-level cell; a common configuration for flash-SSDs, associated with V-NAND (3D-stacking) manufacturing
-* QLC (4 bits) quad-level cell; these cells die more frequently, but the higher density fits well for storage (write once, read as many times as you want)
+* SLC (1 bit) single-level cell; will have the longest lifespan. No longer used for entire disks, only as cache. Estimated to last 100k cycles.
+* MLC (2 bits) multi-level cell; no longer made. Estimated to last 3k-10k cycles.
+* TLC (3 bits) tri-level cell; a common configuration for flash-SSDs, associated with V-NAND (3D-stacking) manufacturing. Estimated to last 500-3k cycles.
+* QLC (4 bits) quad-level cell; these cells die more frequently, but the higher density fits well for storage (write once, read as many times as you want). Estimated to last 300-1k cycles.
 
 > DRAM and cache
 + Great-performance drives should have both of those. Especially the dedicated DRAM.
@@ -113,66 +230,48 @@
 
 
 
->> USB
-+ Relevant for USB drives, USB-to-SATA adapters, Android file-transfer (and charging), video-feed (including streaming to a VR headset), and any external peripheral.
-+ USB 4 (any gen) is only provided by USB-C
-+ Some USB-C cables are merely supporting USB 2.0
-+ When a USB-device supports a protocol, it's not inferred that it runs on it at full speed; it's just above the speed of previous tier.
-* The confusing terminology:
-~>  USB_version  Aliases                         Transfer-Rate_(Speed)
-~<  1.0          -                                            187 kB/s             
-~<  1.1          "Full-Speed"                                 1.5 MB/s             
-~<  2.0          "High-Speed"                                  60 MB/s              
-~<  3.x_Gen_1    "SuperSpeed"  (was: "USB 3.0")               625 MB/s             
-~<  3.x_Gen_2    "SuperSpeed+" (was: "USB 3.1")              1.25 GB/s            
-~<  3.2_Gen_2x2  -                                            2.5 GB/s             
-~<  4_Gen_3x2    -                                              5 GB/s               
-~<  4_Gen_4      "USB 4 V2.0"                                  10 GB/s    
-
-
-
->> PCI
-* PCIe (PCI Express) connections have a different number of connectors (lanes): x1 / x2 / x4 / x8 / x16.
-*   x2 isn't common. Sometimes M.2 has 2 lanes (though usually it's 4)
-* PCI is universal and interchangeable: older-gen devices can use newer-gen slots, and newer-gen devices can use older-gen slots.
-*   The performance is by the lowest of the two. If one is only Gen 3, it wouldn't matter that the other is Gen 5, they'll run at Gen 3 speeds.
-*   You can use a slot with "too many" lanes for a device that connects to only a few of them. It'll work.
-*   Most devices (including GPUs) would even work on too-few lanes!
-*       if the PCIe header is close off at the end, blocking the rest of your device, you can really just cut-out the obstructing piece (carefully). Some motherboards have open-ended PCIe slots for this reason.
-~>  Table: PCIe Transfer Speeds (in GB/s) ;
-~>  PCIe_Generation      per-lane_(x1)  x2   x4  x8   x16
-~<                  1.0           0.25  0.5   1    2    4
-~<                  2.0            0.5    1   2    4    8
-~<                  3.0              1    2   4    8   16
-~<                  4.0              2    4   8   16   32
-~<                  5.0              4    8  16   32   64
-~<    6.0 (future-impl)              8   16  32   64  128
-~<  7.0 (future-design)             16   32  64  128  256
-+ Like in USB, each generation roughly doubles the transfer rate of previous generation
-+   Like in USB, these are "max speeds" - the PCIe slots won't maximize the above-listed potential, but they should be above previous generation's promise
-
-
-
 >> GPU
 
-> Reasons to pick AMD cards:
-* As of the time of writing, AMD (Radeon) cards are the budget-oriented options; better overall performance/price. Maybe Intel would become as relevant in the future.
-*   AMD cards have more VRAM in mid-tiers, and often more cores. As their drivers get better, their full potential gets realized years after launch, making them great long-term picks
-* Still as of current date, 2024 Q1, AMD is better for Linux (fewer issues of various sorts), though NVIDIA cards are perfectly workable
+> Terminology 
+* AMD GPU-naming:
+*   [legacy] AMD CrossFire - no longer implemented; was a technology for sharing GPU-workload on multiple GPUs
+*   XT: Basically means the same GPU but marginally clocked higher. TODO - verify this is consistently so
+*   XTX
+*   GRE (Golden Rabbit Edition): China-only release, now worldwide. Performance is between XT and XTX.
+* NVIDIA GPU-naming:
++   Any prefix could have "GeForce" brand mentioned; it doesn't mean anything today (there's no more "Quadro" brand), just ignore it.
+*   [legacy] NVIDIA SLI - no longer implemented; was a technology for sharing GPU-workload on multiple GPUs
+*   [legacy] NVIDIA GS: lowest-end
+*   [legacy] NVIDIA GT: mid-low range
+*   [legacy] NVIDIA GTX: mid-high end (not anymore; today if it's not "RTX", it's low-end). X means it has NVIDIA's hardware video encoding, and 
+*   NVIDIA RTX: any modern NVIDIA card. The "R" or "RT" stand for "Ray-Tracing" (a highly compute-demanding rendering technique that only became possible within recent decade with GPU's escalated power)
+*   <model-name> Super: negligibly-slightly (1%-15%) better than base model
+*   <model-name> Ti: marginally-to-astoundingly (10%-100%) better than base model. Could also mean extra VRAM.
+*   <model-name> Ti Super: This should indicate that the Ti was at a moderate bump (20-25%), so the "super" adds extra 10% on top of the "Ti". Could also mean extra VRAM (over "Ti").
+*   <model-name> D (Dragon): Chinese-market release. Basically the same model, maybe slightly weaker.
+*   <model-name> FE: just means NVIDIA themselves are the vendors (see note about that in "Tiers")
 
-> Reasons to pick NVIDIA cards
-* If you want to use CUDA for AI, you'd have to pick NVIDIA
-* If you want NVIDIA's "Ray Tracing" feature, you'd have to pick NVIDIA (AMD have their own, but it's not as developed)
-* If you have a G-SYNC monitor, you can't make use of that feature (G-SYNC) unless you use an NVIDIA GPU
+TODO: DLSS 3, FSR 3, XeSS , Frame-Generation , Ray Reconstruction, DXR (DirectX Ray-Tracing)
 
-> Reasons to pick Intel cards:
-* Sometimes available for low price, for their performance.
+> AMD cards pros/cons:
+*+  As of the time of writing, AMD (Radeon) cards are the budget-oriented options; better overall performance/price. Maybe Intel would become as relevant in the future.
+*+      AMD cards have more VRAM in mid-tiers, and often more cores. As their drivers get better, their full potential gets realized years after launch, making them great long-term picks
+*+  Still as of current date, 2024 Q1, AMD is better for Linux (fewer issues of various sorts), though NVIDIA cards are perfectly workable
+*+  Maybe you can run CUDA processes (such as AI) on your AMD card, with this:  https://github.com/vosen/ZLUDA ; know that it's now against NVIDIA's updated ToS.
+*+  AMD's old cards get significantly cheaper with time, and it's often the case that some newer generation cards are barely any better than some card in the previous series that's much cheaper. So check prices for previous series and buy the better deal overall.
+*-  Drivers (especially early ones) are often reported as problematic, more than NVIDIA's
 
-> Flaws
-* AMD's drivers are often reported as problematic, more than NVIDIA's
-* NVIDIA's latest highest-end cards have voltage problems; there are numerous reports of their high-power requirement practically melting connections
-* Intel's drivers are still lacking, as does the hardware (has a lot of potential, which might not ever get materialized). Basically buying them is still a gamble, if not a mere novelty.
-* Intel's cards are far behind AMD and NVIDIA in capabilities, for now.
+> NVIDIA cards pros/cons:
+*+  If you want to use CUDA for AI, you'd have to pick NVIDIA
+*+  If you want NVIDIA's "Ray Tracing" feature, you'd have to pick NVIDIA (AMD have their own, but it's not as developed)
+*+  If you have a G-SYNC monitor, you can't make use of that feature (G-SYNC) unless you use an NVIDIA GPU
+*-  NVIDIA's latest highest-end cards have voltage problems; there are numerous reports of their high-power requirement practically melting connections
+*-  NVIDIA's old cards aren't dropping much in price, so if you're buying from them, you probably want something from the newest series. 
+
+> Intel cards pros/cons:
+*+  Sometimes available for low price, for their performance.
+*-  Intel's drivers are still lacking, as does the hardware (has a lot of potential, which might not ever get materialized). Basically buying them is still a gamble, if not a mere novelty.
+*-  Intel's cards are far behind AMD and NVIDIA in capabilities, for now.
 
 > Heatsink styles
 * There are 2 available styles: You can look at the heatsink's fin-orientation to tell which one it is:
@@ -187,10 +286,11 @@
 +   If your case has heating issues, or the extra-heat is problematic to the CPU or the voltage modules around it, maybe you'd prefer a blower-style
 
 > Tiers
++ Accept 2-4% deviance expected performance; no card is the same, even if they're sold as the same model. Some would be a bit faster, some a bit slower. Some cards even perform better than instances of their slightly-upgraded model counterparts.
 * Vaguely the tiers go like this:
 *   low-tier: an (almost?) extinct tier of ~$100 cards, good enough to just-run AAA games on low-mid settings at 30-60 FPS.
 *       Modern APUs are about on-par with 8-year-old low-tier GPUs
-*       low-tier cards often require no extra power connections (they run just off the PCIe's power), and that makes them convenient to use in various situations, or upgrades of very-old computers
+*       low-tier cards often require no extra power connections (they run just off the PCIe's power), and that makes them convenient to use in various situations, notably as upgrades for very-old computers
 *   mid-tier: cards that can run AAA games well up to 1440p (a few years ago, the standard for mid was 1080p). These days, in the range of $300-$600
 *   high-end: cards that run games at 4K, or render your 3D model projects and animations significantly faster than mid-tier. These days, in the range of $700-$1800
 *       Realistically, this tier is needed for quality-VR experience
@@ -199,16 +299,27 @@
 + If you just want to game with your GPU, remember that some gains are meaningless; there's very little difference in experience between 140 FPS and 180 FPS at the same quality (number of polygons and same visual effects)
 *   A reasonable jump in capabilities is supposed to make gaming feasible on 1440p instead of 1080p, or 4K instead of 1440p. If you consider improving at hard-to-notice areas like between 90 and 96 FPS, just save your money.
 *       You should have a margin of just 10-20% beyond what you consider a good experience at the quality-tier you're aiming for. Beyond that, yet below the next quality-tier, there's no point.
-+ Generally, you shouldn't waste a lot of money on the "Gaming"/"OC" edition cards (basically for the brand's stylized although maybe-bit-better cooler). If you get into a 250-300 dollar difference that could get you a higher-tier card, just get the higher-tier one.
-+ NVIDIA selles "FE" ("Founders' Edition") cards, which have their own (somewhat shitty) heatsink applied. Quality-wise, FE cards are high-binned, and at a usually-lower price; they're often a better deal than 3rd-party NVIDIA cards.
++ Generally, you shouldn't waste a lot of money on the "Gaming"/"OC" edition cards (basically for the brand's stylized although maybe-bit-better cooler). If you get into a 100-300 dollar difference that could get you a higher-tier card, just get the higher-tier one.
++ NVIDIA sells "FE" ("Founders' Edition") cards, which have their own (somewhat shitty) heatsink applied. Quality-wise, FE cards are usually high-binned, regularly at lower price; they're often a better deal than 3rd-party NVIDIA cards.
 +   An especially-good choice if you want to replace the heatsink with a waterblock
 
-> PCIe versions
-* There's no big uplift in GPUs' performance in most workloads between PCI Gen 5 over Gen 4. Some decent cards won't even be very limited by Gen 3.
-*   Expect 10-25% of performance difference between Gen3 and Gen4 for high-end cards (mildly significant, but not the full potential 100% difference in the generations' bandwidth-difference)
+> Infographics (comparison between cards)
+* tom'sHARDWARE graphs (2024 Q1): https://www.tomshardware.com/reviews/gpu-hierarchy,4388.html
+*   1080p Medium FPS: https://cdn.mos.cms.futurecdn.net/qiWnVboCCfkk2JgVern39L-1200-80.png      and slightly-outdated; 3 of tom'sHARDWARE Ultra graphs (1080p, 1440p, 4k) https://www.reddit.com/r/pcmasterrace/comments/10kitdj/updated_toms_hardware_gpu_hierarchy_chart_for/
+* Passmark's top performance GPUs graph (performance and ballpark-price) https://www.videocardbenchmark.net/high_end_gpus.html  ; you can go from top to bottom to the first match that's within your budget (not counting the PSU you'd need)
+*   Also relevant (if their prices apply to you): performance-to-price ratio chart  https://www.videocardbenchmark.net/gpu_value.html
 
-> When to buy
-* Best prices are usually around the end of the year, by Black Friday
+> PCIe versions
++ Refer to PCI section
++ Reminder: not all PCIe slots connect directly to CPU (usually it's jut the top one), some go through chipset and thus have more latency. So put your card(s) in top-slot(s)
++ Usually the card is the limiting component. As of writing, 2024 Q1, the strongest GPU on the market ("RTX 4090") is PCI Gen 4, while many boards are already on PCI Gen 5.
+* The "RTX 4090" (which is a PCI Gen 4 card) should display the worst discrepency between PCI generations since it's the strongest card. Within full-utilization for max FPS (bandwidth is the bottleneck):
+*   performs the same on Gen 4 and 5
+*   performs slightly lower in Gen 3:
+*       4K (as it should be used):  up to 1% performance loss
+*       1440p:                      up to 2% performance loss
+*       1080p:                      up to 2% (typically), but possibly 10-25% performance loss in specific cases due to driver-optimization issues
++ In realistic scenarios, there's still no meaningful performance boost beyond PCI Gen 3. Even for the specific cases where you're lowering the resolution and expecting worse performance, your CPU and Monitor would likely limit you.
 
 
 
@@ -217,6 +328,9 @@
 * AMD's CPUs are now the more expensive option, especially when factoring how pricier their motherboard are over Intel's
 TODO - focus on integrated graphics (APU)
 TODO - G / X / K / KF GPUs.
+TODO - P cores, E cores
+TODO - value retention
+TODO - intel being more efficient than Intel
 
 
 
@@ -229,6 +343,8 @@ TODO - G / X / K / KF GPUs.
 *   SR isn't putting as big a load on the memory controller.
 * Memory controller is part of the CPU 
 * Your RAM-speed is also limited by the CPU and motherboard. Putting a bigger load on the memory controller results in having lower max-frequencies
+
+TODO - DDR comparison
 
 > Timing: There are 4-5 different timings: CL-tRCD-tRP-tRAS-(maybe)CMD  # for more details, read: https://hardwaresecrets.com/understanding-ram-timings/
 * CAS latency: "C" or "CL" or "Clock" is the most significant factor; num of cycles the memory controller takes to retrieve data
@@ -262,7 +378,7 @@ TODO - G / X / K / KF GPUs.
 * You can ignore the QVL (qualified vendors list) of motherboards, RAM rarely works exclusively with the listed vendors.
 * You can ignore the CPUs' and motherboards' listed compatible memory speeds - those are base-specs, not limits.
 * Remember that motherboards typically run RAM at 2666 MHz by default. You need to enter BIOS/UEFI configuration (press DEL or some other key while booting) to specify the target intended speed through "XMP" or "EXPO". If your calibration fails, try slightly lower frequency (or different voltage if you know what you're doing)
-*   You need to find how fast your RAM really goes through trial and error. For you, it may end-up higher or lower than what's mentioned on the product's box.
+*   You need to find how fast your RAM really goes (or more precisely, how well it's getting along with your MB and CPU) through trial and error. For you, it may end-up higher or lower than what's mentioned on the product's box.
 * Repeating a past bullet to make it clear: the most important factor when buying RAM is the ratio of the frequency (desired higher) to Clock (desired lower)
 *   Example: 3600MHz* at C18 is lesser to 3200MHz* at C14.   (*MT, not MHz, but store-pages will display them wrong, so I'm playing along...)
 *   Example: 3600MHz* at C18 is about the same as 3200MHz* at C16. Generally, at equal frequency-to-clock ratios, the higher-frequency option is slightly better. (*see above remark)
@@ -270,7 +386,8 @@ TODO - G / X / K / KF GPUs.
 
 
 >> Motherboard
-> TODO: form factors
+> TODO: form factors ("EATX", ATX, Micro-ATX(mATX), Mini ITX)
+TODO - air-flow, and fan sizes
 TODO - refer to RAM in regards to topology
 TODO - refer to PCI in regards to possible allocations
 *   The top one (if not the only one) is usually x16, sometimes the only x16 on the board, and the only one connected to the CPU directly, so if you use a GPU, it should go there to maximize its bandwidth and performance
@@ -280,26 +397,69 @@ TODO - 3rd-party pressure plates for some types of CPU sockets, for even mountin
 
 
 >> PSU
+* PSUs are passive - they don't adjust the power that they deliver. Whatever the PC components ask for, they provide (if possible)
+* DON'T use one brand's PSU's cable on another brand's PSU!
+
+> Interface
+* Modularity (mostly a matter of short-term convenience)
+*   Modular: most convenient, you can avoid attaching unnecessary cables, or replace any of them
+*   Semi-Modular: like modular, but Motherboard and CPU cables are permanently attached (but you'd need them attached eventually anyway)
+*   Non-modular: No modularity, you get a clutter of cables attached. Could be an issue if your case has no space for all of the cables. Turns cable routing more tedious too.
+* 12VHPWR connector - a 16-pin (12+4) connector in the ATX 3.0 standard (Not to be confused with Motherboard ATX form factor), delivering up to 600W. Basically just for (NVIDIA) GPUs.
+*   GPUs with such a connector come with an adapter to 2-4 different 8-pin connectors; for older PSUs that don't have a 12VHPWR outlet.  
++   Make sure to fully-insert those, because loose contacts at such high power have been observed as fire-starters.
+
+> Wattage needs
 * PSUs are most efficient (min. amount of power-loss) at around 50% utility. Of-course it's also important that it's able to power the entire system (PC) on full-load 
 * An old 1200W PSU is about as good and long-lasting as a modern-built one: computing evolves but physics doesn't; capacitors aren't built in much better quality than in the past
 *   Unless Nvidia would change the basic-wattage-requirement perception again, and your once-overkill PSU would be relatively underpowered in modern standards
-*   Generally buying a PSU that's "too good" in terms of wattage-supply is a generally a good idea - you won't need to buy a new one for your next PC, and it'd save a bit on your electricity as it'd run closer to the mentioned 50% point.
-* You should pick a PSU from a reputable vendor that uses Japanese capacitors, those are the best. The best-by-quality PSU companies by descending order:
+*   Generally buying a PSU that's "too good" in terms of wattage-supply is a good idea - you won't need to buy a new one for your next PC, and it'd save a bit on your electricity as it'd run closer to the mentioned 50% point.
+
+> Fan
+* Generally, FDB (Fluid Dynamic Bearing) are the best (rifling is on the inside).
+*   Marketing lies about this, so there are no guarantees (where you get rifle bearings on the outside); the FDB patent's up and so no one's checking if the term is used right.
+* Some PSUs come with "Eco Mode" which allows the fan to turn off when the PSU doesn't require the cooling
+*   There are some risks with this mode (according to people's reports), so you should probably just avoid it, and leave your fan running non-stop.
+
+> Desireable physical features (advanced stuff; you can skip this section)
+* Japanese capacitors; those are the best.
+*   There are some high-quality US and German, but they're rarely used for consumer-grade PSUs 
+* AC-to-DC ("Primary"): AC power gets stepped-down with a transformer, then converted to unregulated DC via rectifier circuit.
+* DC-to-DC ("Secondary"):
+*   Switching Regulator Topology
++       Reading references: https://www.smps.us/topologies.html , https://www.ti.com/seclit/ml/sszp406/sszp406.pdf
++       There are many possible layouts for SMPS (Switching Mode Power Supply). Keeping it simple; LLC for high-end PSUs, Double-Forward for cheap PSUs.
+*           Double Forward / 2-Switch Forward: Cheap, but causes coil whine and is inefficient.
+*           Resonant LLC: 2 inductors (LL; one inductor is a transformer) and a capacitor (C). Expensive but efficient.
+*               As Half-Bridge: the most common LLC; simpler, uses 2 switches. Can be optimal for lower wattage PSUs.
+*               As Full-Bridge: uses 4 switches; more complicated and expensive, but also more efficient; great for high wattage. Not fitting for lower-power, like 750W (assuming that the parts are efficient)
+*   Regulations
+*       Group Regulated: poor regulation (voltages can go too high), cheap
+*       DC-DC: Newest. Similar to Double Mag Amp, but more efficient (can function with less load). Most efficient and most expensive.
+
+> Top Brands
+* The best-by-quality PSU companies by descending order:
 *   Seasonic
 *   EVGA / Corsair
 *   PC-case companies like Antec / be-quiet! / Cooler-Master / Fractal-Design
 *   motherboard companies like MSi / ASUS
 *   other known brands, such as XFX
 *   Gigabyte - knowingly shipped power supplies that 
+
+> Brands you should avoid
 * Don't buy the following; Besides having to replace them sooner, your other more-expensive computer parts would be in danger:
 *   Unknown brands
 *       Aresgames [obscure brand] (Lied to become top PSU-seller in Amazon, for model "AGS850", claiming it was 80+ Gold, while it was 80+ Bronze at best)
 *   Gigabyte (purposely shipped faulty PSUs in the past. Look up "exploding power supplies" and you'll see them mentioned first.)
+
+> 80+
++ A measure of how much of the input (AC) gets converted to the output (DC)
++ There's a new alternative: "Cybernetics" - a standard of testing with a full report for each model
 * Try to pick a PSU with a better 80+ certification of efficiency, to minimize power-loss.
-*   This is just an efficiency-rating, don't think of it as a general-quality grade
+*   This is just an efficiency-rating, don't think of it as a general-quality grade. It's not taking into accound some very importent things, like voltage regulation, or issues like ripple.
 *   Be aware that this isn't monitored/enforced, and some companies have been caught lying about it
-~> Table: "80+'s efficiency per workload"
-~>  _             115V_internal*_____  230V**_____________  230V_EU*___________
+~>  Table: "80+'s efficiency per workload"
+~>  _             115V*______________  230V**_____________  230V_EU*___________
 ~>        load->  10%  20%  50%  100%  10%  20%  50%  100%  10%  20%  50%  100%
 ~<  80+             -  80%  80%   80%    -    -    -     -    -  82%  85%   82%
 ~<  80+_Bronze      -  82%  85%   82%    -  81%  85%   81%    -  85%  88%   85%
@@ -320,14 +480,36 @@ TODO - 3rd-party pressure plates for some types of CPU sockets, for even mountin
 +   You can use a CPU-cooler on a GPU; it's quite effective. If you can mount it.
 TODO - mention RAM clearance
 
-> Leading products by avg temperature [fans x size] (descending order):
-* Thermalight Peerless Assassin [2x120]
-* Deepcool AK620 [2x120]
-* Zalman CNPS20X [2x140]
-* Noctua NH-D15 [2x140]
-*+  excellent support; Noctua even ships (on their expense!) brackets to new CPU sockets so you'll be able to keep using their good-old product
-* Deepcool Assassin III [2x140]
-* Scyte FUMA 2 [2x120]
+> Heat-pipes
++ An important part in any large cooler; for quick heat-spread
++ Basically a copper tube with water-vapor within, which cools (condenses to liquid) at the end and comes back flowing on the walls
++ Generally, the more heat-pipes the better the heat-spread/conduction
+* Theoretically, some patterned wall-linings can improve the flow, or separation between the vapors and liquids
+*   Sintered - walls are coated by grainy/powdery material.
+*   Grooved - walls are grooved like in a rifle's barrel, with about 30 parallel grooves.
+*   Mesh Weave - weaved strands of copper lining the walls.
+
+> Leading products by avg temperature, noise-normalized [fans x size] [Single / Dual-tower] (descending):
+* Thermalight Peerless Assassin 120                 [2x120][D]  : cheap, BEST at 200W and 123W noise-normalized, and BEST (among air-coolers) cooling at 100% fan speed
+* Deepcool Assassin IV                      [1x140 / 1x120][D]  : BEST at 200W 100%-fan, tied at 200W noise-normalized
+* Deepcool AK620                                    [2x120][D]
+* Zalman CNPS20X                                    [2x140][D]
+* Be Quiet! Dark Rock Pro 4                       [135+120][D]
+* Noctua NH-D15                                     [2x140][D]
+* Arctic Freezer 36 Black                           [2x120][S]  : cheap
+* Deepcool Assassin III                             [2x140][D]  : marketing lied about features in that product
+* Scyte FUMA 2                                      [2x120][D]
+* Jiushark JF13K Diamond                            [2x120][mushroom-like tower, 2x120 blowing air down like stock-CPU-coolers]  : cheap, cools VRMs well. Comes with the wrong allen-key, and you should probably swap the crappy fans with thos of a better company 
++ All of these are trailing behind the AIO coolers listed (in AIO section), but not by a lot from the bottom of the AIO list
++ These results are for specific wattage at a specific dBA noise limit (which affects each company's fans differently). The ranking changes over slight tweaks.
++   Nevertheless, this is roughly the order in which they should be ranked, and these are still the world's leading air-coolers; they're are all good.
++ Noctua provides excellent support; even ships (on their expense!) brackets to new CPU sockets so you'll be able to keep using their good-old product
+
+> Other good (in other aspects) coolers (descending by expected cooled wattage)
+* ID Cooling SE-214-XT ARGB         [1x120][S]       : Budget-products (when cooling up to 120W) ; sub-$20 single-tower single-120-fan cooler, with respectable performance
+* Thermalight Assassin Spirit 120   [1x120][S]       : tied for BEST at 68W noise-normalized stock performance
+* Arctic Freezer 34 Esports Duo     [2x120][S]       : tied for BEST at 68W noise-normalized stock performance
+* Noctua NH-P1                          [0][S(BIG)]  : Passive cooler. Effectively cools with no fans (no noise and no power-draw); you can still attach a fan if you deem it necessary.
 
 
 
@@ -363,15 +545,27 @@ TODO - mention RAM clearance
 *       If you put the radiator to the side, the tubes should connect to the top part of the ratidator, to allow the escape of air from the CPU-block
 *   If your pump is embedded in the radiator, either put the radiator at the bottom of the case (if there's air-intake there), or vertically while pump area is at the bottom.
 
-> Leading products by avg temperature [fans x size]:
-* Arctic Liquid Freezer III 360 [3x120] (best while noise-normalized)
-*   modular CPU-block; the VRM-fan comes off easily for easy maintenance/replacement
-* Arctic Liquid Freezer II 420 [3x140]
-* Arctic Liquid Freezer II 360 [3x120]
-* EK AIO Elite 360 [3x120]  (best cooling at 100% fan speed)
-* Lian Li Galahad 360 [3x120]
-* EK AIO 240 [2x120]
-* Lian Li Galahad 240 [2x120]
+> Leading products by avg temperature, noise-normalized [radiator fans x size] (descending):
+* Arctic Liquid Freezer III 360                     [3x120]  : modular CPU-block; the VRM-fan comes off easily for easy maintenance/replacement
+* DeepCool Mystique 360                             [3x120]
+* Arctic Liquid Freezer II 420                      [3x140]
+* Lian Li GA II Trinity Performance 360             [3x120]  : BEST cooling at 100% fan speed on 200W
+* EK AIO Elite 360 D-RGB   (fans on both rad. sides)[6x120]
+* Arctic Liquid Freezer III 280 RGB                 [2x140]
+* Lian Li GA II Trinity NH                          [3x120]
+* Alseye Infinity i360                              [3x120]
+* Arctic Liquid Freezer II 360                      [3x120]  : had a gunk-buildup issue (but Arctic handled it alright)
+* EK AIO 360                                        [3x120]
+* Lian Li Galahad 360                               [3x120]
+* EK AIO Elite 360 D-RGB                            [3x120]
+* Arctic Liquid Freezer II 280                      [2x140]
+* EK AIO 240                                        [2x120]
+* NZXT Kraken X62                                   [2x140]
+* NZXT Kraken X72                                   [3x120]
+* Lian Li Galahad 240                               [2x120]
++ Some AIO coolers (from EVGA, Fractal) were omitted from the bottom of the list because they were beaten by the leading air-coolers
++ Like in the case of air coolers, this isn't definitive ranking because the test is only of a specific scenario. But this is still a good rough estimate, and those are all world-leading AIO coolers.
++ Liquid Freezer CPU-blocks have a built-in fan to cool the VRMs around the CPU
 
 
 
@@ -381,7 +575,10 @@ TODO
 
 >> Fans
 TODO
-
+Gentle Typhoon (good model)
+Noctual
+Fans that are daisy-chaining so you only need to plug one of them
+AlphaCool have fans with a metal plate which surprisingly (even for them) helped with lowering noise
 
 
 
@@ -442,7 +639,10 @@ TODO
 
 
 
-* TODO - Keyboards (and switches)
+* TODO - Keyboards (including mechanical switches (specifically Cherry MX, also Gateron and Akko), keys' material: PBT keys vs ABS keys, Topre electrostatic switches)
+    Switches' resistence: if they're light at the start and heavy at the end, they feel "mushy" (generally a bad thing). They should be Linear.
+    Make sure that the switches fit into the plate (what kind of square hole do they have) 
+    models for example: HHKB Pro 1, Leopold FC660C,  Duck Octagon V3, OrtholinearKeyboards Planck (usues Neutrino plate), Tofu96, IQUNIX F96 Knight
 
 * TODO - Mice
 
@@ -475,7 +675,29 @@ TODO
 TODO?
 DAC + AMP (and maybe speakers)
 VR
+PCIe: NIC (Intel vs Realtek), sound, USB, ...
 
+
+
+=============================
+-------- Info Sources -------
+=============================
++ There's much more to add below, but doing so would make it hard to navigate 
+
+> Most of the performance-data about PC cases, coolers (air and AIO), and some data about fans and PSUs can be found or expanded upon at GamersNexus:
+*   https://gamersnexus.net/
+*   https://www.youtube.com/@GamersNexus/videos
+
+> For raw-FPS performance of various components and platforms (including mini-PCs, Raspberry Pi, Steam Deck, etc.): tom'sHARDWRE
+*   https://www.tomshardware.com/
+*   https://www.youtube.com/@tomshardware/videos
+
+> Tech news
+* https://www.anandtech.com/
+
+> For speculations on the market (especially for CPUs/GPUs)
+* https://www.youtube.com/@Coreteks/videos      : a bit controvertial, so you'd probably highly-agree/disagree
+* https://www.youtube.com/@adoredtv/videos
 
 
 

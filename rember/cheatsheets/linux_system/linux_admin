@@ -67,6 +67,7 @@
 >> Users / Groups
 + Some people like relocating their HOME dir, for modularity and easy migration. In my modest opinion though, you shouldn't do that;
 +   If you insist on doing that, at least relocate to a volume that's within the same disk as the OS, so you'll be more likely to have it accessible when your OS loads.
++   If you want to do that to preserve your configs, just backup your configs to a git repository.
 * groups <username>                                         # display the groups of a user
 * usermod -aG <groupA,groupB,groupC> <username>             # add user to group(s). You can even add to group sudo (makes into superuser in Ubuntu).
 * getent group                                              # list all groups and their user-members

@@ -79,8 +79,12 @@
 * ▲ ▼ ► ◄ ➤    : triangle arrows
 * † ✝ ✞ ♱ ✚    : cross
 * ☤            : hermes staff (caduceus)
-* ✓ ✓ ☑ ✔ 🗹  : checkmarks / checkbox 'v'
-* ✕ ✖ ✗ ✘ ☒    : x
+* ✓ ✓ ☑ ✔ 🗹    : checkmarks / checkbox 'v'
+* ✕ ✖ ☒ ✗ ✘    : x
+
+> fonts and sizes
+* ᵃ ᵇ ᶜ ᵈ ᵉ ᶠ ᵍ ʰ ᶦ ʲ ᵏ ˡ ᵐ ⁿ ᵒ ᵖ ᵠ ʳ ˢ ᵗ ᵘ ᵛ ʷ ˣ ʸ ᶻ  : online-tool:  https://lingojam.com/TinyTextGenerator
+*   ᵇᵃ⁻ᵈᵘᵐ⁻ᵗˢˢ
 
 
 > Other meme emojis
@@ -111,14 +115,14 @@
 -<  🤩               Star-Struck                      U+1F929      &#129321         😏               Smirking Face               U+1F60F      &#128527     
 -<  😘               Face Blowing A Kiss              U+1F618      &#128536         😒               Unamused Face               U+1F612      &#128530     
 -<  😗               Kissing Face                     U+1F617      &#128535         🙄               Face With Rolling Eyes      U+1F644      &#128580     
--<   ☺               Smiling Face                     U+263A       &#9786           😬               Grimacing Face              U+1F62C      &#128556      
+-<  ☺                Smiling Face                     U+263A       &#9786           😬               Grimacing Face              U+1F62C      &#128556      
 -<  😚               Kissing Face With Closed Eyes    U+1F61A      &#128538         🤥               Lying Face                  U+1F925      &#129317     
 -<  😙               Kissing Face With Smiling Eyes   U+1F619      &#128537         😌               Relieved Face               U+1F60C      &#128524 
 
 ~>  Emoticon/Smiley  Description                   Unicode_Hex  HTML_Dec_Code  Emoticon/Smiley  Description                    Unicode_Hex  HTML_Dec_Code
 -<  😔               Pensive Face                  U+1F614      &#128532       😟               Worried Face                   U+1F61F      &#128543     
 -<  😪               Sleepy Face                   U+1F62A      &#128554       🙁               Slightly Frowning Face         U+1F641      &#128577     
--<  🤤               Drooling Face                 U+1F924      &#129316        ☹               Frowning Face                  U+2639       &#9785       
+-<  🤤               Drooling Face                 U+1F924      &#129316       ☹                Frowning Face                  U+2639       &#9785       
 -<  😴               Sleeping Face                 U+1F634      &#128564       😮               Face With Open Mouth           U+1F62E      &#128558     
 -<  😷               Face With Medical Mask        U+1F637      &#128567       😯               Hushed Face                    U+1F62F      &#128559     
 -<  🤒               Face With Thermometer         U+1F912      &#129298       😲               Astonished Face                U+1F632      &#128562     
@@ -147,30 +151,30 @@
 -<  😈               Smiling Face With Horns              U+1F608      &#128520       🙈               See-No-Evil Monkey       U+1F648      &#128584     
 -<  👿               Angry Face With Horns                U+1F47F      &#128127       🙉               Hear-No-Evil Monkey      U+1F649      &#128585     
 -<  💀               Skull                                U+1F480      &#128128       🙊               Speak-No-Evil Monkey     U+1F64A      &#128586     
--<   ☠                Skull And Crossbones                 U+2620       &#9760        💯               Hundred Points           U+1F4AF      &#128175      
+-<  ☠                Skull And Crossbones                 U+2620       &#9760         💯               Hundred Points           U+1F4AF      &#128175      
 -<  💩               Pile Of Poo                          U+1F4A9      &#128169       💢               Anger Symbol             U+1F4A2      &#128162     
 -<  🤡               Clown Face                           U+1F921      &#129313       💥               Collision                U+1F4A5      &#128165     
 -<  👹               Ogre                                 U+1F479      &#128121       💫               Dizzy                    U+1F4AB      &#128171     
 -<  👺               Goblin                               U+1F47A      &#128122       💦               Sweat Droplets           U+1F4A6      &#128166     
 -<  👻               Ghost                                U+1F47B      &#128123       💨               Dashing Away             U+1F4A8      &#128168     
--<  👽               Alien                                U+1F47D      &#128125       🕳               Hole                     U+1F573      &#128371     
+-<  👽               Alien                                U+1F47D      &#128125       🕳                Hole                     U+1F573      &#128371     
 -<  👾               Alien Monster                        U+1F47E      &#128126       💣               Bomb                     U+1F4A3      &#128163     
 -<  🤖               Robot Face                           U+1F916      &#129302       💬               Speech Balloon           U+1F4AC      &#128172     
--<  😺               Grinning Cat Face                    U+1F63A      &#128570       🗨               Left Speech Bubble       U+1F5E8      &#128488     
--<  😸               Grinning Cat Face With Smiling Eyes  U+1F638      &#128568       🗯               Right Anger Bubble       U+1F5EF      &#128495     
+-<  😺               Grinning Cat Face                    U+1F63A      &#128570       🗨                Left Speech Bubble       U+1F5E8      &#128488     
+-<  😸               Grinning Cat Face With Smiling Eyes  U+1F638      &#128568       🗯                Right Anger Bubble       U+1F5EF      &#128495     
 -<  😹               Cat Face With Tears Of Joy           U+1F639      &#128569       💭               Thought Balloon          U+1F4AD      &#128173     
 -<  😻               Smiling Cat Face With Heart-Eyes     U+1F63B      &#128571       💤               Zzz                      U+1F4A4      &#128164     
 
 ~>  Emoticon/Smiley  Description                    Unicode_Hex  HTML_Dec_Code  Emoticon/Smiley  Description        Unicode_Hex  HTML_Dec_Code
 -<  👋               Waving Hand                    U+1F44B      &#128075       🤛               Left-Facing Fist   U+1F91B      &#129307     
 -<  🤚               Raised Back Of Hand            U+1F91A      &#129306       🤜               Right-Facing Fist  U+1F91C      &#129308     
--<  🖐               Hand With Fingers Splayed      U+1F590      &#128400       👏               Clapping Hands     U+1F44F      &#128079     
+-<  🖐                Hand With Fingers Splayed      U+1F590      &#128400       👏               Clapping Hands     U+1F44F      &#128079     
 -<  ✋               Raised Hand                    U+270B       &#9995         🙌               Raising Hands      U+1F64C      &#128588     
 -<  🖖               Vulcan Salute                  U+1F596      &#128406       👐               Open Hands         U+1F450      &#128080     
 -<  👌               Ok Hand                        U+1F44C      &#128076       🤲               Palms Up Together  U+1F932      &#129330     
--<   ✌               Victory Hand                   U+270C       &#9996         🤝               Handshake          U+1F91D      &#129309      
+-<  ✌                Victory Hand                   U+270C       &#9996         🤝               Handshake          U+1F91D      &#129309      
 -<  🤞               Crossed Fingers                U+1F91E      &#129310       🙏               Folded Hands       U+1F64F      &#128591     
--<  🤟               Love-You Gesture               U+1F91F      &#129311        ✍               Writing Hand       U+270D       &#9997       
+-<  🤟               Love-You Gesture               U+1F91F      &#129311       ✍                Writing Hand       U+270D       &#9997       
 -<  🤘               Sign Of The Horns              U+1F918      &#129304       💅               Nail Polish        U+1F485      &#128133     
 -<  🤙               Call Me Hand                   U+1F919      &#129305       🤳               Selfie             U+1F933      &#129331     
 -<  👈               Backhand Index Pointing Left   U+1F448      &#128072       💪               Flexed Biceps      U+1F4AA      &#128170     
@@ -178,11 +182,11 @@
 -<  👆               Backhand Index Pointing Up     U+1F446      &#128070       🦶               Foot               U+1F9B6      &#129462     
 -<  🖕               Middle Finger                  U+1F595      &#128405       👂               Ear                U+1F442      &#128066     
 -<  👇               Backhand Index Pointing Down   U+1F447      &#128071       👃               Nose               U+1F443      &#128067     
--<   ☝               Index Pointing Up              U+261D       &#9757         🧠               Brain              U+1F9E0      &#129504      
+-<  ☝                Index Pointing Up              U+261D       &#9757         🧠               Brain              U+1F9E0      &#129504      
 -<  👍               Thumbs Up                      U+1F44D      &#128077       🦷               Tooth              U+1F9B7      &#129463     
 -<  👎               Thumbs Down                    U+1F44E      &#128078       🦴               Bone               U+1F9B4      &#129460     
 -<  ✊               Raised Fist                    U+270A       &#9994         👀               Eyes               U+1F440      &#128064     
--<  👊               Oncoming Fist                  U+1F44A      &#128074       👁               Eye                U+1F441      &#128065     
+-<  👊               Oncoming Fist                  U+1F44A      &#128074       👁                Eye                U+1F441      &#128065     
 
 ~>  Table: braille (unicode 2800-28FF) - useful for ascii-art
 ~>  XXXn  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F

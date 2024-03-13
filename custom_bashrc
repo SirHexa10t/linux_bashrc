@@ -1860,7 +1860,7 @@ function mkfiledir () {
     for arg in "$@"; do  mkdir -p $(dirname "$arg"); done
 }
 
-# touch + make sure that the necessary dirs exists
+# touch + make sure that the necessary dirs exist
 function mktouch () {
     mkfiledir "$@"
     touch "$@"
@@ -3034,7 +3034,7 @@ fi
 
 # End-message (finished sourcing)
 if [[ -z "$SCRIPTED_SOURCING" && $EUID -ne 0 ]]; then   # don't output messages if user is root (sudo running) or if accessed through a script
-    echo "$(gecho "Finished loading") \"$CUSTOM_BASHRC_FILE\" for: \"$(realpath "$0")\". To view added commands, run: $(becho remindme)"  # announce done
+    echo "$(gecho "Finished loading") \"$CUSTOM_BASHRC_FILE\" for: \"$(realpath "$0")\".)"  # To view added commands, run: $(becho remindme)"  # announce done  # TODO - place back after fixing the bug this has
     [ -f "$TESTS_FILE" ] && source "$TESTS_FILE"  # run the tests file if it exists and we're not in sudo mode
 fi
 

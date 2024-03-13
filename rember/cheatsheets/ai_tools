@@ -43,6 +43,7 @@
 
 > Chat GPT 3.5/4/Copilot - the original thing. GPT3.5 requires signup (with phone-num), and anything beyond costs money
 * https://chat.openai.com/
+* Basically owned by Microsoft
 
 > Miqu - leaked model said to be on par with ChatGPT4
 * https://huggingface.co/miqudev/miqu-1-70b
@@ -51,10 +52,12 @@
 > Bing Chat - Microsoft's hosting of ChatGPT4 (no registration required)
 * https://www.bing.com/search?toncp=0&q=Bing+AI&showconv=1    : there are other possible links, but connecting to this via LibreWolf+VPN sometimes gives you 10 consecutive-context queries instead of just 4
 
-> Grok - Elon Musk's AI
+> Grok - Elon Musk's AI (paid)
 * https://x.ai/       : requires payment
 
-> Gemini - Google's AI
+> Gemini (previously Bard) - Google's AI. Has a free program, and a paid "Gemini Advanced"
 * https://gemini.google.com/app
 
+> Claude - Anthropic's AI
+* https://claude.ai/
 

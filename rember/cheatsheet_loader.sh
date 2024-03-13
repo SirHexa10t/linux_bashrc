@@ -10,8 +10,11 @@ declare -A CHSH_FLAGS
 CHSH_FLAGS['--edit']='xdg-open'  # open with default editor (like Xed)
 CHSH_FLAGS['-e']='xdg-open'
 CHSH_FLAGS['--fp']='echo'  # file-path printing
+CHSH_FLAGS['--cd']='cd'  # change-dir to file location (uses custom_bashrc's cd override)
 [ -n "$(which codium)" ] && CHSH_FLAGS['-c']='codium'  # open with VSCodium (only if available)
 CHEATSHEET_PLACEHOLDER='chsh_file'
+
+# TODO ? -g for grep, maybe --cat for cat and changing fp to --echo
 
 function _get_chsh_edit_conditions () {
     function _get_chsh_edit_condition () { echo 'if [ "$1" == '"$1"' ]; then '"${CHSH_FLAGS[$1]} '$CHEATSHEET_PLACEHOLDER'; "; }  # if var exists, check gets printed
@@ -67,12 +70,16 @@ function cheatsheets () {
         local file
         _get_cheatsheet_files | while IFS= read -r file; do grep -e "$1" -i "$file" -C 2 --color=always | _print_if_stream "Matches within $(wecho $(_derive_chsh_cmd_name "$file"))" ; done        
     else    # general info
-        orecho "To search within cheatsheets, rerun this command, followed by string-to-search."
-        orecho "To edit a cheatsheet you can run its \"$CHEATSHEET_PREFIX\" command, followed by a flag. $CHSH_FLAGS_SPECIFICATION"
-        echo 
-        tree --dirsfirst "$CHEATSHEETS_PATH"  # paste files, tree style
-        echo
-        echo "${command_list[@]}" | _print_if_stream "Commands:"
+        # buffer the prints
+        local paste_explanation="$(
+            orecho "To search within cheatsheets, rerun this command, followed by string-to-search."
+            orecho "To edit a cheatsheet you can run its \"$CHEATSHEET_PREFIX\" command, followed by a flag. $( for flag in "${!CHSH_FLAGS[@]}"; do echo -n "$(wecho "$flag"): open/print file using $(orecho "${CHSH_FLAGS[$flag]}") ;  "; done )"
+            echo 
+            tree --dirsfirst "$CHEATSHEETS_PATH"  # paste files, tree style
+            echo
+            echo "${command_list[@]}" | _print_if_stream "Commands:"
+        )"
+        echo "$paste_explanation"
     fi
 }
 

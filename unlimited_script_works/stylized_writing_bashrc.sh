@@ -34,7 +34,7 @@ function list_colors_available () {  ###tags: text-coloring
 
 # make given tag persistant
 function _tag_persist () {  ###tags: text-coloring
-    echo "<=persist${@}this=>"
+    echo "$@" #  # TODO - handle later. Persist used to mean one thing, now it's a "stronger" feature (using ^^ or ^^^), which might not be desired
 }
 
 # TODO - detect if the terminal is bright instead of dark? If it's white, the colored prints should be darker; so you should remove the "\033[1m" prefix
@@ -140,6 +140,8 @@ function commecho () {  ###tags: text-coloring
     #  TODO - add coloring for tables (in table rows, color-code numericals/units, and the words "yes" and "no")
     
     # TODO - implement positive/negative/neutral bullet-points (*+, *-, *%)
+    
+    # TODO - implement timeline stylizing (a line that goes from top to bottom with data-points within (spacing the data-points according to date or some other numerical))
     
         
     formatted="$(echo "$formatted" | awk '
