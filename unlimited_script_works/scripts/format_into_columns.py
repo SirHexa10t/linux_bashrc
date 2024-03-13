@@ -25,7 +25,7 @@ def strip_ansi(text):
 
 
 def is_number_maybe_w_unit(input):
-    pattern = r'^[+-]?[0-9]+(\.[0-9]+)?\s?[KkMmGgTt]?i?[bB]?(/s)?%?$'
+    pattern = r'^[+-]?[0-9]+(\.[0-9]+)?\s?[pKkMmGgTt]?((i?[bB]?(/s)?)|(%?)|((@[0-9]+)?(Hz)?))$'
     return bool(re.match(pattern, input))
 
 
@@ -123,26 +123,26 @@ num       word  a  b  long_word
         self.assertEqual(self.strip_ends(expected_output), self.strip_ends(result))
 
     def test_regular(self):
-        self.assert_as_bash_cmd(f"{self.CURRENT_FILE_PATH} '{self.SAMPLE_TABLE}'", self.SAMPLE_OUTPUT)
+        self.assert_as_bash_cmd(f"'{self.CURRENT_FILE_PATH}' '{self.SAMPLE_TABLE}'", self.SAMPLE_OUTPUT)
 
     def test_prepended(self):
-        self.assert_as_bash_cmd(f"{self.CURRENT_FILE_PATH} --prepend '{self.SAMPLE_TABLE}'", self.SAMPLE_RTL_OUTPUT)
+        self.assert_as_bash_cmd(f"'{self.CURRENT_FILE_PATH}' --prepend '{self.SAMPLE_TABLE}'", self.SAMPLE_RTL_OUTPUT)
 
     def test_prepended2(self):
-        self.assert_as_bash_cmd(f"{self.CURRENT_FILE_PATH} '{self.SAMPLE_TABLE}' --prepend", self.SAMPLE_RTL_OUTPUT)
+        self.assert_as_bash_cmd(f"'{self.CURRENT_FILE_PATH}' '{self.SAMPLE_TABLE}' --prepend", self.SAMPLE_RTL_OUTPUT)
 
     def test_echoed(self):
         self.assert_as_bash_cmd(f"echo '{self.SAMPLE_TABLE}' | {self.CURRENT_FILE_PATH}", self.SAMPLE_OUTPUT)
 
     def test_streamed(self):
-        self.assert_as_bash_cmd(f"{self.CURRENT_FILE_PATH} <<< '{self.SAMPLE_TABLE}'", self.SAMPLE_OUTPUT)
+        self.assert_as_bash_cmd(f"'{self.CURRENT_FILE_PATH}' <<< '{self.SAMPLE_TABLE}'", self.SAMPLE_OUTPUT)
 
     def test_given_filename(self):
         import tempfile
         with tempfile.NamedTemporaryFile(delete=True, mode='w', encoding='utf-8') as temp_file:
             temp_file.write(self.SAMPLE_TABLE)
             temp_file.seek(0)
-            self.assert_as_bash_cmd(f"{self.CURRENT_FILE_PATH} '{temp_file.name}'", self.SAMPLE_OUTPUT)
+            self.assert_as_bash_cmd(f"'{self.CURRENT_FILE_PATH}' '{temp_file.name}'", self.SAMPLE_OUTPUT)
 
     def test_ansi_stripping(self):
         strings_w_ansi = [
@@ -199,8 +199,10 @@ num       word  a  b  long_word
 
     def test_is_number(self):
         numerical_inputs = ["123", "123K", "123.45M", "2MB", "-1.23Gi", "5TiB", "1K", "1k", "2.5G", "10MiB",  "4.5",
-                            "2.000", "5 TiB", "+12.5", "10%", "2k%", "1.3 k", "2 MB/s", "4.4GB/s", ]
-        anumerical_inputs = ["abc", "1.2X", "1.2.3", "1 0", "2/2", "kB", "2%k", ]
+                            "2.000", "5 TiB", "+12.5", "10%", "2k%", "1.3 k", "1.12 kb/s", "2 MB/s", "4.4GB/s",
+                            "4K", "1080p", "60Hz", "1440p@120Hz"
+                            ]
+        anumerical_inputs = ["abc", "1.2X", "1.2.3", "1 0", "2/2", "kB", "2%k", "1440p@Hz", ]
 
         for num in numerical_inputs:
             print(f"testing num: {num}")

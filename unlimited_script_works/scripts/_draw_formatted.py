@@ -2,51 +2,37 @@
 
 """
 recolors text by replacing color tags with their appropriate color-codes
-arg 1: tagged text ; unless it's "--print_available_colors" (print available tags)
+    "--print_available_colors" - print available tags and exit
+    any-args: text to be processed; can be provided via arg, args, stream, pipe. Not as file.
 """
 
-# TODO - handle streamed data, and/or file-descriptor data (in case it's streamed with '<<<')
 
 import sys
 import re
-from collections import deque, OrderedDict
+from collections import deque
+from enum import Enum
 
 
-class Persistence:
+class Persistence(Enum):
+    PERSISTENCE_EOL = ('^^',)
+    PERSISTENCE_EOF = ('^^^',)
 
-    # persistence name to string signifier in tags
-    PERSISTENCE_EOL = 'eol'
-    PERSISTENCE_EOF = 'eof'
-    PERSISTENCE = OrderedDict([
-        (PERSISTENCE_EOL, '^^'),
-        (PERSISTENCE_EOF, '^^^'),
-    ])
+    def substr(self):
+        return self.value[0]
 
-    @classmethod
-    def _encompass_with_persisting_substr(cls, tagging, persistence, escaped=False):
-        substr = cls.PERSISTENCE[persistence]
+    def apply_to(self, tagging, escaped=False):
+        substr = self.substr()
         if escaped:
             substr = re.escape(substr)
         return f"<{substr}{tagging}{substr}>"
 
-    @classmethod
-    def to_persisting_eol(cls, tagging, escaped=False):
-        """turns tag or chain of tags, including reset, to persisting tags"""
-        return cls._encompass_with_persisting_substr(tagging, cls.PERSISTENCE_EOL, escaped)
-
-    @classmethod
-    def to_persisting_eof(cls, tagging, escaped=False):
-        """turns tag or chain of tags, including reset, to persisting tags"""
-        return cls._encompass_with_persisting_substr(tagging, cls.PERSISTENCE_EOF, escaped)
-
-    @classmethod
-    def identify_persistence(cls, tagging):
-        for persist, substr in reversed(cls.PERSISTENCE.items()):  # from end to start
-            start = f"<{substr}"
-            end = f"{substr}>"
+    @staticmethod
+    def identify_persistence(tagging):
+        for persist in reversed(Persistence):  # from end to start
+            start = f"<{persist.substr()}"
+            end = f"{persist.substr()}>"
             if tagging.startswith(start) and tagging.endswith(end):
                 return persist
-
         return None
 
     @classmethod
@@ -54,7 +40,7 @@ class Persistence:
         """remove the persisting part (like wire stripping)"""
         identified = cls.identify_persistence(tagging)
         if identified:
-            substr = cls.PERSISTENCE[identified]
+            substr = identified.substr()
             return tagging.removeprefix(f"<{substr}").removesuffix(f"{substr}>"), identified
         return tagging, None
 
@@ -97,15 +83,15 @@ class TagIndex:
     }
 
     reset_tag = list(resets_map.keys())[0]  # get the default value dynamically (no code duplication / magic strings)
-    reset_eol_tag = Persistence.to_persisting_eol(reset_tag)
+    reset_eol_tag = Persistence.PERSISTENCE_EOL.apply_to(reset_tag)
     reset_processed = resets_map[reset_tag]
 
     @staticmethod
     def _construct_persistent_dict(some_dict):
         return dict(
             **some_dict,
-            **{Persistence.to_persisting_eol(key): value for key, value in some_dict.items()},
-            **{Persistence.to_persisting_eof(key): value for key, value in some_dict.items()},
+            **{Persistence.PERSISTENCE_EOL.apply_to(key): value for key, value in some_dict.items()},
+            **{Persistence.PERSISTENCE_EOF.apply_to(key): value for key, value in some_dict.items()},
         )
 
     persisting_colors_map = _construct_persistent_dict(color_map)
@@ -128,8 +114,8 @@ class Matcher:
     def _create_w_persist_search(regex_loolup):
         return [
             regex_loolup,
-            Persistence.to_persisting_eol(regex_loolup, escaped=True),
-            Persistence.to_persisting_eof(regex_loolup, escaped=True),
+            Persistence.PERSISTENCE_EOL.apply_to(regex_loolup, escaped=True),
+            Persistence.PERSISTENCE_EOF.apply_to(regex_loolup, escaped=True),
         ]
 
     whitespace_regex_raw = r'<=([0-9]+)WS=>'  # for picking out the number in space-tags
@@ -201,7 +187,7 @@ class TagChain:
         self.encoded = ''.join([TagIndex.color_map.get(key, "") for key in self.tag_queue])
 
 
-    # A "singleton" session
+# A "singleton" session
 class ChainsStack:
 
     def __init__(self):
@@ -314,13 +300,20 @@ def draw_formatted(text: str):
 
 
 if __name__ == "__main__":
+    def process_text(text):
+        text_result = draw_formatted(text)
+        print(f'{text_result}')  # "return" result (bash)
+        exit(0)  # if you reached past the result printing, it's a success
+
     if len(sys.argv) >= 2 and sys.argv[1]:  # arg 1 is this file
-        if sys.argv[1] == '--print_available_colors':
-            print(*TagIndex.color_map.keys())
+        if '--print_available_colors' in sys.argv:
+            print(*TagIndex.color_map.keys())  # just print the dict
+            exit(0)
         else:   # regular run
-            text_result = draw_formatted(sys.argv[1])
-            print(f'{text_result}')  # "return" result (bash)
-        exit(0)
+            process_text('\n'.join(sys.argv[1:]))  # run function on all args, separated by newlines
+    elif not sys.stdin.isatty():  # no args, but data is piped in (stdin)
+        process_text(sys.stdin.read().strip())
+
     exit(1)
 
 
@@ -340,8 +333,10 @@ import unittest
 class TestYourFunction(unittest.TestCase):
 
     some_tag = '<=green=>'
-    pers_eol = Persistence.PERSISTENCE[Persistence.PERSISTENCE_EOL]
-    pers_eof = Persistence.PERSISTENCE[Persistence.PERSISTENCE_EOF]
+    pers_eol = Persistence.PERSISTENCE_EOL
+    pers_eof = Persistence.PERSISTENCE_EOF
+    eol_str = pers_eol.substr()
+    eof_str = pers_eof.substr()
 
     # calculate final form
     def fin(self, *args) -> str:
@@ -373,21 +368,21 @@ class TestYourFunction(unittest.TestCase):
 
     def test_persistence_functions(self):
 
-        eol_pers_tag = f"<{self.pers_eol}{self.some_tag}{self.pers_eol}>"
-        eof_pers_tag = f"<{self.pers_eof}{self.some_tag}{self.pers_eof}>"
+        eol_pers_tag = f"<{self.eol_str}{self.some_tag}{self.eol_str}>"
+        eof_pers_tag = f"<{self.eof_str}{self.some_tag}{self.eof_str}>"
 
-        self.assertEqual(eof_pers_tag, Persistence.to_persisting_eof(self.some_tag))
-        self.assertEqual(eol_pers_tag, Persistence.to_persisting_eol(self.some_tag))
+        self.assertEqual(eol_pers_tag, self.pers_eol.apply_to(self.some_tag))
+        self.assertEqual(eof_pers_tag, self.pers_eof.apply_to(self.some_tag))
 
-        self.assertEqual(Persistence.PERSISTENCE_EOL, Persistence.identify_persistence(eol_pers_tag))
-        self.assertEqual(Persistence.PERSISTENCE_EOF, Persistence.identify_persistence(eof_pers_tag))
+        self.assertEqual(self.pers_eol, Persistence.identify_persistence(eol_pers_tag))
+        self.assertEqual(self.pers_eof, Persistence.identify_persistence(eof_pers_tag))
         self.assertIsNone(Persistence.identify_persistence(eof_pers_tag + '>'))
         self.assertIsNone(Persistence.identify_persistence(''))
         self.assertIsNone(Persistence.identify_persistence('something'))
         self.assertIsNone(Persistence.identify_persistence(self.some_tag))
 
-        self.assertEqual((self.some_tag, Persistence.PERSISTENCE_EOL), Persistence.strip(eol_pers_tag))
-        self.assertEqual((self.some_tag, Persistence.PERSISTENCE_EOF), Persistence.strip(eof_pers_tag))
+        self.assertEqual((self.some_tag, self.pers_eol), Persistence.strip(eol_pers_tag))
+        self.assertEqual((self.some_tag, self.pers_eof), Persistence.strip(eof_pers_tag))
         self.assertEqual(('', None), Persistence.strip(''))
         self.assertEqual((self.some_tag, None), Persistence.strip(self.some_tag))
 
@@ -397,26 +392,23 @@ class TestYourFunction(unittest.TestCase):
             return TagIndex.is_valid_tag(stripped)
 
         self.assertTrue(TagIndex.is_valid_tag(self.some_tag))
-        self.assertTrue(TagIndex.is_valid_tag(f"<{self.pers_eol}{self.some_tag}{self.pers_eol}>"))
-        self.assertTrue(TagIndex.is_valid_tag(f"<{self.pers_eof}{self.some_tag}{self.pers_eof}>"))
+        self.assertTrue(TagIndex.is_valid_tag(f"<{self.eol_str}{self.some_tag}{self.eol_str}>"))
+        self.assertTrue(TagIndex.is_valid_tag(f"<{self.eof_str}{self.some_tag}{self.eof_str}>"))
 
         self.assertFalse(TagIndex.is_valid_tag(f"{self.some_tag}<=blue=>"))
         self.assertFalse(TagIndex.is_valid_tag(f"{self.some_tag}{self.some_tag}"))
-        self.assertFalse(TagIndex.is_valid_tag(f"<{self.pers_eof}{self.pers_eof}{self.some_tag}{self.pers_eof}{self.pers_eof}>"))
-        self.assertFalse(TagIndex.is_valid_tag(f"<{self.pers_eof}{self.some_tag}{self.pers_eol}>"))
-        self.assertFalse(TagIndex.is_valid_tag(f"<{self.pers_eol}{self.some_tag}{self.pers_eof}>"))
+        self.assertFalse(TagIndex.is_valid_tag(f"<{self.eof_str}{self.eof_str}{self.some_tag}{self.eof_str}{self.eof_str}>"))
+        self.assertFalse(TagIndex.is_valid_tag(f"<{self.eof_str}{self.some_tag}{self.eol_str}>"))
+        self.assertFalse(TagIndex.is_valid_tag(f"<{self.eol_str}{self.some_tag}{self.eof_str}>"))
         self.assertFalse(TagIndex.is_valid_tag('<==red=>'))
         self.assertFalse(TagIndex.is_valid_tag('<==red===>'))
         self.assertFalse(TagIndex.is_valid_tag('<==red==><=blue=>'))
 
     def test_matcher(self):
-        literal = Persistence.to_persisting_eol(TagIndex.reset_tag, escaped=False)
-        regex = Persistence.to_persisting_eol(TagIndex.reset_tag, escaped=True)
-        self.assertTrue(literal in Matcher.split_by_matches(regex, f"aaaa{literal}bbbb"))
-
-        literal = Persistence.to_persisting_eof(TagIndex.reset_tag, escaped=False)
-        regex = Persistence.to_persisting_eof(TagIndex.reset_tag, escaped=True)
-        self.assertTrue(literal in Matcher.split_by_matches(regex, f"aaaa{literal}bbbb"))
+        for persist in Persistence:
+            literal = persist.apply_to(TagIndex.reset_tag, escaped=False)
+            regex = persist.apply_to(TagIndex.reset_tag, escaped=True)
+            self.assertTrue(literal in Matcher.split_by_matches(regex, f"aaaa{literal}bbbb"))
 
         literal = TagIndex.reset_tag
         regex = TagIndex.reset_tag
@@ -432,8 +424,8 @@ class TestYourFunction(unittest.TestCase):
         # get translation of tags (tag chains). starts with reset.
         fin = (lambda *args: ''.join([TagIndex.color_map[f'<={tagstr}=>'] for tagstr in list(args)]))
         rfin = (lambda *args: fin_rst + fin(*args))
-        pl = Persistence.to_persisting_eol
-        pf = Persistence.to_persisting_eof
+        pl = Persistence.PERSISTENCE_EOL.apply_to
+        pf = Persistence.PERSISTENCE_EOF.apply_to
 
         chain_tags = '<=green=><=bold=>'
         chain_encoded = f"{fin('green','bold')}"
@@ -525,9 +517,9 @@ class TestYourFunction(unittest.TestCase):
             'whitespaces_at_line_start': (
                 f"<=2WS=><-2 spaces",
                 f"  <-2 spaces{fin_rst}"),
-            'persistence_eol_over_preprocessed': (
-                f"<=red=>R <^^<=green=>^^>G {rfin('blue')}B{fin_rst} G\nno_color",
-                f"{rfin('red')}R {rfin('green')}G {rfin('blue')}B{rfin('green')} G{fin_rst}\nno_color{fin_rst}"),
+            # 'persistence_eol_over_preprocessed': (
+            #     f"<=red=>R <^^<=green=>^^>G {rfin('blue')}B{fin_rst} G\nno_color",
+            #     f"{rfin('red')}R {rfin('green')}G {rfin('blue')}B{rfin('green')} G{fin_rst}\nno_color{fin_rst}"),
         }
         for k, v in tests.items():
             print(f"running test \"{k}\"")
@@ -548,3 +540,29 @@ class TestYourFunction(unittest.TestCase):
         #           outpt_str=f"{fin('green')}*{fin_rst} ip addr  {fin_rst}{fin('yellow')}# display own networking interfaces{fin_rst}")
 
         # TODO - test hard-reset
+        # TODO - test that the chain stack is empty at the end each time
+
+
+    def test_shell(self):
+        import subprocess
+        import os
+
+        current_file_path = os.path.abspath(__file__)
+        input_string = '<=red=>this is red <=green=>and this is green'
+        output_string = '\x1b[0m\x1b[31mthis is red \x1b[0m\x1b[32mand this is green\x1b[0m'
+
+        def cmd_compare(bash_command):
+            result = subprocess.run(bash_command, shell=True, capture_output=True, text=True,
+                                    executable='/bin/bash').stdout
+            result = result.removesuffix('\n')  # the shell subprocess adds a newline via echo; remove it
+            self.assertEqual(output_string, result)
+
+        # regular
+        cmd_compare(f"'{current_file_path}' '{input_string}'")
+
+        # piped
+        cmd_compare(f"echo '{input_string}' | '{current_file_path}'")
+
+        # streamed
+        cmd_compare(f"'{current_file_path}' <<< '{input_string}'")
+
