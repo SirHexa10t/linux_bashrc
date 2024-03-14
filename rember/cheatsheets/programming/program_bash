@@ -106,9 +106,9 @@
 ``` ${param:?word}                 # ":?": if param is unset, exit and output: "bash: word: parameter null or not set"
 
 > Substrings
-``` result="${hello_world_str:2}"    # ":":  returns substring from nth char onward. In this case if the string is "hello world" it'll return "llo world"
-```     "${@:2}"                     #          can return whole args by index, not just strings
-``` result="${hello_world_str:2:5}"  # ":":  returns substring starting at first index, at the length of second. In this case if the string is "hello world" it'll return "llo w"
+``` result="${hello_world_str:2}"    # ":":  returns array from nth char onward. In this case if the string is "hello world" it'll return "llo world"
+```     "${@:2}"                     #          the array can be args
+``` result="${hello_world_str:2:5}"  # ":num":  returns substring starting at first index, at the length of second. In this case if the string is "hello world" it'll return "llo w"
 ```     "${str:0:3}${str:7}"         #          pick string at ranges; this basically removes the substring between index 3 and 7 (exclusive)
 ```     "${list[@]:$start:$count}"   #          get a <count> items, starting from <start> index 
 ``` "${filename%.*}"                 # "%":  remove string from end; if removing pattern: shortest possible - in this example only last ".<thing>" gets erased, not all chain of ".<other>.<thing>".
@@ -213,7 +213,7 @@
 > while
 ``` while true; do                                              # infinite loop (needs to exit with "break" within)
 ``` while IFS= read -r line; do <command>; done < "$some_file"  # read file line by line (each line saved into var "line")
-``` while read -r cmde; do <command>; done <<< "$text_block"    # read line by line from text. Can also do: << <<< "${text_list[@]}"
+``` while IFS= read -r line; do <command>; done <<< "$lines"    # read line by line from text. The "IFS= " part preserves indentations. For array input you can do: `<<< "${text_list[@]}"`
 ``` while [[ $# -gt 0 ]]; do                                    # iterate while there are still args (contents of loop using "shift" to consume the args)
 ``` while [ -z "$found" ]; do                                   # any condition would do.
 ```     while [ ! -e "$iso_file_path" ]; do                     # you can also use "not"
@@ -230,8 +230,10 @@
     for item in ${mylist[@]}; do                                # iterate on list items
 ``` numbers1="1 2 3"; numbers2="2 4 6"; numbers2="10 20 30"; 
     for number in $numbers1 $numbers2 $numbers3; do             # iterate on all elements (separated by whitespace) within all strings  
-``` for key in "${!myHashMap[@]}"; do echo "k: $key v: ${myHashMap[$key]}"; done  # iterate on "hashmap" keys
-``` for value in "${myHashMap[@]}"; do                          # iterate on "hashmap" values
+``` for key in "${!myHashMap[@]}"; do 
+        echo "k: $key v: ${myHashMap[$key]}"; done              # iterate on "hashmap" keys
+```     for value in "${myHashMap[@]}"; do                      # iterate on "hashmap" values
+```     for value in $(printf "%s\n" "${!myHashMap[@]}" | sort); do # iterate on "hashmap" keys sorted alphabetically
 ``` for ((i=0; i<$num_of_threads; i++)); do                     # c-style for-loop.
 ```     for ((i=0; i<$num_of_threads; ++i)); do                 # also works
 ```     for ((i=0, j=1; i<$num_of_threads; i++, j++)); do       # also works
@@ -245,11 +247,16 @@
 >> String operations
 >> =================
 
++ Most of what's already covered here is about strings
+
 > Join
 ``` joined="$(IFS=$sep; echo "${arr[*]}")"                                             # ONLY if your separator is a single char
 ``` joined="$(printf "%s$separator" "${arr[@]}")"; joined="${joined%"$separator"}"     # print separated string with any separator. There's always a trailing separator at the end, so it needs to be removed explicitly
 ```     printf -v joined "%s$separator" "${arr[@]}" ; joined="${joined%"$separator"}"  # same thing
 ```     joined="$(printf "%s$separator" "${arr[@]}" | sed "s/${separator}$//")"        # ONLY if you don't have special characters in separator
+
+> Trim / Remove-prefix/suffix
+``` trimmed="${mystr:2:-3}"     # trims away 2 chars from the start and 3 from the end
 
 
 

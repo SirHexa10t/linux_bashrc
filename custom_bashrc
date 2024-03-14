@@ -590,6 +590,32 @@ function min () {
     echo $min
 }
 
+# prints given number with unit (example: "5 MiB") in plain bytes
+function to_bytes () {
+    local number="${1//[A-Za-z ]/}"
+    local unit="${1//[0-9. ]/}"
+    
+    [ -z "$unit" ] && { echo "$number"; return; }  # no units; already in plain bytes
+    
+    local calc="$(
+    case "${unit^^}" in
+        "KIB") echo "$number * 1024" ;;  # yes, it's KiB, and not "KIB". But this way is easier to script
+        "MIB") echo "$number * 1024 * 1024" ;;
+        "GIB") echo "$number * 1024 * 1024 * 1024" ;;
+        "TIB") echo "$number * 1024 * 1024 * 1024 * 1024" ;;
+        "PIB") echo "$number * 1024 * 1024 * 1024 * 1024 * 1024" ;;
+        "KB") echo "$number * 1000" ;;
+        "MB") echo "$number * 1000 * 1000" ;;
+        "GB") echo "$number * 1000 * 1000 * 1000" ;;
+        "TB") echo "$number * 1000 * 1000 * 1000 * 1000" ;;
+        "PB") echo "$number * 1000 * 1000 * 1000 * 1000 * 1000" ;;
+        *) echo "$number" ;;
+    esac
+    )"
+    
+    echo "$calc" | bc
+}
+
 # debugger: prints vars that were added by following function call
 # arg 1: -s (optional: run the command silently)
 function _vars_added_by () {
@@ -849,7 +875,7 @@ function _prompt_input_to_file () {
     # arg 1: what to announce
     function _print_the_file_contents () {
         local buffered_prompt=$(
-            dagecho -p "$1"
+            dagecho "$1"
             becho "-----------------file-start-----------------"
             cat "$file_to_write"
             becho "------------------file-end------------------"
@@ -857,7 +883,7 @@ function _prompt_input_to_file () {
         echo "$buffered_prompt"
     }
 
-    [ -n "$specific_prompt" ] && echo "$specific_prompt" || becho -p "Writing into file: \"$(wecho "$file_to_write")\"."
+    [ -n "$specific_prompt" ] && echo "$specific_prompt" || becho "Writing into file: \"$(wecho "$file_to_write")\"."
     if [ -f "$file_to_write" ]; then
         _print_the_file_contents "The file \"$(wecho "$file_to_write")\" already exists, and has these contents:"
         _prompt_yn "Writing a into this file would overwrite the existing contents! Are you sure?" || return  # return if the user doesn't want to overwrite
@@ -1048,7 +1074,7 @@ function spellcheck () {
         for marked_word in adverb verb adjective pronoun noun preposition conjunction interjection; do other_defs="$(color_word -t "$other_defs" -w "$marked_word" -c '<=italic=><=yellow=>')" ; done
         echo "$other_defs"
     else
-        recho -p "✖ $(ruecho $word)\tDid you mean:"  # can alternatively use fail: ✕
+        recho "✖ $(ruecho $word)\tDid you mean:"  # can alternatively use fail: ✕
         local marked_corrections=() correction  # also defines iteration var
         for correction in $corrections; do marked_corrections+=("$(py_word2_diff "$word" "$correction")") ; done
         printf '%s , ' "${marked_corrections[@]}" | sed 's/,\s*$/\n/'  # list to string separated by spaced commas
@@ -1118,7 +1144,7 @@ function multiping () {
                 failure=''
                 ping_results="$(ping "-$protocol" -c "$num_of_pings" "$address" 2> /dev/null)"
                 if [ $? -ne 0 ]; then
-                    [[ "$protocol" == "4" ]] && recho -p "Failed pinging $colored_address on $protocol_name"  # only print if failed at IPv4
+                    [[ "$protocol" == "4" ]] && recho "Failed pinging $colored_address on $protocol_name"  # only print if failed at IPv4
                     failure='true'
                 fi 
 
@@ -1245,12 +1271,12 @@ function resources_used () {
     echo "Computing units count: $(becho $thread_count)"
     echo "If your overall CPU usage reaches $(becho $bottleneck_threshold%), your CPU is possibly bottlenecked on a single thread."
 
-    echo "$(uecho 'Resources currently taken by users:') $(dabecho -p "$(cecho "*") verified human users are colored. $(cecho "**") results are subject to slight shifts over runtime, partially due to this very script's running.")"
+    echo "$(uecho 'Resources currently taken by users:') $(dabecho "$(cecho "*") verified human users are colored. $(cecho "**") results are subject to slight shifts over runtime, partially due to this very script's running.")"
     echo -e "$usage_summary" | column -t -s $'\t' -N "$headers"
 
     echo "$(uecho 'Total CPU usage:') $total_cpu_usage"
     echo "$(uecho 'Total RAM usage:') $total_ram_usage"
-    echo "$(uecho 'Total Disk usage:') $total_disk_usage  $(dabecho -p "$(cecho "*") For '/' only. Run \"devs\" command to see more.")"  
+    echo "$(uecho 'Total Disk usage:') $total_disk_usage  $(dabecho "$(cecho "*") For '/' only. Run \"devs\" command to see more.")"  
     # TODO - check if there is a GPU at all, and support AMD (or Intel) drivers (need to detect)
     [ -n "$show_gpu" ] && ( uecho "GPU utilization info:" ; nvidia-smi -q -d MEMORY,COMPUTE,UTILIZATION ) # if flag --gpu is specified    
 }
@@ -1406,7 +1432,7 @@ function kill_interactively () {
     local pids_spaces=$(echo "$pids_commas" | tr ',' ' ')  # save PIDs with space-separation (for killing)
     local proc_info=$(ps -p "$pids_commas" -o pid,ppid,user,%cpu,%mem,stat,start,time,cmd --sort=-%cpu)
 
-    local prompt="$(echo "$proc_info" ; becho -p "The listed processes $(recho will be killed). Are you sure?")"
+    local prompt="$(echo "$proc_info" ; becho "The listed processes $(recho will be killed). Are you sure?")"
     if _prompt_yn "$prompt"; then _sudo_if_necessary kill ${pids_spaces} ; else echo "Quitting." && return ; fi  # refular kill, not -9 (forced immediate)
 
     _wait_n_seconds 2
@@ -1447,7 +1473,7 @@ function add_to_path () {
 # arg 1: URL
 function install_deb_from_url () {
     local pkg_name=$(echo "$1" | awk -F/ '{print $NF}')  # get the string after last '/'
-    local installation_msg="$(becho -p "Installed debian (.deb) package: \"$pkg_name\". If you want to remove it, run: $(wecho "sudo dpkg -r $pkg_name").")"
+    local installation_msg="$(becho "Installed debian (.deb) package: \"$pkg_name\". If you want to remove it, run: $(wecho "sudo dpkg -r $pkg_name").")"
     # TODO - set a proper download location in wget, not just current dir
     wget "$1" && sudo gdebi -n "./$pkg_name" && echo "$installation_msg"  # download and install
     rm "$pkg_name"  # remove .deb file
@@ -1758,7 +1784,7 @@ function test_drive_read_write () {
     dd if="$testfile" of=/dev/null bs="$testfile_size" count=1 iflag=direct
 
     # TODO - fetch the data from the appropriate cheatsheets page instead?
-    dagecho -p "Compare your results with the USB transfer speed specifications:
+    dagecho "Compare your results with the USB transfer speed specifications:
     USB 1.0: $(yecho '187 kB/s') , USB 1.1: $(yecho '1.5 MB/s')
     USB 2.0: $(yecho '60 MB/s')
     USB 3.0 (a.k.a USB 3.1 Gen 1): $(yecho '625 MB/s') , USB 3.1 Gen 2: $(yecho '1.25 GB/s') , USB 3.2 Gen 2 x 2: $(yecho '2.5 GB/s') , 
@@ -2155,7 +2181,7 @@ function tarchive () {
         [[ -f "$archive_name" && -n "$no_overwrite" && -z "$predetermined_name" ]] && \
             archive_name="$(_add_str_before_filetype "$archive_name" "_$(date +%Y_%m_%d_T%H%M%S)")"
 
-        becho -p "Archiving: $(wecho "$(du -sh $full_path)") into: $(wecho "$archive_name")"
+        becho "Archiving: $(wecho "$(du -sh $full_path)") into: $(wecho "$archive_name")"
         # write the file
         case "$comp" in
             'gz'|'bz2'|'xz')
@@ -2227,7 +2253,7 @@ function untarchive () {
     local space_available="$(df -h "$chosen_file" --output=size | tail -n+2)"
     local filesize_absolute=$(echo "$filesize" | numfmt --from=iec)
     local space_available_absolute=$(echo "$space_available" | numfmt --from=iec)
-    becho -p "The extraction requires some buffer space. Compressed archive-file size: $(recho "$filesize"), file's disk remaining: $(recho "$space_available")"
+    becho "The extraction requires some buffer space. Compressed archive-file size: $(recho "$filesize"), file's disk remaining: $(recho "$space_available")"
     (( $(echo "$filesize_absolute < $minimal_factor * $space_available_absolute" | bc -l) )) || { errcho "There's not enough space to attempt extracting \""$chosen_file"\". This is where I stop."; return 1; }
 
     # could potentiall surpass max file-path, but it's too small a detail to care about
@@ -2257,13 +2283,13 @@ function untarchive () {
         return 0
     fi
 
-    becho -p "Extracted to folder: \"$(wecho "$output_folder")\"."  
+    becho "Extracted to folder: \"$(wecho "$output_folder")\"."  
 
     # recursively continue unpacking if there's only 1 more archive within
     local extracted_files="$(find "$output_folder" -maxdepth 1 -type f)"
     if [ $(echo "$extracted_files" | grep -v '^$' | wc -l) -eq 1 ]; then  # if there's exactly 1 file within, not counting empty lines in result
         local one_file="${extracted_files[*]}"
-        becho -p "Only one file was extracted: \"$(gecho "$one_file")\"; checking if it can be unpacked further"
+        becho "Only one file was extracted: \"$(gecho "$one_file")\"; checking if it can be unpacked further"
         untarchive --file "$one_file" $([ -n "$password" ] && echo "-p $password" | xargs )
     fi 
 }
@@ -2351,7 +2377,7 @@ function unencrypt () {
     local folder_of_extraction=$(realpath "$output_folder" 2>/dev/null || echo $(dirname "$file_mod_ext") )  # use output folder if specified
     local file_unencrypted_output="$( realpath "$folder_of_extraction/decrypted_$(basename "$file_mod_ext")" )"
 
-    becho -p "Identified $encryption_name encryption, attempting to unencrypt and save as $(gecho "$file_unencrypted_output") . $(buecho "Sort out the naming on your own")."  # let user know what's going on
+    becho "Identified $encryption_name encryption, attempting to unencrypt and save as $(gecho "$file_unencrypted_output") . $(buecho "Sort out the naming on your own")."  # let user know what's going on
     [ -z "$password" ] && unset optional_pass;  # password wasn't provided, so this won't be used; we'll prompt the user.
 
     if [ "$encryption_name" = 'OpenSSL' ]; then
@@ -2413,10 +2439,10 @@ function benchmark_archiving () {
 
     becho "Here are the results, remember that some algorithms' default encryption isn't good; relying on them for their speed is like relying on walking for fuel efficiency"
     for algo in ${algorithms[@]}; do
-        becho -p "archiving with $(gecho "$algo") took: $(gecho "${archive_times[$algo]} s") , unarchiving took: $(gecho "${unarchive_times[$algo]} s") , compressed at ratio: $(gecho "x${compression_ratios[$algo]}")"
+        becho "archiving with $(gecho "$algo") took: $(gecho "${archive_times[$algo]} s") , unarchiving took: $(gecho "${unarchive_times[$algo]} s") , compressed at ratio: $(gecho "x${compression_ratios[$algo]}")"
     done
 
-    local deletion_cmd=('rm' '-rf' "$target_folder") 
+    local deletion_cmd=('rm' '-rf' "$target_folder")
     becho "We're done. I left the files for your review. You can remove them with this command:"
     echo "${deletion_cmd[@]}" | color_word 'benchmark'
     if _prompt_yn "$(becho "would you like me to run it now for you?")"; then "${deletion_cmd[@]}"; fi
@@ -2495,12 +2521,12 @@ function _shortaccess_folder () {
     if [ -z "$dev_mountpoint" ]; then
         # if was supposed to mount
         if [ -z "$nomount" ]; then errcho "Failed to mount device uuid: \"$uuid\"!!!";
-        else becho -p "Avoided mounting $(recho unmounted device uuid: "\"$uuid\""), as requested"
+        else becho "Avoided mounting $(recho unmounted device uuid: "\"$uuid\""), as requested"
         fi
         return 1
     fi
 
-    becho -p "Device $(yecho "$(lsblk -no NAME,LABEL,UUID "/dev/disk/by-uuid/$uuid")") (<- name label UUID) is mounted at $(yecho "$dev_mountpoint")."  # at this point the device is mounted.
+    becho "Device $(yecho "$(lsblk -no NAME,LABEL,UUID "/dev/disk/by-uuid/$uuid")") (<- name label UUID) is mounted at $(yecho "$dev_mountpoint")."  # at this point the device is mounted.
 
     # iterate on couples (inner-paths , mountpoint) 
     local i
@@ -2761,6 +2787,19 @@ function mine_monero () {  ###tags: requires-configuration
     || "$miner_executable"
 }
 
+function list_gpus() {
+    local gpu_results="$(inxi -G)"
+    local line
+    while IFS= read -r line; do  # color R/G/B according to the maker of the GPU (AMD/NVIDIA/Intel)
+        local cmd='echo'
+        if grep -iFq "nvidia" <<< "$line"; then cmd='gecho';
+        elif grep -iFq "amd" <<< "$line"; then cmd='recho';
+        elif grep -iFq "intel" <<< "$line"; then cmd='becho';
+        fi
+        "$cmd" "$line"
+    done <<< "$(inxi -G)"
+}
+
 
 # Virtual Machines
 # ================
@@ -2786,33 +2825,58 @@ function launch_vm_w_lookingglass () {  ###tags: requires-configuration
     done
 
     # look up info within the vm's definitions file
-    local xml_file="/etc/libvirt/qemu/${vm_name}.xml"
-
-    local q_qq="\"'"  # single quote and double quotes
-    local sq="'"  # single-quote
-    # get the shmem name:
-    # TODO maybe - make shmem_name and shmem_size query with either single or double quotes
-    local shmem_name=$(sudo awk -F 'name=' '/shmem/ {gsub("'$sq'", "", $2); print $2}' "$xml_file" | sed 's/^"\([^"]*\)".*/\1/' | sed 's/>$//')  # extract the string between the quotes, remove the quotes, remove the closing '>'
-    [ -z "$shmem_name" ] && { errcho "Couldn't find shmem name (shared-memory for looking glass). If there's no GPU sharing its memory, Looking-Glass can't be used. Exiting."; return 1; }
-    local lg_file="/dev/shm/$shmem_name"
-    local shmem_size=$(sudo awk '/<\/shmem>/ {exit} {print}' "$xml_file" | tac | sed -n -E "s/.*<size unit='([^']*)'>([^<]*)<\/size>.*/\2 \1/p")  # get first size match above closing tag
-    local portnum=$(sudo grep -oP "<graphics type=[$q_qq]spice[$q_qq] port=[$q_qq]\K\d+" "$xml_file")  # works for either single or double quotes
-    portnum=${portnum:=5900}  # default if empty
-    # get first slot-match after the pci subsystem tag, then convert the matched number within from hex to dec (works with either quote or double quotes)
-    local gpu_index=$(sudo grep -A 999999 "<hostdev mode=[$q_qq]subsystem[$q_qq] type=[$q_qq]pci[$q_qq] managed=[$q_qq]yes[$q_qq]>" "$xml_file" | grep -o "slot=[$q_qq]0x[0-9a-fA-F]\+[$q_qq]" | head -1 | sed "s/slot=[$q_qq]\(0x[0-9a-fA-F]\+\)[$q_qq]/\1/" | xargs printf "%d")
-    local inxi_index=$((gpu_index+2))
+    local xml_cached="$(sudo cat "/etc/libvirt/qemu/${vm_name}.xml")"
     
-    # Show user the parameters and ask for approval (quit if disapproved)
-    becho -p "$(wecho "Note:") no two running VMs may have the same looking-glass $(cecho "session-file") or $(cecho "VNC-port") or $(cecho "GPU") at the same time"
-    becho -p "$(wecho "Note:") shmem size needs to be enough for your resolution. Rough estimates (according to \"$(buecho "https://looking-glass.io/docs/B6/install/#client-determining-memory")\"): \
-$(cecho "1080p:") 32M, $(cecho "1200p:") 32M, $(cecho "1440p:") 32M, $(cecho "4K:") 128M ; if you want to support $(cecho "HDR mode:") $(wecho "DOUBLE") the previously stated amount."
-    recho "Please authorize the following."
-    echo "$(becho "I think the VM uses this GPU:") $(inxi -G | awk "NR==$inxi_index")"
-    if _prompt_yn "$(becho -p "$(cecho "VM"): $(wecho "$vm_name"), $(cecho "looking-glass/shmem name"): $(wecho "$shmem_name") ($(cecho "shmem size"): $(wecho "$shmem_size")), $(cecho "VNC-port"): $(wecho "$portnum"), $(cecho "index of used GPU"): $(wecho "$gpu_index"). Launch with these parameters?")"; then
-        echo "Starting..." 
-    else 
-        echo "Quitting. If the details were off, modify your VM's xml file (easiest through VM Manager, but you can also run: \"virsh edit $vm_name\")" 
-        return
+    local q="'"  # VM XMLs use single quotes. If you need double-quotes, change that here.
+
+    # get tag's lines. arg1: tag's name
+    function _get_tag_contents() { sed "/<$1/,/<\/$1>/"'!d'; }
+    # get tag's lines. arg1: tag's name, arg2: type-field's value
+    function _get_specific_tag_contents() { sed "/<$1.*type=[$q]$2[$q]/,/<\/$1>/"'!d'; }
+    # get a specific field's value. arg1: field's name
+    function _field_value() { sed -n "s/.*$1=[$q]\([^$q]*\)[$q].*/\1/p"; }
+    # get a number specified within a specific field's line. arg1: field's name 
+    function _field_number() { grep "$1=" | sed 's/[^0-9]*//g'; }
+    
+    
+    # memory sufficiency check
+    local vm_mem_required="$( echo "$xml_cached" | _field_number '<memory unit') $( echo "$xml_cached" | _field_value 'memory unit')"
+    local current_free_ram=$( free -b | grep Mem: | awk '{print $4}' )
+    [ $(to_bytes "$vm_mem_required") -gt "$current_free_ram" ]  && { errcho "'$vm_name' requires $vm_mem_required of free RAM, but right now you only have $(free -k | grep Mem: | awk '{print $4}') KiB"; return 1; }
+    
+    # shared memory between GPUs
+    local shmem_section="$( echo "$xml_cached" | _get_tag_contents 'shmem')"
+    shmem_name="$( echo "$shmem_section" | _field_value 'name')"
+    [ -z "$shmem_name" ] && { errcho "Couldn't find shmem name (shared-memory for looking glass). If there's no GPU sharing its memory, Looking-Glass can't be used. Exiting."; return 1; }
+    shmem_size="$( echo "$shmem_section" | _field_number 'size unit') $( echo "$shmem_section" | _field_value 'size unit')"
+
+    # non-hardware display
+    local graphics_section="$( echo "$xml_cached" | _get_tag_contents 'graphics')"
+    extra_graphics_type="$( echo "$graphics_section" | _field_value 'graphics type')"
+    extra_graphics_portnum="$( echo "$graphics_section" | _field_value 'port')"
+    [[ -z "$extra_graphics_portnum" || "$extra_graphics_portnum" == 'yes' ]] && extra_graphics_portnum+="  $(dagecho '(Probably port 5900)')"  # default VNC port
+
+    # GPU passed through
+    local gpu_domain_bus_slot_function="$( echo "$xml_cached" | _get_specific_tag_contents 'hostdev' 'pci' | _get_tag_contents 'source' | grep "<address" --color=never | grep -oP "(?<=$q)[^$q]+(?=$q)" | grep -v '^\s' | sed 's/^0x//'; )"
+    local lspci_cache="$(lspci)"
+    
+    local cached_prints=$(
+        # all details except connected GPU
+        for detail in 'shmem_name' 'shmem_size' 'extra_graphics_type' 'extra_graphics_portnum'; do echo "$(becho "$detail:") ${!detail}"; done
+        
+        becho 'gpu functions passed:'  
+        echo $gpu_domain_bus_slot_function | xargs -n4 | while read -r domain bus slot function; do
+            echo "$lspci_cache" | grep "$bus:$slot.$function"
+        done
+        
+        # Show user the parameters and ask for approval (quit if disapproved)
+        dagecho "$(wecho "Note:") no two running sessions VM may have the same looking-glass $(becho "session-file") or $(becho "VNC-port") or $(becho "GPU") at the same time"
+        dagecho "$(wecho "Note:") shmem size needs to be enough for your resolution. Rough estimates (according to \"$(cuecho "https://looking-glass.io/docs/B6/install/#client-determining-memory")\"): $(cecho "1080p:") 32M, $(cecho "1200p:") 32M, $(cecho "1440p:") 32M, $(cecho "4K:") 128M ; if you want to support $(cecho "HDR mode:") $(wecho "DOUBLE") the previously stated amount."
+    )
+    echo "$cached_prints"
+    
+    if _prompt_yn "Launch $(wecho "$vm_name") with the above parameters?"; then echo "Starting...";
+    else echo "Quitting. If the details were off, modify your VM's xml file (easiest through VM Manager, but you can also run: \"virsh edit $vm_name\")"; return;
     fi
 
     if _is_dev "$VM_IMG_PARTITION_UUID" ; then  # if is a legitimate device, try mounting it
@@ -2820,6 +2884,7 @@ $(cecho "1080p:") 32M, $(cecho "1200p:") 32M, $(cecho "1440p:") 32M, $(cecho "4K
         mount_media_by_uuid "$VM_IMG_PARTITION_UUID"
     fi
 
+    local lg_file="/dev/shm/$shmem_name"  # will be created later
     becho "Creating looking-glass session file: $lg_file"
     sudo touch "$lg_file" && sudo chown $(whoami):kvm "$lg_file" && sudo chmod 660 "$lg_file"
     [ -f "$lg_file" ] && dagecho "$(ls -alF "$lg_file")"

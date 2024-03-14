@@ -370,7 +370,7 @@ TODO - DDR comparison
 * As of the beginning of 2024, DDR4 is already unsupported by latest AMD/Intel generations. It's on its way out. DDR5 is about 1.5 times faster than DDR4, and consumes less power.
 * Don't mix different models of RAM - use multiple of the same kind of stick
 * Use 2 or 4 sticks of RAM (just not an odd number) to avoid latency issues.
-* Prefer 2 RAM sticks instead of 4 to lower the load on the memory controller (2x16 GiB 3600MT will sometimes have better response rate than 4x8 GiB 3600MT)
+* Prefer 2 RAM sticks instead of 4 to lower the load on the memory controller (2x16 GB 3600MT will sometimes have better response rate than 4x8 GB 3600MT)
 *   There *is* more bandwidth in using 4. It factors in at some niche workloads.
 *   As mentioned, for 2 sticks, DaisyChain generally gets better frequencies
 *   If you really want to use 4, you're slightly better-off doing it in T-topology motherboard

@@ -10,72 +10,21 @@
 # TODO - pass the args in a temp (RAM-only) file, so it won't complain about too many args (that's what python does...)
 # recolors text by replacing color tags with their appropriate color-codes. Calls '_py_draw_formatted' to do that 
 function _draw_formatted () {  ###tags: text-coloring
-    if type -t _py_draw_formatted &> /dev/null ; then echo -e "$(_py_draw_formatted "$@")";
+    if type -t _py_draw_formatted &> /dev/null ; then _py_draw_formatted "${@:-$(cat)}";
     else echo -e "$@"; fi
 }
 
 # Lists available colors (tags), and associated functions. Calls '_py_draw_formatted' for the list of colors 
 function list_colors_available () {  ###tags: text-coloring
-    local color_tags=$(_py_draw_formatted --print_available_colors)
     local tags=$(
         local tag
-        local reset_tag='<=reset=>'
-        for tag in ${color_tags[@]}; do
-            local c_tag="$tag"
-            echo "$tag" | sed "s/<=\([^=]*\)=>/<=${c_tag}\1${reset_tag}=>/"
-            # echo "tag: $tag";
+        for tag in $(_py_draw_formatted --print_available_colors); do
+            echo "<=$(_colored_echo "$tag" "${tag:2:-2}")=>" 
         done
     )
-    _draw_formatted "$tags"
+    echo "$tags"
 
     # TODO - list coloring commands
-}
-
-
-# make given tag persistant
-function _tag_persist () {  ###tags: text-coloring
-    echo "$@" #  # TODO - handle later. Persist used to mean one thing, now it's a "stronger" feature (using ^^ or ^^^), which might not be desired
-}
-
-# TODO - detect if the terminal is bright instead of dark? If it's white, the colored prints should be darker; so you should remove the "\033[1m" prefix
-# recolors all lines with specified color
-# any early arg: color (see available colors in "_draw_formatted") , any early arg: -p (optional - turn tag to persistant) , any early arg: -n (optional - no coloring, just tagging) , any early arg: -t (optional - just return the tag itself) , last arg: text to color
-function _colored_echo () {  ###tags: text-coloring
-    local no_drawing persist tag only_tag
-
-    # handle flags, leave text to the end
-    while [[ $# -gt 1 ]]; do
-        if [ "$1" == '-n' ]; then  # just put in the tags, don't draw
-            no_drawing='true'
-            shift
-        elif [ "$1" == '-p' ]; then  # persisting tag
-            persist='true'
-            shift
-        elif [ "$1" == '-t' ]; then  # only return the tag, don't do any text/color-related work
-            only_tag='true'
-            shift
-        elif [[ "$1" =~ ^'<='.+'=>'$ ]]; then  # found color tag to apply
-            tag+="$1"
-            shift
-        else  # regular text - we're done scanning for options
-            break
-        fi
-    done
-    
-    [ -z "$tag" ] && { errcho "Didn't get a tag to color with, and that's the whole purpose of this function" ; return 1 ; }  # if no coloring tag picked
-
-    [ -n "$persist" ] && tag=$(_tag_persist "$tag")  # if requested to "upgrade" to persistant tag
-
-    [ -n "$only_tag" ] && { echo "$tag" ; return ; }  # if requested to only return the tag
-
-    local formatted=$( for arg in "$@"; do echo "${tag}${arg}<=reset=>"; done )
-    if [ -n "$no_drawing" ]; then
-        echo "$formatted"
-        return
-    else
-        _draw_formatted "$formatted"  # automatically puts the color reset at the ends of the lines
-        return
-    fi
 }
 
 # comment-colorized echo - Colorize and reorganize in ways that make text easy to read. It's a bit like markdown, but with colors, and better compatibility with code readability
@@ -84,16 +33,16 @@ function commecho () {  ###tags: text-coloring
     local bullet_point_color='<=cyan=>'                                 # * item
     local bullet_point_sub_color='<=green=>'                            # *   sub-item
     local upper_line_continuing_arrow="$bullet_point_sub_color"         # char automatically added to sub-items: ↳
-    local double_cat_line_color=$(_tag_persist '<=bold=><=yellow=>')    # >> title
-    local single_cat_line_color=$(_tag_persist '<=bold=><=blue=>')      # > topic
-    local tilda_cat_line_color=$(_tag_persist '<=b_purple=>')           # ~> table_topic
-    local tilda_bra_line_color=$(_tag_persist '<=italic=>')             # ~< table_content
-    local minus_bra_line_color=$(_tag_persist '<=yellow=>')             # -< table_content (contains emojis or other chars that don't look well with regular formatting)
-    local plus_line_color=$(_tag_persist '<=bold=><=cyan=>')            # + remark
-    local sharp_comment_color=$(_tag_persist '<=yellow=>')              #   # comment
+    local double_cat_line_color='<=bold=><=yellow=>'                    # >> title
+    local single_cat_line_color='<=bold=><=blue=>'                      # > topic
+    local tilda_cat_line_color='<=b_purple=>'                           # ~> table_topic
+    local tilda_bra_line_color='<=italic=>'                             # ~< table_content
+    local minus_bra_line_color='<=yellow=>'                             # -< table_content (contains emojis or other chars that don't look well with regular formatting)
+    local plus_line_color='<=bold=><=cyan=>'                            # + remark
+    local sharp_comment_color='<=yellow=>'                              #   # comment
     local double_slash_documentation_color="$sharp_comment_color"       #  // comment
-    local colon_comment_color=$(_tag_persist '<=yellow=>')              #   : comment
-    local sharp_documentation_color=$(_tag_persist '<=green=>')         # # comment
+    local colon_comment_color='<=yellow=>'                              #   : comment
+    local sharp_documentation_color='<=green=>'                         # # comment
     local double_quotes_color='<=bold=><=red=>'                         # "something"       # also used for text between bra and ket ( <> )
     local tilted_quote_color='<=bold=><=orange=>'                       # `code piece`      # TODO - make code-marking persistant, but only until the closing '`', not until EOL
     local warning_color='<=flicker=><=uline=><=bold=><=red=>'           # oh_no!!
@@ -133,7 +82,7 @@ function commecho () {  ###tags: text-coloring
     local ny='\(.*\)'  # "n-ything"
     local n_e='\(.*$\)'  # "en-ee"; "ANYthing until End". The braces need to be escaped, but not the dollar sign, it means "end"
     local cs='^``` '  # code-start (line starts with: '``` '), used to identify if later code-comment is applicable
-    local cm="$(_tag_persist "$tilted_quote_color")"  # code-marking (the color-coding at the start of a code-line)
+    local cm="$tilted_quote_color"  # code-marking (the color-coding at the start of a code-line)
     
     # formatted=$(echo "$formatted" | sed -E "s/(<[^>]+>)/$angled_brackets_color\1$reset/g")  # recolor within '< >' (user-input). Needs to run first, to not modify the color tags
     
@@ -173,6 +122,22 @@ function commecho () {  ###tags: text-coloring
 }
 
 
+# TODO - detect if the terminal is bright instead of dark? If it's white, the colored prints should be darker; so you should remove the "\033[1m" prefix
+# recolors all lines with specified color
+# starting args: coloring tags to apply to all text ; all other args OR piped data is text to format
+function _colored_echo () {
+    local tags=''
+    while [[ $# -gt 0 ]]; do
+        if [[ "$1" =~ ^'<='.+'=>'$ ]]; then tags+="$1" && shift
+        else break; 
+        fi
+    done
+    # decorate tags as needed, if they exist
+    [ -n "$tags" ] && tags="<^^^$tags^^^>"  # the ^^^ thing means persistence until EOF
+    
+    _draw_formatted "${tags}${@:-$(cat)}"
+}
+
 
 # echo in red
 function recho () { _colored_echo "<=bold=><=red=>" "$@"; }
@@ -204,6 +169,8 @@ function ruecho () { recho "<=uline=>" "$@" ; }
 function guecho () { gecho "<=uline=>" "$@" ; }
 # underlined echo in blue
 function buecho () { becho "<=uline=>" "$@" ; }
+# underlined echo in cyan
+function cuecho () { cecho "<=uline=>" "$@" ; }
 # underlined echo in yellow
 function yuecho () { yecho "<=uline=>" "$@" ; }
 # underlined echo in orange
@@ -213,7 +180,7 @@ function wuecho () { wecho "<=uline=>" "$@" ; }
 
 
 # echo into error output
-function errcho () { recho -p "$@" >&2 ; }
+function errcho () { recho "$@" >&2 ; }
 
 
 

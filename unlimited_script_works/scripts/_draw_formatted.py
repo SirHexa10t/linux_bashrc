@@ -120,7 +120,7 @@ class Matcher:
 
     whitespace_regex_raw = r'<=([0-9]+)WS=>'  # for picking out the number in space-tags
 
-    single_tag_regex = r"<=[a-zA-Z_]+=>"
+    single_tag_regex = r"<=[0-9a-zA-Z_]+=>"
     tag_chain_regexes = _create_w_persist_search(f"({single_tag_regex})+")
     reset_regexes = _create_w_persist_search(TagIndex.reset_tag) + ['\\x1b\\[0m']  # work with already-processed resets
 
