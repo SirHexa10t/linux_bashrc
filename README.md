@@ -163,6 +163,10 @@ Lists the bash commands that this project provides - can be used for lookup, rea
     + If some command doesn't work because of a missing package, the function should fail; not fix itself.
   + Damages due to common commands' override should always be unlikely, yet fully remain the user's responsibility
   + Don't rely on your overrides' quirks in your own functions; they're there for the user's convenience and should be considered removable.
++ No impact on other users who're not using this repo
+  + Don't litter the user's OS / environment.
+    + Don't write to global locations such as "/usr/local/bin/"
+    + When writing to user's home-dir, all info has to be contained within a single dir
 + Be considerate of the user: assume tiredness or weak memory.
   + If something complicated is going on, there should be a notification/explanation about it.
   + Don't let the text blend; color-code your messages, so it's easy to discern what kind of data is displayed.

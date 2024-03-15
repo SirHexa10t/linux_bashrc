@@ -92,6 +92,8 @@ function commecho () {  ###tags: text-coloring
     
     # TODO - implement timeline stylizing (a line that goes from top to bottom with data-points within (spacing the data-points according to date or some other numerical))
     
+    # TODO - replace info-indicators, from + to !. Then you can do +,-,% directly as variants of list items 
+    
         
     formatted="$(echo "$formatted" | awk '
                     in_code && !/^    / { in_code = 0 }                 # if entered code-mode, stay in it only if the spacing indicates youre still in the same block 

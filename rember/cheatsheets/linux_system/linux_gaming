@@ -1,0 +1,145 @@
+# various things that might interest you if you want to game on Linux
+
+  + General note: if you're gaming on Linux, you shouldn't run your games on NTFS (file system). This ancient MS file-system introduces various issues that you wouldn't want to deal with.
+      + Since NTFS is proprietary, Linux probably won't resolve its compatibility issues with it anytime soon (or ever)
+      + You can store your mods on ext4 for cross-compatibility with Windows machines
+
+
+
+>> Hardware and Video Drivers
+  * Nvidia cards: You should install the proprietary NVIDIA GPU drivers.
+      * https://wiki.archlinux.org/title/NVIDIA
+  * AMD's default Open Source drivers are usually enough.
+      * https://wiki.archlinux.org/title/AMDGPU
+      * Some programs (like DaVinci Resolve) require proprietary drivers, for which you'll need to install AMDGPU-PRO
+  * Intel GPUs and Intel integrated-graphics work without intervention (no GPU drivers required)
+
+
+
+>> Linux-native Games
+
+> Compatible Engines (no need for porting / modifications)
+  * Unreal Engine       : usually runs faster on Linux than Windows
+  * Unity
+      * Basically most of the indie games, right there. Though some will probably migrate to Unreal after their outrageous fee updates in 2023 
+  * Godot
+  * others: Lumberyard, Defold, GameMaker Studio, CRYENGINE, IdTech...
+  
+> Almost anything written in cross-platform languages
+  * Java (if exceptional dependencies weren't included)
+      * notably Minecraft
+  * Python
+      * notably Ren'Py (Visual Novel engine) games
+
+>> Console Emulators
+  + Almost all emulators are compatible with Linux
+  + Many emulators can be found here: https://www.consoleroms.com/emulators
+  + You can find many emulators on FlatHub
+  
+  TODO - separate into categories of what's emulated
+  * There are many emulators, a few of them:
+      * RetroArch         : an "emulators hub"; interface for different engines for different consoles
+      * EmulationStation  : another "all in one" emulator
+          * https://es-de.org/
+          * Can stream to TV
+          * Actively helps you import your roms into your Steam library, with cover-arts, descriptions etc.! 
+      * Dolphin           : GameCube/Wii emulator
+      * Play!             : PS2 emulator
+      * TODO - RetroArch, Dosbox, PPSSPP, RPCS3, VMBA-M, FS-UAE, Higan, DeSmuME, KegaFusion, Waydroid, MAME, Citra (RIP), PCSX2, mGBA, FCEUX, DGEN, ZSNES, Mednafen, EmulationStation, ScummVM, Ryujinx, ePSXe, Stella, Reicast, Nestopia, Mupen64plus, Yabause, Pegasus, Yuzu (Rip)PCSX-R, Xemu, Hatari(?) DuckStation, Snes9X, SameBoy... (many more)
+
+
+
+>> Running Windows-only Games
+  + The most problematic games to run are those that have anti-cheat
+      + Some Anti-Cheat games work (like FallGuys), but some don't (like Fortnite)
+      + Generally you shouldn't try to play anti-cheat games on Linux; even if you're successful, they might ban you. Getting fucked with their kernel-level malware is just mandatory.
+  + Even if you don't use Proton, there are useful community discussion over issues per-game on ProtonDB
+
+> Packages and services
+  * WINE          : "Wine Is Not (an) Emulator" - a compatibility-layer that translates Windows commands to Linux's (basically an emulator)
+      * WINE-GE   : required(?) by ProtonGE, works on non-Steam games too   https://github.com/GloriousEggroll/wine-ge-custom
+      * Bottles   : a UI for setting up and configuring WINE. You make profiles with presets of enabled features, like DirectX versions, FSR/DLSS, duscrete-GPU, Windows version compatibility...
+  * Proton        : an extension to WINE. Developed by Valve and CodeWeavers
+      * ProtonDB  : https://www.protondb.com/  - check here what proton-compatibility has been verified for your Windows-game
+      * ProtonGE  : a port of Proton with specific games' patches   https://github.com/GloriousEggroll/proton-ge-custom
+      * Anti-Cheat workarounds: you can play around with the Proton versions, like installing while compatibility is set to 7-15, but launch the game with compatibility 7-21.
+      + Usually you should pick the latest that's non-experimental
+  * "ProtonUp" (CLI, or "ProtonUp-Qt" for GUI)  -  an aid for installing ProtonGE (adding it to your list of Proton options), and other compatibility layers (listed below)
+      + https://davidotek.github.io/protonup-qt/
+  * Boxtron     : basically DOSbox
+  * Luxtorpeda  : open-source engines (games like Doom)
+  * Roberta     : ScummVM
+  * TODO - cover Winetricks, Boxtron, 
+
+> Game Launchers/Libraries (GUI)
+  * Steam   : just like in Windows. Works with most other tools, so you'd probably want it installed.
+      * https://flathub.org/apps/com.valvesoftware.Steam
+      * Thanks to the efforts of the Steam deck, Steam nowadays comes bundled with Proton, and convenient tweaking options.
+      * To modify a game's Proton profile: right-click > "Properties..." > "COMPATIBILITY" > "Force the use of a specific steam Play compatibility tool" > choose an appropriate Proton version
+      + You can run any program, not just games; that includes console emulators
+  * Lutris  : gaming platform/manager game-launcher that bridges to other platforms (like Blizzard's Battle.net). Requires Steam and Proton.
+      * https://lutris.net/downloads    https://linux-gaming.kwindu.eu/index.php?title=Lutris
+      * has community-maintained install-scripts for setup/configuration of WINE. There's a convenient button for adding games: "Search the Lutris website for installers".
+          * Some games are problematic through this approach; you might want to just use "bottles" or "gamehub"
+  * Heroic  : game launcher that serves as a replacement for the "Epic" client. You login to your EpicGames account and it'll list your games and give you launching options.
+  * GameHub : another game-launching hub, similar to Lutris; meant to unite your game libraries (GOG, Steam, HumbleBundle, itch-io...)
+      + https://tkashkin.github.io/projects/gamehub/
+      * Proton-version choice similar to Steam's
+      * Has support for controllers
+      
+> Ad-Hoc Solutions and Community Efforts
+  + Refer to above "Packages" section for some relevant option
+  * C&C (Command and Conquer):
+      + some Linux-compatible stuff: https://cncnet.org/
+      * Red Alert 2:  https://github.com/mmtrt/cncra2yr   /   https://snapcraft.io/cncra2yr
+
+> Modding games
+  * Steam Tinker Launch    : automates the modding process for games by handing you the tools you need, such as
+      * Vortex Mod-manager  : Bethesda (only?) game modder
+      * Hedgemod            : modder for Sonic games, from Generations up to latest (Frontiers)
+
+  * TODO - others (too many to list all... mods for Monster Hunter, Risk of Rain, PayDay2, Tales of <anything>ia, Nier, ... )
+  + Some modding tools were specifically Windows-only, but now work on Linux too!
+
+
+
+>> Steam Tools
+
+TODO - cover SteamTinkerLauncher, DXVK, vkBasalt, Gamescope, VR-video-player, Replay-Sorcery
+
+> Basic steps:
+  * Make your library display all games (including Windows') and allow running them:  Steam > Settings > Compatibility > [Enable everything]
+  * Enable controller: Steam > Settings > Controller > [adjust according to your needs]
+  * To modify a game's Proton profile: right-click > "Properties..." > "COMPATIBILITY" > "Force the use of a specific steam Play compatibility tool" > choose an appropriate Proton version
+
+> Runtime monitoring (framerates, temps, etc.)
+  * MangoHUD  : all the stats you could want at the corner of your screen
+      * Install the tool in Steam and then refer to it per game: right-click > "Properties..." > "GENERAL" >  "LAUNCH OPTIONS": write (w/o quotes) "mangohud %command%"
+  * Goverlay  : convenient configuration for MangoHUD and other tools
+      * has global-apply options that'd save you the hassle of configuring all games' launch-options for hud-layout config
+  * GameMode  : a daemon that applies optimizations to your games (GPU governor, I/O priority, process niceness...)
+      * https://github.com/FeralInteractive/gamemode
+      * Install and then per game: right-click > "Properties..." > "GENERAL" >  "LAUNCH OPTIONS": write (w/o quotes) "gamemode %command%"
+      
+
+
+>> Gaming-oriented Linux
+
+> Flavors/distros
+  + Technically you don't need a specialized system, but some of them come pre-configured and loaded with relevant apps to help you. Many people just game on Fedora
+  * Nobara                          : (Fedora distro) Gaming-oriented (shortens a bit some simple steps you'd have to do in Fedora), with very-slight improvements in performance over Fedora. No SELinux.
+  * Garuda Linux Dragonized Gaming  : (Arch distro)   A lot of flare; a heavy OS. Comes with a lot of gaming-oriented (translation-layer) packages and tools pre-installed.
+  * SteamOS 3 (Arch distro)         : (Arch distro)   Steam Deck's OS, incorporates KDE Plasma 5.
+      * HoloISO                     : (Arch distro)   SteamOS, adapted to run on Desktop
+  
+> Specialized Kernels (at your own risk)
+  + https://wiki.archlinux.org/title/kernel
+  
+  * for Arch
+      * Zen Kernel - highly optimized low-latency kernel
+  * for Debian
+      * Zen Kernel
+      * XanMod Kernel - memory management improvements
+  * for Fedora
+      * kernel-fsync - adds in various kinds of patches, including Steam-Deck support
+

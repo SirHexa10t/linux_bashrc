@@ -82,7 +82,7 @@
 
 
 
->> Data Transfer Formats
+>> Connectors / Data Transfer Formats
 
 > USB
 + Relevant for USB drives, USB-to-SATA adapters, Android file-transfer (and charging), video-feed (including streaming to a VR headset), and any external peripheral.
@@ -124,8 +124,8 @@
 TODO - GDDR
 
 > HDMI
-+ HDMI is proprietary, owned by a bunch of tech companies.
-+   They exercise their power to disallow implementation of advanced features for Linux (AMD asked, was denied)
++ HDMI is proprietary, owned by the HDMI Forum - a bunch of tech companies.
++   They exercise their power to disallow implementation of advanced features in Open-Source drivers (AMD asked, was denied - that's why there's no Linus suppor of FreeSync on HDMI, and you can't run 4K@120 on HDMI2.1 on Linux)
 + There's the Standard HDMI (Type A), Mini HDMI (Type C), and Micro HDMI (Type D). All have 19 pins and support the same performance
 +   Type B is defined with 29 pins, but isn't used anywhere
 ~>  HDMI_Version  Name                Max_Resolution          Max_Transmission  HDR  Compression          Audio_Support                 
@@ -135,6 +135,10 @@ TODO - GDDR
 ~<  2.0-2.0b      Premium_High-Speed       4K@50Hz / 5K@30Hz         2.25 GB/s  Yes                    -  HE-AAC, DRA, 32 audio channels
 ~<  2.1-2.1b      Ultra_High-Speed    8K@30Hz / DCS:8K@120Hz          5.3 GB/s  Yes  DSC 1.2a (optional)  eARC                          
 *4K=3840×2160 , 5K=5120×2880 , 8K=7680×4320
+
+> DP (DisplyPort)
++ Royalty-free design by VESA (Video Electronics Standards Association)
++ USB-C monitor outputs are basically DP in a different connector-shape
 
 
 
@@ -676,6 +680,7 @@ TODO?
 DAC + AMP (and maybe speakers)
 VR
 PCIe: NIC (Intel vs Realtek), sound, USB, ...
+UPS
 
 
 

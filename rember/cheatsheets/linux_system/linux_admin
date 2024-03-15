@@ -66,8 +66,9 @@
 
 >> Users / Groups
 + Some people like relocating their HOME dir, for modularity and easy migration. In my modest opinion though, you shouldn't do that;
-+   If you insist on doing that, at least relocate to a volume that's within the same disk as the OS, so you'll be more likely to have it accessible when your OS loads.
-+   If you want to do that to preserve your configs, just backup your configs to a git repository.
++   If you insist on doing that, at least relocate to a volume that's within the same disk as the OS, so you'll be more likely to have it accessible when your OS loads or when you safe-boot.
++   If you want to do that to preserve your configs, try symlinking the dirs within HOME - that way you only risk your preferences breaking, not everything.
++       If your configs  are very important to you, periodically save them to a git repository.
 * groups <username>                                         # display the groups of a user
 * usermod -aG <groupA,groupB,groupC> <username>             # add user to group(s). You can even add to group sudo (makes into superuser in Ubuntu).
 * getent group                                              # list all groups and their user-members
@@ -93,6 +94,11 @@
 * /etc/sudoers  :  sudo users file
 * sudo nvidia-xconfig  # create new xorg config, used by nvidia driver
 
+
+>> Configurations (Linux installations)
+* /usr/local/bin/       : packages directory - things you put here would be added to your terminal's commands
+*   be aware that these won't get updated by package managers
+*   sudo ln -sfn "$program_runnable" "/usr/local/bin/$command"  : define a new command in terminal that'll launch your program
 
 >> Configurations (GNOME)
 * ~/.config/autostart/  :  location of startup scripts that run for your own user after startup 

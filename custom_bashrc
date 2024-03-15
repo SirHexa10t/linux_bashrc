@@ -558,15 +558,18 @@ function date () {
     fi
 }
 
+
+
+# Common basic functionalities
+# ============================
+
+
 # "backwards move". Undoes a mv command that has 2 args (both have to be files, or both dirs). Revert a move command by going to the start of it, and add 'b'
 # arg 1: destination-file , arg 2: source-file
 function bmv () {
     mv "$2" "$1"
 }
 
-
-# Common basic functionalities
-# ============================
 
 # TODO - integrate this into some functions that check if an arg exists?
 # check if arg 1 (string) exactly matches any within the rest of the args (list)
@@ -736,6 +739,7 @@ function _repeat_whitespace_rows () {
 function rm_leading_whitespaces () {
     sed 's/^[[:space:]]*//' <<< "${1:-$(cat)}"
 }
+
 
 
 # Programming
