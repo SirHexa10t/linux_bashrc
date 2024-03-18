@@ -24,7 +24,7 @@ def strip_ansi(text):
     return ansi_escape.sub('', text)
 
 
-def is_number_maybe_w_unit(input):
+def is_num_or_unit(input):
     pattern = r'^[+-]?[0-9]+(\.[0-9]+)?\s?[pKkMmGgTt]?((i?[bB]?(/s)?)|(%?)|((@[0-9]+)?(Hz)?))$'
     return bool(re.match(pattern, input))
 
@@ -41,14 +41,14 @@ def format_table(text: str, align_left=True):
         for j, word in enumerate(row):
             col_word_lengths[j] = max(col_word_lengths.get(j, 0), len(strip_ansi(word)))
             if word != NUMERICALLY_NEUTRAL:  # ignore word if it could be either a number or not
-                col_numerical_majority[j] = col_numerical_majority.get(j, 0) + (1 if is_number_maybe_w_unit(word) else -1)
+                col_numerical_majority[j] = col_numerical_majority.get(j, 0) + (1 if is_num_or_unit(word) else -1)
 
     def pad_word(a_word, index):
         removed_chars_count = len(a_word) - len(strip_ansi(a_word))  # char-count ignores colors and other unseen chars
         padding_total = col_word_lengths.get(index, 0) + removed_chars_count
         # numbers need to be RTL, because it makes the MSB (most significant bit) stand out rather than the LSB.
         # the config doesn't matter; if a number/neutral-char is in a majority-numerical column, align it right
-        is_align_right_anyway = col_numerical_majority.get(index, 0) > 0 and (is_number_maybe_w_unit(a_word) or a_word == NUMERICALLY_NEUTRAL)
+        is_align_right_anyway = col_numerical_majority.get(index, 0) > 0 and (is_num_or_unit(a_word) or a_word == NUMERICALLY_NEUTRAL)
         return a_word.rjust(padding_total) if not align_left or is_align_right_anyway else a_word.ljust(padding_total)
 
     # pad all words to make columns uniform
@@ -206,9 +206,9 @@ num       word  a  b  long_word
 
         for num in numerical_inputs:
             print(f"testing num: {num}")
-            self.assertTrue(is_number_maybe_w_unit(num))
+            self.assertTrue(is_num_or_unit(num))
 
         for non_num in anumerical_inputs:
             print(f"testing non-num: {non_num}")
-            self.assertFalse(is_number_maybe_w_unit(non_num))
+            self.assertFalse(is_num_or_unit(non_num))
 

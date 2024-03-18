@@ -31,7 +31,10 @@
   * Python
       * notably Ren'Py (Visual Novel engine) games
 
+
+
 >> Console Emulators
+
   + Almost all emulators are compatible with Linux
   + Many emulators can be found here: https://www.consoleroms.com/emulators
   + You can find many emulators on FlatHub
@@ -50,26 +53,32 @@
 
 
 >> Running Windows-only Games
+
   + The most problematic games to run are those that have anti-cheat
       + Some Anti-Cheat games work (like FallGuys), but some don't (like Fortnite)
       + Generally you shouldn't try to play anti-cheat games on Linux; even if you're successful, they might ban you. Getting fucked with their kernel-level malware is just mandatory.
   + Even if you don't use Proton, there are useful community discussion over issues per-game on ProtonDB
+  + You can also find compatibility notes and patches on WINE's site:  https://appdb.winehq.org/
 
 > Packages and services
-  * WINE          : "Wine Is Not (an) Emulator" - a compatibility-layer that translates Windows commands to Linux's (basically an emulator)
+  + WINE and Proton come with Steam. You might need ProtonGE for some games, or Protontricks for some tuning. ProtonUp could help too
+  * "WINE"        : "Wine Is Not (an) Emulator" - a compatibility-layer that translates Windows commands to Linux's (basically an emulator)
       * WINE-GE   : required(?) by ProtonGE, works on non-Steam games too   https://github.com/GloriousEggroll/wine-ge-custom
       * Bottles   : a UI for setting up and configuring WINE. You make profiles with presets of enabled features, like DirectX versions, FSR/DLSS, duscrete-GPU, Windows version compatibility...
-  * Proton        : an extension to WINE. Developed by Valve and CodeWeavers
-      * ProtonDB  : https://www.protondb.com/  - check here what proton-compatibility has been verified for your Windows-game
-      * ProtonGE  : a port of Proton with specific games' patches   https://github.com/GloriousEggroll/proton-ge-custom
+  * "Proton"      : comes with built-in WINE to act as a compatibility layer, uses DXVK/VKD3D for translation of DirectX to Vulkan, and creates a virtual install-dir per-game. Developed by Valve and CodeWeavers.
+      * "ProtonDB"      : https://www.protondb.com/  - check here what proton-compatibility has been verified for your Windows-game
+      * "Protontricks"  : get a convenient interface to do Winetricks tuning per game
+      * "ProtonGE"      : a port of Proton with specific games' patches   https://github.com/GloriousEggroll/proton-ge-custom
+            * installed in: .steam/steam/compatibilitytools.d ; just put the proton-ge file there (usually latest version is best) and it'll be added into Steam's proton-list
       * Anti-Cheat workarounds: you can play around with the Proton versions, like installing while compatibility is set to 7-15, but launch the game with compatibility 7-21.
       + Usually you should pick the latest that's non-experimental
-  * "ProtonUp" (CLI, or "ProtonUp-Qt" for GUI)  -  an aid for installing ProtonGE (adding it to your list of Proton options), and other compatibility layers (listed below)
-      + https://davidotek.github.io/protonup-qt/
-  * Boxtron     : basically DOSbox
-  * Luxtorpeda  : open-source engines (games like Doom)
-  * Roberta     : ScummVM
-  * TODO - cover Winetricks, Boxtron, 
+  * "ProtonUp" (CLI, or "ProtonUp-Qt" for GUI)  : an aid for installing ProtonGE (adding it to your list of Proton options), and other compatibility layers (listed below)
+      * https://davidotek.github.io/protonup-qt/
+  * "Winetricks"  : WINE settings and DLL compatibility tunings
+      * https://flathub.org/apps/com.github.Matoking.protontricks
+  * "Boxtron"     : basically DOSbox
+  * "Luxtorpeda"  : open-source engines (games like Doom)
+  * "Roberta"     : ScummVM
 
 > Game Launchers/Libraries (GUI)
   * Steam   : just like in Windows. Works with most other tools, so you'd probably want it installed.
@@ -77,21 +86,19 @@
       * Thanks to the efforts of the Steam deck, Steam nowadays comes bundled with Proton, and convenient tweaking options.
       * To modify a game's Proton profile: right-click > "Properties..." > "COMPATIBILITY" > "Force the use of a specific steam Play compatibility tool" > choose an appropriate Proton version
       + You can run any program, not just games; that includes console emulators
-  * Lutris  : gaming platform/manager game-launcher that bridges to other platforms (like Blizzard's Battle.net). Requires Steam and Proton.
+  * Lutris  : gaming platform/manager game-launcher that bridges to other platforms (including ones with no Linux client at all). Requires Steam and Proton.
       * https://lutris.net/downloads    https://linux-gaming.kwindu.eu/index.php?title=Lutris
+      * bridges to all major platforms; Steam, Epic, GOG, Humble-Bundle, Ubisoft Connect, Origin (EA), probably also itch.io. For Battle.net (Blizzard), you'll install the client in Lutris, then run and use it like in Windows.
       * has community-maintained install-scripts for setup/configuration of WINE. There's a convenient button for adding games: "Search the Lutris website for installers".
           * Some games are problematic through this approach; you might want to just use "bottles" or "gamehub"
   * Heroic  : game launcher that serves as a replacement for the "Epic" client. You login to your EpicGames account and it'll list your games and give you launching options.
+      * Better than the Epic client, and mostly better than Lutris
+      * Also supports GOG account
   * GameHub : another game-launching hub, similar to Lutris; meant to unite your game libraries (GOG, Steam, HumbleBundle, itch-io...)
       + https://tkashkin.github.io/projects/gamehub/
       * Proton-version choice similar to Steam's
       * Has support for controllers
-      
-> Ad-Hoc Solutions and Community Efforts
-  + Refer to above "Packages" section for some relevant option
-  * C&C (Command and Conquer):
-      + some Linux-compatible stuff: https://cncnet.org/
-      * Red Alert 2:  https://github.com/mmtrt/cncra2yr   /   https://snapcraft.io/cncra2yr
+TODO - cover itch and minigalaxy
 
 > Modding games
   * Steam Tinker Launch    : automates the modding process for games by handing you the tools you need, such as
@@ -103,24 +110,30 @@
 
 
 
->> Steam Tools
+>> Steam / Platform Tools
 
-TODO - cover SteamTinkerLauncher, DXVK, vkBasalt, Gamescope, VR-video-player, Replay-Sorcery
-
-> Basic steps:
+> Basic Steam steps:
   * Make your library display all games (including Windows') and allow running them:  Steam > Settings > Compatibility > [Enable everything]
   * Enable controller: Steam > Settings > Controller > [adjust according to your needs]
   * To modify a game's Proton profile: right-click > "Properties..." > "COMPATIBILITY" > "Force the use of a specific steam Play compatibility tool" > choose an appropriate Proton version
+  
+> Drivers and Hardware-acceleration
+  * FSR: cross-platform (any manufacturer's GPU) upscaling program from AMD; if a game doesn't run in your monitor's resolution, you can run it lower resolution and upscale it
+    * You can use it on Steam through ProtonGE by choosing it in compatibility list and then adding launch-option: "WINE_FULLSCREEN_FSR=1 %command%" 
+    * You can use it on Lutris by right-click on a game > "Runner options" -> toggle "Enable AMD FidelityFX Super Resolution (FSR)"
+    * You can use it on Heroic through the Wine section, by choosing GE-Proton and checking "Enable FSR Hack"
 
 > Runtime monitoring (framerates, temps, etc.)
   * MangoHUD  : all the stats you could want at the corner of your screen
       * Install the tool in Steam and then refer to it per game: right-click > "Properties..." > "GENERAL" >  "LAUNCH OPTIONS": write (w/o quotes) "mangohud %command%"
   * Goverlay  : convenient configuration for MangoHUD and other tools
       * has global-apply options that'd save you the hassle of configuring all games' launch-options for hud-layout config
-  * GameMode  : a daemon that applies optimizations to your games (GPU governor, I/O priority, process niceness...)
+  * GameMode  : a daemon that applies optimizations to your games (GPU governor, I/O priority, process niceness...). Basically tells your computer to prioritize the game.
       * https://github.com/FeralInteractive/gamemode
-      * Install and then per game: right-click > "Properties..." > "GENERAL" >  "LAUNCH OPTIONS": write (w/o quotes) "gamemode %command%"
-      
+      * Install on Steam and then per game: right-click > "Properties..." > "GENERAL" >  "LAUNCH OPTIONS": write (w/o quotes) "gamemode %command%"
+  * VkBASALT  : post-processing layer that improves games' graphics
+TODO - cover SteamTinkerLauncher, DXVK, Gamescope, VR-video-player, Replay-Sorcery
+
 
 
 >> Gaming-oriented Linux

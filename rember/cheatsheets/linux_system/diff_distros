@@ -107,19 +107,26 @@
 + The main visual component of a Desktop Environment (if included). Determines display of windows, screen-interaction, effects like snapping and tiling, GUI elements like the taskbar... 
 
 > Tiling Managers
-+ Keyboard-driven managers that automatically snap windows without overlap
-* i3 - keyboard-only window manager  # TODO - see what it's based on
-*   Sway - i3 but meant to be used with Wayland
-* DWM - another window manager (just terminal windows)
-* Awesome - can be used in tiling / floating mode, can use Wayland
-* Xmonad - ?
-* Hyperland - uses Wayland
-* BSPWM - uses Wayland
-* Wayfire - uses Wayland
-* Mosaic - uses Wayland
-* Qtile - Qt-based
-* River - ?
-* Cutefish - ?
++ https://wiki.archlinux.org/title/Comparison_of_tiling_window_managers
++ Keyboard-driven managers that fill your screen with your windows without overlaps.
++   Some tiling features are implemented in non-tiling managers
+* Usually the most lightweight (few resources to run)
+* Types:
+*   Manual tiler: you tell the next window where to open (to either of the 4 sides of current window)
+*   Dynamic tiler: each new window opens according to a layout-pattern you define
+* Examples:
+*   i3 - keyboard-only window manager  # TODO - see what it's based on
+*       Sway - i3 but meant to be used with Wayland
+*   DWM - another window manager (just terminal windows)
+*   Awesome - can be used in tiling / floating mode, can use Wayland
+*   Xmonad - ?
+*   Hyperland - uses Wayland
+*   BSPWM - uses Wayland
+*   Wayfire - uses Wayland
+*   Mosaic - uses Wayland
+*   Qtile - Qt-based
+*   River - ?
+*   Cutefish - ?
 
 > Stacking Managers
 * KWin - KDE Plasma implementation that uses Wayland

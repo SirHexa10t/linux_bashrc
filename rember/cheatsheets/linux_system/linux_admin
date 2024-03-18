@@ -5,6 +5,7 @@
 
 >> RUN
 * reboot                        # reboots the system (gracefully)
+* grub-reboot                   # if you have dual/multi-boot, you can ues this to reboot and determine which OS will be start 
 * sudo systemctl start sshd     # start ssh service for external access
 * sudo service apache2 restart  # restart apache service (if any)
 

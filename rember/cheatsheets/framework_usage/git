@@ -1,5 +1,16 @@
 # Reminders for git, and advanced tricks
+
++ There's a lot to say about managing git through CLI, but I'm a proponent for using a graphical tool. Get GitKraken or GitFork or some other tool like that.
+
+> Expunging data
 + You can delete files or lines from code retroactively using the tool from here: https://rtyley.github.io/bfg-repo-cleaner/
 *    java -jar bfg-1.14.0.jar --delete-files <file_to_delete.sh>  # after running this, you would be asked to run another command; do that too and push your modified branch to overwrite remote branch.
-* There's a lot to say about managing git through CLI, but I'm a proponent for using a graphical tool. Get GitKraken or GitFork or some other tool like that.
+
+> submodule
+``` git submodule add <url> <path>              # add a submodule
+``` git config -f .git/config --remove-section submodule.$submodule_name  # remove submodule "$submodule_name"
+    git config -f .gitmodules --remove-section submodule.$submodule_name
+``` git submodule update --remote               # update submodules
+``` git submodule update --recurse-submodules   # same
+``` git submodule foreach git pull              # same
 

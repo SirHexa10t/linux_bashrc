@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# TODO implement zsh features
+
 # TODO - this project is quite bloated, so only load the "indexes" of the functions? (create aliases that point to the functions in files, but only load the functions when they're run)
     # maybe just separate into different files for now
     

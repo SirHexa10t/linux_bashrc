@@ -98,6 +98,30 @@
 
 * GPU Screen Recorder   : like OBS, but without overhead. Might be hard to find outside of Arch
 
+* fzf                   : fuzzy-find. Look through file and various strings (like command history).
+``` fzf -q  # looks through current dir like IDEs look for variables (by char order, but in any index) 
+``` fzf -e  # exact-match search
+
+* Atuin  : make your command history into a DB and filter interactively through it
+
+* powertop  : a battery-drain-reduction app from Intel. Lists power-consuming programs and gives you power-saving options (such as turning off drives when inactive)
+
+* dust      : a replacement for du and df - shows space-consumption by dir, with a visual simplistic graph 
+
+* bat       : a rust replacement for cat, that does highlighting (like for code), git-changes, shows tabs/spaces, and integrates well with other tools like fzf, ripgrep, and man
+
+* eza       : `ls`, but in a legible and color-coded manner
+
+* spectacle  : KDE-Plasma / Qt screen recorder
+
+* Kate      : Qt text editor
+
+* KDE Connect  : connect to other devices (including Bluetooth)
+
+* NeoChat   : Matrix (chatting app) client
+
+* Tokodon   : Mastodon client
+
 ------------------------------------------
 
 
