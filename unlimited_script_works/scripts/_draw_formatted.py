@@ -10,7 +10,7 @@ recolors text by replacing color tags with their appropriate color-codes
 import sys
 import re
 from collections import deque
-from enum import Enum
+from enum import Enum, auto
 
 
 class Persistence(Enum):
@@ -185,6 +185,21 @@ class TagChain:
                     self.rejects_queue.append(tag)
         self.persist = persist
         self.encoded = ''.join([TagIndex.color_map.get(key, "") for key in self.tag_queue])
+
+
+class TagNodeType(Enum):
+    PLAIN_TEXT = auto()
+    VALID_TAG = auto()
+    PREPROCESSED_TAG = auto()
+    RESET = auto()
+
+
+class TagNode:
+
+    def __init__(self, actual_text, node_type, persistence=None):
+        self.actual_text = actual_text
+        self.node_type = node_type
+        self.persistence = persistence
 
 
 # A "singleton" session

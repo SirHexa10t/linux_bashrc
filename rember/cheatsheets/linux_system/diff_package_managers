@@ -1,0 +1,31 @@
+# Differences between package managers and installation options
+
+
+
+apt is often outdated, relative to Flatpak
+
+
+Homebrew - for CLI tools
+
+Nix
+
+Flatpak - for gui programs
+
+.deb
+
+.appimage
+
+aur
+
+pacman
+
+apt, nala, aptitude
+
+snap
+
+
+
+Distrobox - If you want a package that's not compatible with your managers, you can run it containerized
+    TODO - basic commands and procedure
+
+

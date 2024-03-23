@@ -7,12 +7,25 @@
 
 
 >> Hardware and Video Drivers
+
+> GPU drivers
   * Nvidia cards: You should install the proprietary NVIDIA GPU drivers.
       * https://wiki.archlinux.org/title/NVIDIA
   * AMD's default Open Source drivers are usually enough.
       * https://wiki.archlinux.org/title/AMDGPU
       * Some programs (like DaVinci Resolve) require proprietary drivers, for which you'll need to install AMDGPU-PRO
   * Intel GPUs and Intel integrated-graphics work without intervention (no GPU drivers required)
+
+> External GPU tools
+  * GreenWithEnvy   : NVIDIA-GPU monitoring, fan-control, overclocking tool
+      * https://gitlab.com/leinardi/gwe
+
+> OS optimizations
+  + Refer to Platform-Tools section
+
+> For laptops (battery considerations)
+  * SlimbookBattery     : override battery conservation, fan-control, and determine various batter/power-related thresholds
+      * https://github.com/Slimbook-Team/slimbookbattery
 
 
 
@@ -89,6 +102,7 @@
   * Lutris  : gaming platform/manager game-launcher that bridges to other platforms (including ones with no Linux client at all). Requires Steam and Proton.
       * https://lutris.net/downloads    https://linux-gaming.kwindu.eu/index.php?title=Lutris
       * bridges to all major platforms; Steam, Epic, GOG, Humble-Bundle, Ubisoft Connect, Origin (EA), probably also itch.io. For Battle.net (Blizzard), you'll install the client in Lutris, then run and use it like in Windows.
+      * has extra parameters for running, such as core-count restriction, or enabling "Feral GameMode" (which is just GameMode, refer to Platform-tools)
       * has community-maintained install-scripts for setup/configuration of WINE. There's a convenient button for adding games: "Search the Lutris website for installers".
           * Some games are problematic through this approach; you might want to just use "bottles" or "gamehub"
   * Heroic  : game launcher that serves as a replacement for the "Epic" client. You login to your EpicGames account and it'll list your games and give you launching options.

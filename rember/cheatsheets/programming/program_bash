@@ -38,6 +38,7 @@
 * "$1": first arg in current scope (and so on for each num accordingly)
 * "$@": all args in current scope as separate items ; "$*": all args in current scope concatenated into a unified string ; "$#": args count
 * "$$": current PID
+* "$!": variable indirect; when `str_a='myvar'`, you can call `${myvar}` by doing `${!str_a}`
 * "$?": the return code of last operation (can be used to check if it ran successfully)
 * "$(<cmd here>)": run commands within commands (can also be done like so: `<cmd here>`)
 * "${FUNCNAME[0]}": name of current function

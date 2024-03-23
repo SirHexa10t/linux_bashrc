@@ -1,0 +1,13 @@
+
+
+TODO - a "timeline"-like line, that represents distance from the sun (each newline is a constant distance?). Includes planets' moons, and specifies for each: mass (and relative to the sun or Earth), speed (in rotation around sun), spin, and diameter. Also temperature
+include the asteroid belt
+
+
+planet
+vs
+asteroid
+vs
+dwarf planet
+
+

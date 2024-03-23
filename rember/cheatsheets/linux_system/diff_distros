@@ -105,6 +105,7 @@
 
 >> Window-manager
 + The main visual component of a Desktop Environment (if included). Determines display of windows, screen-interaction, effects like snapping and tiling, GUI elements like the taskbar... 
++ Many Window Managers are also Compositors, meaning they interact with Xorg/wlroots to handle device (keyboard/mouse) I/O
 
 > Tiling Managers
 + https://wiki.archlinux.org/title/Comparison_of_tiling_window_managers

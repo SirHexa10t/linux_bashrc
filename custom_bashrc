@@ -2810,6 +2810,7 @@ function list_gpus() {
 # Virtual Machines
 # ================
 
+# TODO - run as kvm user so sudo access won't be needed?
 # TODO - offer to choose a vm by number [1-n]. Need to create a function like y_n one that gets a dicitonary as an argument 
 # TODO - offer to add USB (and other?) devices by ID (from displayed list). Filter out devices already in XML.
 # interactively launch looking-glass session and VM (if not running). 
@@ -2845,62 +2846,78 @@ function launch_vm_w_lookingglass () {  ###tags: requires-configuration
     function _field_number() { grep "$1=" | sed 's/[^0-9]*//g'; }
     
     
+    # ------------------------------------------
+    # -----------Prerequisite checks------------
+    # ------------------------------------------
+    
     # memory sufficiency check
     local vm_mem_required="$( echo "$xml_cached" | _field_number '<memory unit') $( echo "$xml_cached" | _field_value 'memory unit')"
     local current_free_ram=$( free -b | grep Mem: | awk '{print $4}' )
-    [ $(to_bytes "$vm_mem_required") -gt "$current_free_ram" ]  && { errcho "'$vm_name' requires $vm_mem_required of free RAM, but right now you only have $(free -k | grep Mem: | awk '{print $4}') KiB"; return 1; }
+    [[ "$(virsh domstate "$vm_name")" == 'shut off' && $(to_bytes "$vm_mem_required") -gt "$current_free_ram" ]]  && { errcho "'$vm_name' requires $vm_mem_required of free RAM, but right now you only have $(free -k | grep Mem: | awk '{print $4}') KiB"; return 1; }
     
     # shared memory between GPUs
     local shmem_section="$( echo "$xml_cached" | _get_tag_contents 'shmem')"
     shmem_name="$( echo "$shmem_section" | _field_value 'name')"
     [ -z "$shmem_name" ] && { errcho "Couldn't find shmem name (shared-memory for looking glass). If there's no GPU sharing its memory, Looking-Glass can't be used. Exiting."; return 1; }
     shmem_size="$( echo "$shmem_section" | _field_number 'size unit') $( echo "$shmem_section" | _field_value 'size unit')"
-
-    # non-hardware display
-    local graphics_section="$( echo "$xml_cached" | _get_tag_contents 'graphics')"
-    extra_graphics_type="$( echo "$graphics_section" | _field_value 'graphics type')"
-    extra_graphics_portnum="$( echo "$graphics_section" | _field_value 'port')"
-    [[ -z "$extra_graphics_portnum" || "$extra_graphics_portnum" == 'yes' ]] && extra_graphics_portnum+="  $(dagecho '(Probably port 5900)')"  # default VNC port
-
-    # GPU passed through
-    local gpu_domain_bus_slot_function="$( echo "$xml_cached" | _get_specific_tag_contents 'hostdev' 'pci' | _get_tag_contents 'source' | grep "<address" --color=never | grep -oP "(?<=$q)[^$q]+(?=$q)" | grep -v '^\s' | sed 's/^0x//'; )"
-    local lspci_cache="$(lspci)"
     
-    local cached_prints=$(
-        # all details except connected GPU
-        for detail in 'shmem_name' 'shmem_size' 'extra_graphics_type' 'extra_graphics_portnum'; do echo "$(becho "$detail:") ${!detail}"; done
-        
-        becho 'gpu functions passed:'  
-        echo $gpu_domain_bus_slot_function | xargs -n4 | while read -r domain bus slot function; do
-            echo "$lspci_cache" | grep "$bus:$slot.$function"
-        done
-        
-        # Show user the parameters and ask for approval (quit if disapproved)
-        dagecho "$(wecho "Note:") no two running sessions VM may have the same looking-glass $(becho "session-file") or $(becho "VNC-port") or $(becho "GPU") at the same time"
-        dagecho "$(wecho "Note:") shmem size needs to be enough for your resolution. Rough estimates (according to \"$(cuecho "https://looking-glass.io/docs/B6/install/#client-determining-memory")\"): $(cecho "1080p:") 32M, $(cecho "1200p:") 32M, $(cecho "1440p:") 32M, $(cecho "4K:") 128M ; if you want to support $(cecho "HDR mode:") $(wecho "DOUBLE") the previously stated amount."
-    )
-    echo "$cached_prints"
-    
-    if _prompt_yn "Launch $(wecho "$vm_name") with the above parameters?"; then echo "Starting...";
-    else echo "Quitting. If the details were off, modify your VM's xml file (easiest through VM Manager, but you can also run: \"virsh edit $vm_name\")"; return;
-    fi
-
-    if _is_dev "$VM_IMG_PARTITION_UUID" ; then  # if is a legitimate device, try mounting it
-        becho "Making sure os-virtual-drive file's volume is mounted"
-        mount_media_by_uuid "$VM_IMG_PARTITION_UUID"
-    fi
-
+    # checking that there are no issues with the looking-glass file. If there's an existing file, use it (don't overwrite)
     local lg_file="/dev/shm/$shmem_name"  # will be created later
-    becho "Creating looking-glass session file: $lg_file"
+    echo "$(becho 'Creating looking-glass session file:') $lg_file"
     sudo touch "$lg_file" && sudo chown $(whoami):kvm "$lg_file" && sudo chmod 660 "$lg_file"
     [ -f "$lg_file" ] && dagecho "$(ls -alF "$lg_file")"
     
+    
+    # ------------------------------------------
+    # -----------------Running------------------
+    # ------------------------------------------
+    
+    function _confirm_vm_details() {
+
+        # non-hardware display
+        local graphics_section="$( echo "$xml_cached" | _get_tag_contents 'graphics')"
+        extra_graphics_type="$( echo "$graphics_section" | _field_value 'graphics type')"
+        extra_graphics_portnum="$( echo "$graphics_section" | _field_value 'port')"
+        [[ -z "$extra_graphics_portnum" || "$extra_graphics_portnum" == 'yes' ]] && extra_graphics_portnum+="  $(dagecho '(Probably port 5900)')"  # default VNC port
+    
+        # GPU passed through
+        local gpu_domain_bus_slot_function="$( echo "$xml_cached" | _get_specific_tag_contents 'hostdev' 'pci' | _get_tag_contents 'source' | grep "<address" --color=never | grep -oP "(?<=$q)[^$q]+(?=$q)" | grep -v '^\s' | sed 's/^0x//'; )"
+        local lspci_cache="$(lspci)"
+        
+        local cached_prints=$(
+            # all details except connected GPU
+            for detail in 'shmem_name' 'shmem_size' 'extra_graphics_type' 'extra_graphics_portnum'; do echo "$(becho "$detail:") ${!detail}"; done
+            
+            becho 'gpu functions passed:'  
+            echo $gpu_domain_bus_slot_function | xargs -n4 | while read -r domain bus slot function; do
+                echo "$lspci_cache" | grep "$bus:$slot.$function"
+            done
+            
+            # Show user the parameters and ask for approval (quit if disapproved)
+            dagecho "$(wecho "Note:") no two running sessions VM may have the same looking-glass $(becho "session-file") or $(becho "VNC-port") or $(becho "GPU") at the same time"
+            dagecho "$(wecho "Note:") shmem size needs to be enough for your resolution. Rough estimates (according to \"$(cuecho "https://looking-glass.io/docs/B6/install/#client-determining-memory")\"): $(cecho "1080p:") 32M, $(cecho "1200p:") 32M, $(cecho "1440p:") 32M, $(cecho "4K:") 128M ; if you want to support $(cecho "HDR mode:") $(wecho "DOUBLE") the previously stated amount."
+        )
+        echo "$cached_prints"
+        
+        _prompt_yn "Launch $(wecho "$vm_name") with the above parameters?" || { echo "Quitting. If the details were off, modify your VM's xml file (easiest through VM Manager, but you can also run: \"virsh edit $vm_name\")"; return 1; }
+    }
+    
+    
     # run the vm (if needed)
-    becho "Starting/resuming VM. This might take a minute."
     local vm_state=$(virsh domstate "$vm_name")
     if [ "$vm_state" == "running" ]; then
         gecho "$vm_name is already running."
     elif [ "$vm_state" == "shut off" ]; then
+        _confirm_vm_details || return 1
+                  
+        if _is_dev "$VM_IMG_PARTITION_UUID" ; then  # if there is need for such a device and it's legitimate, try mounting it
+            becho "Making sure os-virtual-drive file's volume is mounted"
+            local mount_ret=$(mount_media_by_uuid "$VM_IMG_PARTITION_UUID" 2>&1)
+            [[ $? -ne 0 && "$(grep -qv "is already mounted at")" ]] && return 1  # stderr exists and ISN'T a trivial non-issue (already mounted), return error
+            echo "$mount_ret"
+        fi
+        
+        becho "Starting VM. This might take a minute."
         virsh start "$vm_name" || return 1
         gecho "starting $vm_name"
     elif [ "$vm_state" == "paused" ]; then
@@ -2920,7 +2937,7 @@ function launch_vm_w_lookingglass () {  ###tags: requires-configuration
     # run looking glass client
     # experimental -S : Prevent the screensaver from starting  , win:size=1920x1080 : Initial window size at startup (default is 1024x768)
     becho "Starting host-side looking-glass client"
-    nohup "$LOOKING_GLASS_CLIENT_FILE" -f "$lg_file" -p $portnum -k -S >/dev/null & disown # -k : enable FPS & UPS display  ; -S : prevent host going to sleep
+    "$LOOKING_GLASS_CLIENT_FILE" -f "$lg_file" -p $portnum -k -S >/dev/null & disown # -k : enable FPS & UPS display  ; -S : prevent host going to sleep
 }
 
 

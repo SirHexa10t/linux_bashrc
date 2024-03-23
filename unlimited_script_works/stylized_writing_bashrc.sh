@@ -94,6 +94,8 @@ function commecho () {  ###tags: text-coloring
     
     # TODO - replace info-indicators, from + to !. Then you can do +,-,% directly as variants of list items 
     
+    # TODO - hide text between two "[]" (set same color in foreground and background)
+    
         
     formatted="$(echo "$formatted" | awk '
                     in_code && !/^    / { in_code = 0 }                 # if entered code-mode, stay in it only if the spacing indicates youre still in the same block 

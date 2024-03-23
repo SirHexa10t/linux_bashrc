@@ -1,11 +1,27 @@
-# Reminders for docker
->> view (might need to run sudo to find all)
+# Reminders and tips for docker
+
+
+>> GUI Clients
++ Good for an overview. You can run docker commands and review the situation through a GUI client
+
+* DockerDesktop
+* Podman
+
+
+
+>> Reviewing (might need to run sudo to find all)
 * docker ps -a  # list ALL containers
 * docker images -a  # list all images
 * docker volume ls  # list all volumes
 * sudo docker inspect <container_name_or_id>  # view container details 
+
+
+
 >> managing container states
 * docker-compose -f <yml_file> up  # Start a container using a yaml/yml file. Use `-d` to make it run in the background
+
+
+
 >> removal
 * docker system prune -a  # remove all images/containers/volumes/networks. The flag `-a` also remove unused images
 * docker rmi <image(s)>  # remove images ; to remove all images:   `docker rmi $(docker images -a -q)`
@@ -13,3 +29,44 @@
 * docker volume rm <volume_name(s)>  # remove volume(s)
 * docker run --rm <image_name>  # run an image and remove its container when it exits
 
+
+
+>> Building
+
+> Typical Dockerfile layout
+FROM python:3.9
+# copy data needed by app (if any)
+COPY some_data /home/data_place/some_data
+# create the work-dir
+WORKDIR /app
+# install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+# copy the code
+COPY . .
+# expose a port
+EXPOSE 5100
+# run the app
+CMD ["python", "app.py"]
+
+> build commands
+* docker build . -t deleteme    # create image
+
+
+
+
+>> Running
+
+* port-forwarding:  <host_port>:<container_port>
+
+
+
+>> Deployment
+
+* AWS ECS, along with AWS Fargate for load-balancing
+* Digital Ocean's App Platform                          : includes a free "starter" pack
+* Google Cloud Run                                      : can also be run for free on Google Cloud account
+  * store image in Google's Artifact Registry in a repository: `docker tag <img_name> <URL_as_ID>` + `docker push <URL>`
+      * probably can also just use Github for that
+  * create a service and select your image
+   

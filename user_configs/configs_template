@@ -1,0 +1,18 @@
+
+
+# version of the configs template; <whole_template_works_differently>.<extra_fields>.<negligible_change>
+# Don't edit this manually
+VER=0.1.0
+
+
+ANNOUNCEMENTS=
+
+# TODO - AI integration with Claude
+# TODO - AI integration with Gemini
+
+# TODO - set notes folder? Maybe it'd have links to external notes? (provide a command that easily memo's a given folder as a symlink)
+
+# TODO - dir of repositories; each repository would run git-fetch, and if on master, also git-pull
+
+# TODO - games dir? (aggregate games from Epic and Steam and maybe a couple others)
+
