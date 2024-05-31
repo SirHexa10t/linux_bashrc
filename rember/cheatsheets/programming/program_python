@@ -1,0 +1,80 @@
+# A quick overview of Python3's syntax, with some examples and common patterns
+
+
+
+> Writing data into parsed matrix
+``` for i, row in enumerate(matrix):
+        matrix[i] = 
+
+> formatting numbers
+* exponent (base-10):
+``` num = 10**(3*8)             # num is 1000000000000000000000000 (24 zeroes)
+    num_e = "{:e}".format(num)  # num_e is '1.000000e+24'
+* decimal-point accuracy (truncating)
+``` num = 1/3
+    f"{num:.8f}"  # 0.33333333  (8 chars after point)
+
+
+
+* repeat string
+``` a='a'*20  # a is 'aaaaaaaaaaaaaaaaaaaa'
+
+
+* "in"
+``` k in my_dict    # is key is in a dictionary
+``` substr in text  # exact match of substring
+
+* checking substring is in string
+``` import re
+    if re.match(r'^[A-Z]$', text):   # pattern-match
+
+* iterating on dictionary
+``` for k, v in my_dict.items():
+
+
+* "any" condition
+``` if any(word in my_dict for word in re.findall(pattern, text)):  # does any match (of pattern) appear as key in my_dict
+
+
+
+r"" - for regex, it escapes chars TODO - confirm, and get example
+f"" - f-string, allows referencing variables and code using {}
+TODO - list others
+
+
+
+
+
+# enum
+ 
+class Color(Enum):
+  RED = (255, 0, 0)
+  GREEN = (0, 255, 0)
+  BLUE = (0, 0, 255)
+
+# iterating on enum instances:
+color_names = [color.name for color in Color]
+color_values = [color.value for color in Color]
+
+print(f"R value of GREEN: {Color.GREEN.value[0]}")
+
+
+
+
+
+
+# string operations
+
+> remove strings from ends
+"hello world!!!".removeprefix('hello ').removesuffix('!')  # world
+
+> repeatedly remove string from ends
+"hello world!!!".lstrip('h').rstrip('!')  # ello world
+
+> replace text (string substitution)
+mystr = "hello world!!!"
+mystr = re.sub('world', 'universe', mystr)  # mystr = 'hello universe!!!'
+
+
+
+

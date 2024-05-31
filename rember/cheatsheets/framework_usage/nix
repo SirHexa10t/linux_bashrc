@@ -1,0 +1,66 @@
+# How to use NixOS / Nix package manager
+
+
+>> Basics
+
+> OS github
+  * https://github.com/nixos/nixpkgs
+
+> Configurations
+  * Configuration file: /etc/nixos/configuration.nix
+      ! there's also "hardware-configuration.nix", though you'd rarely want to modify it
+    ``` sudo nixos-rebuild switch  # rebuild system and switch to new version (doesn't update packages)
+    ``` sudo nixos-rebuild test  # build and activate version, but don't add it to the bootloader
+    ``` sudo nix-collect-garbage --delete-older-than 14d  # delete versions older than 14 days and packages that aren't used by versions
+  * Using Flakes
+    ``` sudo nix flake init --template github:vimjoyer/flake-starter-config  # run in /etc/nixos to initialize flake.nix with vimjoyer's template
+    ``` nix flake update  # update packages ("flake.lock" file gets updated)
+  * NixOS creates new versions as you change your configurations, so you can go back
+      * NixOS saves all its packages in nixstore ( /nix/store ) which get referenced by the versions, so they're not duplicated (no waste of space)
+  
+
+
+>> General guidelines
+
+  * Use Flakes, from the start. They'll make your system reproducible (by listing which NixOS repo branch is used, and following package versions with .lock file)
+  * Add home-manager ( github:nix-community/home-manager ) to inputs, so you'd have programs per-user (configs saved for user, not globally)
+  * You should use Wayland, as X11 is on its way out
+
+
+
+>> Tutorials and other helpful sources
+> Help and tools
+  * https://snowfall.org/         # a Flake configuratiuon framework simplifying various things
+
+> Packages / options
+  * https://search.nixos.org/           # NixOS options and packages on web
+``` nix search nixpkgs <findme>         # Nix package search through CLI
+  * https:github.com/lecoqjacob/manix   # search through NixOS files, including code-comments
+
+> home-manager
+  * https://home-manager-options.extranix.com/              # list of home-manager options
+  * https://mipmip.github.io/home-manager-option-search/    # search home-manager options
+
+>> Helpful people in the community
+
+> Offer help for NixOS
+  * youtube: https://www.youtube.com/@IogaMaster/videos         Discord: https://discord.com/invite/zDweFWHqMY      github: https://discord.com/invite/zDweFWHqMY
+
+> Focusd guides on NixOS
+  * youtube: https://www.youtube.com/@vimjoyer/videos           Discord: https://discord.com/invite/AqHbaeK43b
+  * youtube: https://www.youtube.com/@librephoenix/videos
+
+> Guides for NixOS among other things
+  * youtube: https://www.youtube.com/@ChrisTitusTech/videos     guide: https://christitus.com/nixos-explained/
+
+
+
+
+TODO
+``` nix repl  # explore inputs/outputs easily
+  # evereything in snowfall.org
+``` sudo nixos-rebuild build-vm .#<hostname>   # build a lightweight VM based on configuration. Good for testing.
+nix-shell -p <package>   # add package to specific (current) shell, not globally
+
+
+

@@ -1,0 +1,155 @@
+
+
+>> Involved tech
+
+> Lens types
+* Pancake Lens
+* Aspheric Glass Lens
+    - Heavy
+* Glass lens
+    + No reflections/God-rays/glare
+    + No tunnel-vision?
+    + Better durability and scratch-resistance
+    - Heavy
+> Display technologies
+* Micro-OLED
+    + High pixel density
+    + True blacks and great contrast ratios
+    - Expensive (still new)
+    - Manufacturing is limited to 1.5" panels (since it's still new), meaning small FoV
+* QLED
+    + High brightness (200 nits); means high color-range
+    ~ Backlit, but if used with mini-LED backpanels, it can use local-dimming (back-lights can be turned-off) for True-blacks 
+* LCD
+    
+
+>> Human-limits
+! (unverified) Human-vision is normally around 60 pixels-per-degree - above headsets' output, but not by much
+    ! human vision is sharpest at the center; this figure probably relatess to that number
+
+
+
+
+TODO - tracking systems (base-stations, headset cameras, controller cameras, controller touch sensors) 
+
+
+>> Improvements on nausea
+
+* Placing a fan IRL so the wind blowing on you would help you stay oriented
+* Using a small mat, preferrably textured
+* If possible, improve latency
+
+
+
+>> Recommended apps
+
+TODO - sidequest
+* Steam-Link (connecting Meta devices directly to Steam): https://www.meta.com/experiences/5841245619310585/
+* OVR Advanced Settings (correcting self location with hand-drags)
+* OVR Toolkit (get XS overlay of floating windows (while running any app) - music-playlists / chats / notes / video-calls...)
+* FPS VR (get runtime stats)
+
+
+>> Body Tracking
+
+> Limbs
+* Vive Tracker 3.0
+* SlimeVR
+* Standable
+* OVR smooth tracking (remove jitters in full-tracking)
+
+> Facial / eyes
+* TODO
+
+
+
+
+>> Products
+! VR comparison website: https://vr-compare.com/
+! VR comparison website: https://rentry.org/vrgheadsets
+
+
+* Model (year)
+    * Price:        <in USD>
+    * Resolution:   <per eye>✕<Hz>, <pixels total>, <degrees>
+    * Display:      <type> <eye-tracking>
+    * Platforms:    <PCVR, Standalone...>
+    * Wireless:     <y/n>
+    * Tracking:     <cameras / base-stations>
+    * CPU+Storage:  <Chipset>, <Storage>, <audio>
+    * OS:           <>
+    * Weight:       <in grams>
+    * Controllers:  <>
+
+> Current (2024 Q2) leading headsets
+* (Meta) Quest 3
+* (Bigscreen) Beyond
+    ~ $1000
+    + 170g (127g without straps)
+
+
+> Notable headsets (only recommended for niche cases)
+* (Varjo) XR4
+* (Apple) Vision Pro
+    ! Currently the best lifestyle headset. A replacement for using computer screens.
+    ~ $3500
+    + (23M pixels) ; 100°✕90° FoV , 34 pixels-per-degree
+    - Not PCVR compatible!
+    ~ 600g
+* (Pimax) Crystal Super
+    ! Good if you're a sim-er (racing / flight simulation)
+    ~ Price:        $1800 (with $400 discount if you bought Pimax Crystal)
+    + Resolution:   3840x3840 per eye (29.5M pixels) ; 120Hz? ; 130°✕110° FoV , 57 pixels-per-degree
+        + Swappable with 90Hz Micro-OLED lens. Buying both is extra $600, and buying only w/ Micro-OLED is extra $200
+    + Display:      QLED + mini-LED backlighting , eye-tracking
+    ~ Platforms:    PCVR only
+        + no battery, the power-supply is through DP cable
+    - Wireless:     n (powered through DP)
+    + Tracking:     4 headset cameras + optional expansion for tracking with lighthouses (base-stations)
+    ~ CPU+Storage:  ? Chipset, ? Storage, ? audio
+    * Audio:        ?
+    ~ OS:           ?
+    - Weight:       ? (surely heavy)
+    ~ Controllers:  Quest-2 styled controllers, with haptic feedback
+* (Pimax) Crystal Light
+    ! Good if you're a sim-er (racing / flight simulation)
+    + Price:        $700
+    * Resolution:   2880x2880 (16.6M pixels) ; 120Hz ; 125°✕?° FoV , 35 pixels-per-degree
+    + Display:      QLED + optional mini-LED backlighting , no eye-tracking
+    ~ Platforms:    PCVR only
+    - Wireless:     n (powered through DP)
+    * Tracking:     headset cameras + optional expansion for tracking with lighthouses (base-stations)
+    ~ CPU+Storage:  dual-core for streaming ; no storage
+    * Audio:        Speakers, 3.5mm jack, 2 microphones
+    * OS:           ?
+    - Weight:       530g
+    ~ Controllers:  Quest-2 styled controllers, with haptic feedback
+* (Valve) Index
+    + Good controller gestures
+        
+> Bargain-bin headsets (outdated, but you might get good price for them)
+* (Meta) Quest 2
+* (Meta) Quest Pro
+* (Pimax) Crystal (2022-Q2)
+    + Price:        $1600
+    + Resolution:   2880x2880 (16.6M pixels) ; 120Hz ; 117°✕105° FoV , 35 pixels-per-degree
+    + Display:      QLED + mini-LED backlighting , eye-tracking
+    * Platforms:    PCVR, Standalone
+    * Wireless:     y
+    * Tracking:     headset cameras + optional expansion for tracking with lighthouses (base-stations)
+    * CPU+Storage:  XR2 for standalone ; 256GiB
+    * Audio:        Speakers, 3.5mm jack, 3 microphones
+    * OS:           <>
+    - Weight:       950g
+    ~ Controllers:  Quest-2 styled controllers, with haptic feedback
+* (HP) Reverb G2
+
+
+
+TODO: Somnium VR1 ?
+
+
+
+
+
+

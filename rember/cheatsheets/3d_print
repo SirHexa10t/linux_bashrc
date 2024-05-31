@@ -1,0 +1,143 @@
+
+>> SLA/SLS
+
+!
+
+>  Resin (regular/water-soluble)
+! remember to avoid breathing the fumes and directly touching the resin 
+
+* before pouring in resin, stir/shake your filament bottle to make sure the different elements within it are mixed properly
+* post-print resin isn't as clear and effective, so reusing it for more prints is problematic
+* You should filter used dissolving solution (water/IPA) for re-use.
+* * Put it in the sun or UV-light (best if solution is in a glass container), then filter it. using a coffee filter or cheese-cloth (multi-use)
+* * * You can filter using:
+* * * * a metal sieve + funnel
+* * * * a coffee filter in a double-funnel (specific model by VogMan - inner funnel is perforated so there's more surface area for the coffee filter to filter through)
+* * * * cheese cloth (multi-use, and can be wrung dry, with gloves of-course)
+* * * Throw the solid plastic remains in the trash
+* * maybe: consider immediately reusing the resin within your tray after print - it's not as clean, but you can get some more use out of it before losing some to the filtering process...
+* Wash FEB with warm water and dish-soap
+* * Personal experience: dish-soap is good at cleaning resin (non water-soluble) from skin
+
+> Water-soluble Resin
+* Still toxic! Don't clean your parts by just washing them in the sink, and don't drain it uncured either!
+* After washing with water, it's still soft enough to easily remove supports
+* * Warm water makes it easier to remove support
+- - Prints are slimy after their wash, and require wiping
+- - - The less-effective cleaning is even more problematic for hollow prints, as inner unreached resin oozes out over time (same problem as regular resin, but amplified)
++ Cleaning prints is cheaper (tap water is much cheaper than IPA)
++ Water isn't flammable like IPA
++ Water doesn't cause odors like IPA (actually harmful because of the mixed-in resin?)
+- Prints are more brittle/softer compared to "regular" resin, so it's not suitable for thin parts (miniatures with swords/spears)
+- If you cure prints that still have water on them, you get white marks on your prints
++ + There are "tough" variants (supposedly)
+
+> Recommended resins
+* Recommendations from https://www.youtube.com/@GrayScalpMiniatures
+* * Elegoo ABS-like
+* * ChituSystems Conjure
+
+> Washing
+* Get a pickle-jar (liftable plastic basket within a jar) for rough cleaning, pre-ultrasound-cleaning phase ; details here:  https://www.youtube.com/watch?v=oCgDm1KfboY
+* * Get 2 for thorough cleaning
+* You can use warm water (even on regular resin prints) to heat up your print so the supports separate better
+* For non water-washable resin:
+* * you can use Methylated Spirit instead of IPA 
++ + + Odorless
++ + + Doesn't accumulate sludge, so you can keep using the same solution without replacement
+* * 50% alcohol is about as good as over 90% if you wash thoroughly enough (you'd lose quality over time on reuse anyway)
+* For water-solution
+* * pure water (no minerals/salts) is better than plain tap-water
+
+
+
+TODO - FDM
+
+
+
+HIPS
+
+PVB
+
+PVA
+
+PETG
+
+ABS
+    PC-ABS
+    ABS-T
+
+PLA
+    PLA+
+
+ASA
+
+TPU
+
+Nylon
+
+
+>> Smoothing
+
+> Acetone fumes smoothing
+    ! You can use PP plastic containers to contain acetone, those won't melt
+    ABS
+        NOT ABS-T (melts before losing exterior details)
+    NOT ASA-275 (melts before losing exterior details)
+
+
+> IPA (alcohol) smoothing
+    PVB (from Polymaker, marketed as "Polysmooth")
+
+> PLA smoothing
+    Sandpapering (and plastic wood-filler)  ( https://www.youtube.com/watch?v=1AW098PLi0o )
+        Air-dried putty ( https://www.youtube.com/watch?v=xxdjFREJpKs )
+    Extra-layer sprays ( https://www.youtube.com/watch?v=rn4edNztaPU )
+
+> ABS
+    Acetone fumes
+
+
+
+>> Recycling
+
+    Artme3D - melting shredded plastic into filament ( https://www.youtube.com/watch?v=BT04glGDjB4 )
+
+
+
+
+>> Work environment
+! 
+* suggestion: set-up your printing inside a wardrobe as demonstrated in this video  https://www.youtube.com/watch?v=UU6tWhV010M
+* * vent installed
+* * doors holds items
+* * * scraper
+* * * gloves (nitrile)
+* * * paper towel
+* * * alcohol (IPA)
+* * * clamps
+* * * safety glasses
+* * printers are at shelf-level
+* * at feet level: filaments, bottles of resin
+
+
+
+
+
+>> Software
+
+> Slicing:
+* Chitubox (SLA)
+* Prusa Slicer (FDM/SLA)
+
+> Aids
+* check-for/repair SLA slicing issues:  https://github.com/sn3k3/UVtools
+
+
+
+
+
+
+
+
+

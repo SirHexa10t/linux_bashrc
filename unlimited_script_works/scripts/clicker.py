@@ -26,8 +26,8 @@ activation_key = keyboard.Key.f9
 exit_key = keyboard.Key.f8
 # exit_key = keyboard.KeyCode(char='q')
 
-is_clicking = False
-is_running = True
+is_clicking = False     # flag that gets raised when it's time to perform clicks/key-presses
+is_running = True       # when this turns False, the program quits
 
 # waiting time in seconds
 clicking_interval = 1 / args.cps
@@ -42,7 +42,7 @@ print(f'{RED}{"TOGGLE" if args.toggle else "HOLD"}{END}-clicker: '
 def on_press(key):
     global is_clicking
     if not args.toggle and key == activation_key:
-        is_clicking = True
+        is_clicking = True  # HOLD mode - clicking while pressed
     
 
 def on_release(key):
@@ -53,14 +53,15 @@ def on_release(key):
         return  # not necessary, but to be sure...
 
     if key == activation_key:  # relevant key event
-        if not args.toggle:  # releasing key in hold mode = no more clicking
-            is_clicking = False
+        if not args.toggle:
+            is_clicking = False  # HOLD mode - release means no clicking
         else:  # release key in toggle mode = opposite of previous clicking state
             is_clicking = not is_clicking
 
 if args.key_press:
     keyboard_controller = keyboard.Controller()
-mouse_controller = mouse.Controller()
+else:
+    mouse_controller = mouse.Controller()
 with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
     if args.verbose:
         clicks_done = 0

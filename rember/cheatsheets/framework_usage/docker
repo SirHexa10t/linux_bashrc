@@ -1,15 +1,20 @@
 # Reminders and tips for docker
++ Podman is basically the same as Docker but better in some aspects
++   Podman's API is basically the same as Docker's, so you can just replace "docker" with "podman" in your commands.
++   Podman is more open ("free")
++   Podman doesn't require root permissions so it's also more secure in case you're running something malicious
 
 
 >> GUI Clients
 + Good for an overview. You can run docker commands and review the situation through a GUI client
-
 * DockerDesktop
 * Podman
 
 
 
->> Reviewing (might need to run sudo to find all)
+>> Reviewing (for some, run as root to find all; unless you're using podman instead of docker, then it's all on your user,)
++ For some, of the following, run as root to find all
++   unless you're using Podman instead of Docker
 * docker ps -a  # list ALL containers
 * docker images -a  # list all images
 * docker volume ls  # list all volumes

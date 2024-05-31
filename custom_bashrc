@@ -544,7 +544,7 @@ function sudo () {
 # add a print of local files after changing directory
 function cd () {
     [[ "$#" -eq 1 && -f "$1" ]] && { set -- "$(dirname "$1")"; }  # if given (only a) file, change arg1 to file's location
-    builtin cd $@  &&  ls -AF --color=always --group-directories-first
+    builtin cd "$@"  &&  ls -AF --color=always --group-directories-first
 }
 
 # make mkdir more "reasonable" with a flag that is always nice to have ; -p doesn't print error if dir exists
@@ -2565,6 +2565,8 @@ function _shortaccess_folder () {
 # Media file manipulation
 # =======================
 
+# TODO - ffmpeg reverse gif
+
 # create an image that contains all specified images in horizontal sequence
 function media_hmerge_imgs () {
     local arg filesav is_overwriting ffmpeg_args=()
@@ -2830,6 +2832,8 @@ function launch_vm_w_lookingglass () {  ###tags: requires-configuration
             errcho "Invalid VM name"
         fi
     done
+    
+    # TODO - if already running, maybe the checks (which require sudo) can be skipped
 
     # look up info within the vm's definitions file
     local xml_cached="$(sudo cat "/etc/libvirt/qemu/${vm_name}.xml")"
@@ -2845,6 +2849,9 @@ function launch_vm_w_lookingglass () {  ###tags: requires-configuration
     # get a number specified within a specific field's line. arg1: field's name 
     function _field_number() { grep "$1=" | sed 's/[^0-9]*//g'; }
     
+    # get the "available" amount of RAM from cmd `free`. Arg1: units (b/k/m/g/...)
+    function _how_much_avail_ram() { free -"$1" | grep Mem: | awk '{print $7}'; } 
+    
     
     # ------------------------------------------
     # -----------Prerequisite checks------------
@@ -2852,8 +2859,7 @@ function launch_vm_w_lookingglass () {  ###tags: requires-configuration
     
     # memory sufficiency check
     local vm_mem_required="$( echo "$xml_cached" | _field_number '<memory unit') $( echo "$xml_cached" | _field_value 'memory unit')"
-    local current_free_ram=$( free -b | grep Mem: | awk '{print $4}' )
-    [[ "$(virsh domstate "$vm_name")" == 'shut off' && $(to_bytes "$vm_mem_required") -gt "$current_free_ram" ]]  && { errcho "'$vm_name' requires $vm_mem_required of free RAM, but right now you only have $(free -k | grep Mem: | awk '{print $4}') KiB"; return 1; }
+    [[ "$(virsh domstate "$vm_name")" == 'shut off' && $(to_bytes "$vm_mem_required") -gt "$( _how_much_avail_ram 'b' )" ]]  && { errcho "'$vm_name' requires $vm_mem_required of free RAM, but right now you only have $( _how_much_avail_ram 'k' ) KiB"; return 1; }
     
     # shared memory between GPUs
     local shmem_section="$( echo "$xml_cached" | _get_tag_contents 'shmem')"

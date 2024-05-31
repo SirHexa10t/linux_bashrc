@@ -25,3 +25,7 @@
 + Counter-example: `print("hello")` isn't pure (nor is any function containing such line)
 
 
+TODO - predicate, consumer, and other types of funciton signatures
+
+
+

@@ -54,7 +54,7 @@
 * OpenSUSE Leap - Enterprise-focuse. Slower than Tumbleweed.
 
 > NixOS
-* NixOS - supports a lot of packages, has a reproducible-build system - writing packages and upgrade in specs, and you can go to previous versions if something broke. The Nix package manager is available for other distros.
+* NixOS - thanks to declerative package management (programs listed in a file), it supports a lot of packages, has a reproducible-build system, and allows easily rolling back your changes. The Nix package manager is available for other distros.
 
 > Android
 * Android - a mobile-device OS mainly maintained and developed by Google
@@ -88,6 +88,10 @@
 
 > Horizon (Nintendo Switch OS)
 + Derivative of "Nintendo 3DS system software", but has parts from FreeBSD's code, and Android elements
+*   Atmosphere OS - a FOSS firmware customization for Nintendo Switch
+
+> Redox OS
++ A whole new OS written in Rust
 
 
 
@@ -146,7 +150,7 @@
 *   KDE Lite - ?
 * LXDE (discontinued) - a barebones lightweight environment
 *   LXQt - lightweight fork of LXDE, (about twice heavier the LXDE). Negligibly lighter than Xfce; relatively new (for better/worse). Looks like an amalgamation of old Windows and Mac, seems to have its own quirks
-* DDE (Desktop Deepin Environment) - a "beautiful" environment, maybe the best at that.
+* DDE (Desktop Deepin Environment) - a "beautiful" environment, maybe the best at that. *See (cautious) remark about the OS.
 
 > GTK(+)-based: (GTK 3)
 * GNOME - Very common, but the progression from GNOME 2 to GNOME 3 (a bit more Mac-like) was controvertial.

@@ -47,15 +47,17 @@
 >> Tubing
 
 > Hard-tubes
-* TODO
+* TODO - only OD matters
+* TODO - shaping
 
 > Soft-tubes
-* TODO
+* TODO - explain mild differences between different diameters (bendability, difficulty in addint fittings, stress/pressure tolerance)
+* TODO - explain non-differences (pressure is the same)
 
 
 
 >> Fittings
-* TODO - explain G1/4
+* TODO - explain G1/4"
 
 
 
@@ -132,11 +134,12 @@
 
 > Renown firms
 * EKWB (Edvard König Water Blocks)
-*   Good products, premium-priced.
-*   Often comes pre-pick for the few GPUs that get sold with water-blocks instead of air-coolers
+!   Disgusting exploitation of workers' / partners' good-faith, and payment issues since they (or rather their Slovenian parent company) went into financial problems.
+*   Good products, premium-priced - relatively not cost-effective, but sometimes the best with a small margin.
+*   Often the default on GPUs that get sold with water-blocks
 * AlphaCool
 *   German-quality; decent prices.
-*   Have their own version of the D5, called "VPP". The latest is their VPP Apex, which is a fixed(?) version of the faulty VPP 755, and powered by SATA rather than 
+*   Have their own version of the D5, called "VPP". The latest is their VPP Apex, which is a fixed(?) version of the faulty VPP 755, and powered by SATA rather than molex
 *   Have varying sizes of radiators; if you're missing a radiator in specific uncommon proportions (or are unaware of better options), chances are that they have what you need.
 * PrimoChill
 
