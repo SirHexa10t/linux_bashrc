@@ -145,8 +145,10 @@ TODO - GDDR
 
 
 >> SSD (flash) / Disk
+! for product comparisons, use this site, click on "SSD Spreadsheet":  https://borecraft.com/
+
 + "Solid State Drive" (solid meaning non-volatile) doesn't have to be Flash, but it usually is.
-+ Be aware that unpowered SSDs should be stored in extreme temperatures (not above 30C and not freezing either) to avoid/slow-down data degradation over a year or two.
++ Be aware that unpowered SSDs should be stored in normative temperatures (not above 30C and not freezing either) to avoid/slow-down data degradation over a year or two.
 
 > SSD vs alternatives
 * Intel's Optane (non-flash SSD), is discontinued (true to the time of writing this).
@@ -486,6 +488,7 @@ TODO - mention RAM clearance
 *   Mesh Weave - weaved strands of copper lining the walls.
 
 > Leading products by avg temperature, noise-normalized [fans x size] [Single / Dual-tower] (descending):
+! As of the end of June 2024, Deepcool were blacklisted by the US government for commerce with Russia. Getting coolers from them can be hard, and in some cases illegal.
 * Thermalight Peerless Assassin 120                 [2x120][D]  : cheap, BEST at 200W and 123W noise-normalized, and BEST (among air-coolers) cooling at 100% fan speed
 * Deepcool Assassin IV                      [1x140 / 1x120][D]  : BEST at 200W 100%-fan, tied at 200W noise-normalized
 * Deepcool AK620                                    [2x120][D]
@@ -495,13 +498,13 @@ TODO - mention RAM clearance
 * Arctic Freezer 36 Black                           [2x120][S]  : cheap
 * Deepcool Assassin III                             [2x140][D]  : marketing lied about features in that product
 * Scyte FUMA 2                                      [2x120][D]
-* Jiushark JF13K Diamond                            [2x120][mushroom-like tower, 2x120 blowing air down like stock-CPU-coolers]  : cheap, cools VRMs well. Comes with the wrong allen-key, and you should probably swap the crappy fans with thos of a better company 
+* Jiushark JF13K Diamond                            [2x120][mushroom-like tower, 2x120 blowing air down like stock-CPU-coolers]  : cheap, cools VRMs well. Comes with the wrong allen-key, and you should probably swap the crappy fans with those of a better company 
 + All of these are trailing behind the AIO coolers listed (in AIO section), but not by a lot from the bottom of the AIO list
 + These results are for specific wattage at a specific dBA noise limit (which affects each company's fans differently). The ranking changes over slight tweaks.
 +   Nevertheless, this is roughly the order in which they should be ranked, and these are still the world's leading air-coolers; they're are all good.
 + Noctua provides excellent support; even ships (on their expense!) brackets to new CPU sockets so you'll be able to keep using their good-old product
 
-> Other good (in other aspects) coolers (descending by expected cooled wattage)
+> Other-aspect leading coolers [fans x size] [Single / Dual-tower] (descending by expected cooled wattage)
 * ID Cooling SE-214-XT ARGB         [1x120][S]       : Budget-products (when cooling up to 120W) ; sub-$20 single-tower single-120-fan cooler, with respectable performance
 * Thermalight Assassin Spirit 120   [1x120][S]       : tied for BEST at 68W noise-normalized stock performance
 * Arctic Freezer 34 Esports Duo     [2x120][S]       : tied for BEST at 68W noise-normalized stock performance
@@ -605,6 +608,7 @@ CoolerMaster
 -------- Peripherals --------
 =============================
 
+! If you want e-sports oriented peripherals, you can see the trends here (note: I personally wouldn't recommend eSport items for general use): https://prosettings.net/brands/
 
 
 >> PC Desktop Screen/Monitor
@@ -658,28 +662,100 @@ CoolerMaster
 
 
 
-* TODO - Keyboards (including mechanical switches (specifically Cherry MX, also Gateron and Akko), keys' material: PBT keys vs ABS keys, Topre electrostatic switches)
+* TODO - Mechanical Keyboards (including mechanical switches (specifically Cherry MX, also Gateron and Akko), keys' material: PBT keys vs ABS keys, Topre electrostatic switches)
+    form-factors
+        100% / "Full-sized": Whole keyboard, including numpad
+        80% / TKL (Ten Keys Less): No numpad (personal gripe: it should be "fewer")
+        75: same keys as TKL, but mashed together; the "up" arrow probably intrudes on the right-Shift key's space
+        65%: No Function (F1-F12) keys, usually also loss of some keys that were above the arrows in full-form (PRTSCN/SCROLL_LCK/PAUSE_BRK/INSERT/DEL/HOME/END/PGUP/PGDN) - of those, you'd probably still see DEL, PGUP, PGDN, maybe also HOME (not there if there's a knob)
+        60%: No Arrow keys, and none of the keys that were above the arrows
+        40%: No numbers (and none of the special characters on same keys), some modifiers are gone too (CAPS-LOCK, brackets/braces, back-slash , tilda, quote, quotes)
+        Non-standard: anything that doesn't conform to these, like putting the numpad above the arrow keys, or keyboards that come in more than one piece
     Switches' resistence: if they're light at the start and heavy at the end, they feel "mushy" (generally a bad thing). They should be Linear.
     Make sure that the switches fit into the plate (what kind of square hole do they have) 
     models for example: HHKB Pro 1, Leopold FC660C,  Duck Octagon V3, OrtholinearKeyboards Planck (usues Neutrino plate), Tofu96, IQUNIX F96 Knight
+    Tactile (feedback bump) / Linear (smooth press) / Clicky (clicks on actuation) , silent-tactile / silent-linear
+    Spring weights/heaviness (force needed to press)
+    brands like Holy Panda, and classic keyboards like Ducky, and HHKB Pro 2, Keychron chasis for full-boards (w numpad)?
+    Using different pressure (switch type) for Space than for the other keys
+    Adding foam and other sound dampeners, lubing keys, ...
+    keycaps types / materials (and their height influences the acoustics too)
+    optimizations:
+        Add 2-3 layers of electric (non-conductive, non-flammable) tape to the back of the PCB
+            Add some tape (can be painters tape) near the screw-holes or the contacting rims to break sound travelling between the chasis parts
+        Lubricating the moving parts within the switches with machine grease (Krytox GPL 205 GD0 is good)
+        Add kinetic-sand(?) / butyl sound deadening ("KILMAT") / cotton / silicone (hardening liquid) / flex-seal / tissues / play-doh on the bottom of the chasis to add acoustic dampening
+        Keycaps with thicker edges, made out of heavier plastics
+    2024 keyboard recommendations:
+        Aula F75 (70$)
+        RK Royal Kludge M75 (85$)
+        Rainy 75 (85$)
+        Chilkey ND75 (89$)
+        Womier Sk75 (68-88$)
+        Nuphy Air 75 (low profile keyboard) (120$) (recommended with Cowberry switches)
+        Lofree flow (low profile keyboard) (135$) with Kailh Black switches (but not customizable)
+        Akko (Monsgeek) M1 V3 (70-100$)
+            There's also an HE (Hall-Effect) variant for 30 extra dollars 
+        Varmilo Minilo98 Pro
+        fine keyboard: Keychron ("Lemokey") P1 (110$)
+    Switches (switch-makers):
+        Morandi
+        Kailh (especially the "Thocky": Kailh Varmilo Prestige Silent switches)
+        Gateron (especially the silent: Gateron Ink Smoothie switches, available on aliexpress)
+Via Software (open source keyboard settings program, supported by some keyboards)
+Hall Effect keyboards - the strafing and rapid-pressing gimmick (originally by Wooting)
+    HE switches are analog switches with embedded magnets - you can determine the actuation points (press/release) at any points you want
+    Wooting 60HE+
+    maybe: IQUNIX EZ60/EZ63 
+    Best swtiches: Geon Raptors (black inner part within transluscent red casing)
+
+Keyboard maintenance/cleaning:
+    Pull out the keys using a key-pulling tool. It's just a piece of metal (could be plastic) that's shaped to catch keys individually from below
+        Take a picture beforehand. In case you need a reminder where some keys go
+    Vacuum out most of the filth
+    Wipe (carefully) between your switches with a microfiber-cloth, or a q-tip
+    Put your keys in a container with dish-soap water, or water mixed with bleach.
+        Stir a bit, let it rest for a couple of hours.
+        Filter the keys out (be aware that they can very easily pour out with the liquid - use a proper filter if you're draining over the toilet)
+        Place the keys in clean water, stir
+        Take the keys out and wipe them dry one by one
+    Put the keys back
+
 
 * TODO - Mice
+    Free scrolling (Logitech feature)
+    Extra buttons
+    Macros
 
 * TODO - headphones
 
 
 
 >> Game-controllers
+! Test your controller on this webpage:  https://hardwaretester.com/gamepad
 
-> Gulikit has good magnetic-sticks controllers.
-* Their most famous controller is the "KingKong2 Pro", which handles like the official Nintendo Switch's "Pro Controller"
-*   Has swappable thumb-buttons (XBOX or other console configuration), Amiibo reader, rumble, motion (orientation) sensor, and recordable/repeatable input
-*   Some of those come with buttons that start to squeak or get stuck, requiring a full teardown for oiling/greasing the keys' switches
+> Gulikit has controllers with magnetic sticks (no drift) in ~$60 price range.
+* GuliKit "KingKong2 Pro" (discontinued), mostly NOT recommended - their most known controller. Handles like the official Nintendo Switch's "Pro Controller"
++   Has swappable thumb-buttons (XBOX or other console configuration), Amiibo reader, rumble, motion (orientation) sensor, and recordable/repeatable input
+-   The keys start squeaking and getting stuck at some point, requiring a full teardown for oiling/greasing the keys' switches
 *   The buttons feel like MX Blue or Brown, very clicky. Supposedly rotating the switches' housing by 90 degrees would cause the bump to be ignored, acting more like MX Red
-* Their later model, KK3 Max, is basically the same as the KingKong2 Pro, with some upgrades
-*   Includes a downgrade: regular/cheap silicone membrane instead of switches. Those could tear over time. But at least they won't get squeaky or stuck.
-*   Has 4 optional back-peddals that allow extra inputs.
-*   Not sure if previous models were this good at recording, but the playback has exact stick vectors (usually not the case in controllers' playback) 
+-   Good luck getting support for this controller once the shoulder-button breaks or starts squeaking / scraping against the backside
+* GuliKit "KK3 Max", NOT recommended - a replacement for KK2 Pro. Similar in a lot of ways
++   Has 4 reprogrammable back-buttons
+-       Back-buttons can't do sequenced macros, just remap to another key (which is helpful if you often need to press X / Y alongside A and B, but leaves out all of the automation options)
++   Better recording options 
++       Longer playable presses recording time
++       Recording saves the vector of the sticks, not just the direction (though not having that was just a flaw on KK2's part, not something to be proud to have)
++   Physical toggle between analog and digital (shallower) shoulder buttons
+-   Silicone-membrane keys (despite LIES in advertisement)
+-       Those get stuck and squeak over time too!!
+-       Buttons are heavy to press, and don't push back as much as KK2's (you can't press them as rapidly)
+-       Keys sometimes trigger without being pressed by user (specifically the B button)
+-   Software issues galore
+-       On the Switch Pro profile, once rumble starts it doesn't stop
+-   The LED rings around the sticks are of a type of plastic that rubs with high friction, feeling unsatisfying and doing extra noise during regular use of the sticks
+-   Front finish doesn't feel as good as KK2's
+* FlyDigi "Apex 4"
 
 > 8bitdo - Nintendo-styled controllers of various sizes and looks
 

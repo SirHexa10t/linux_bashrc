@@ -1861,6 +1861,22 @@ function prepare_ntfs_for_writable_mount () {
 # Filesystem
 # ==========
 
+# get filename suffixed, before ext (if relevant)
+# arg 1: filepath , arg 2: suffix-to-add
+function _add_suffix () {
+    local dir=$(dirname "$1")
+    local filename=$(basename "$1")
+    local extension=""
+    
+    if [[ "$filename" == *.* ]]; then
+        extension=".${filename##*.}"
+        filename="${filename%.*}"
+    fi
+    
+    echo "$(dirname "$1")/${filename}$2${extension}"
+    
+}
+
 # get filename (removes path) without filetype ("extension"/"suffix")
 # arg 1: file (or filepath)
 function get_filename_unsuffixed () {
@@ -2039,6 +2055,8 @@ args:
     [ "$?" -eq 1 ] && yecho "NO RESULTS FOUND"
     
     # TODO - read media files' embedded subtitles
+    # TODO - rename to "deepsearch"?
+    # TODO - search within .torrent files (go over title and downloadeble items within)
 }
 
 
@@ -2076,7 +2094,7 @@ function explore () {
     echo "current dir inodes use: $(du -s --inodes "$location" | cut -f1)"
 }
 
-# finds files that shouldnt be executable and chmods them
+# find files that shouldn't be executable and chmod the execution permission out of them
 function revoke_exe_mod () {
     local location=${1:-"$(pwd)"}  # use given address, default to current location
     local format=${2:-'txt'}  # use given format, default to txt
@@ -2565,8 +2583,6 @@ function _shortaccess_folder () {
 # Media file manipulation
 # =======================
 
-# TODO - ffmpeg reverse gif
-
 # create an image that contains all specified images in horizontal sequence
 function media_hmerge_imgs () {
     local arg filesav is_overwriting ffmpeg_args=()
@@ -2594,6 +2610,13 @@ function media_shrink_by_2 () {
     _declare_dims "$1" "Size before"
     ffmpeg -hide_banner -y -i "$1" -vf "scale=iw/2:ih/2" -q:v 1 "$1"
     _declare_dims "$1" "Size after"
+}
+
+# create a reversed gif
+function media_gif_reverse () {
+    [ -f "$1" ] || { errcho "you must provide a gif-file to reverse"; return 1; }
+    
+    ffmpeg -i "$1" -vf reverse $(_add_suffix "$1" '_rev')
 }
 
 # arg 1: media_file
@@ -2833,12 +2856,11 @@ function launch_vm_w_lookingglass () {  ###tags: requires-configuration
         fi
     done
     
-    # TODO - if already running, maybe the checks (which require sudo) can be skipped
-
-    # look up info within the vm's definitions file
-    local xml_cached="$(sudo cat "/etc/libvirt/qemu/${vm_name}.xml")"
     
     local q="'"  # VM XMLs use single quotes. If you need double-quotes, change that here.
+    
+    # get xml contents (just once, to avoid burdening the file-system)
+    function _get_vm_xml_contents() { sudo cat "/etc/libvirt/qemu/${vm_name}.xml"; }
 
     # get tag's lines. arg1: tag's name
     function _get_tag_contents() { sed "/<$1/,/<\/$1>/"'!d'; }
@@ -2857,29 +2879,33 @@ function launch_vm_w_lookingglass () {  ###tags: requires-configuration
     # -----------Prerequisite checks------------
     # ------------------------------------------
     
-    # memory sufficiency check
-    local vm_mem_required="$( echo "$xml_cached" | _field_number '<memory unit') $( echo "$xml_cached" | _field_value 'memory unit')"
-    [[ "$(virsh domstate "$vm_name")" == 'shut off' && $(to_bytes "$vm_mem_required") -gt "$( _how_much_avail_ram 'b' )" ]]  && { errcho "'$vm_name' requires $vm_mem_required of free RAM, but right now you only have $( _how_much_avail_ram 'k' ) KiB"; return 1; }
-    
-    # shared memory between GPUs
-    local shmem_section="$( echo "$xml_cached" | _get_tag_contents 'shmem')"
-    shmem_name="$( echo "$shmem_section" | _field_value 'name')"
-    [ -z "$shmem_name" ] && { errcho "Couldn't find shmem name (shared-memory for looking glass). If there's no GPU sharing its memory, Looking-Glass can't be used. Exiting."; return 1; }
-    shmem_size="$( echo "$shmem_section" | _field_number 'size unit') $( echo "$shmem_section" | _field_value 'size unit')"
-    
-    # checking that there are no issues with the looking-glass file. If there's an existing file, use it (don't overwrite)
-    local lg_file="/dev/shm/$shmem_name"  # will be created later
-    echo "$(becho 'Creating looking-glass session file:') $lg_file"
-    sudo touch "$lg_file" && sudo chown $(whoami):kvm "$lg_file" && sudo chmod 660 "$lg_file"
-    [ -f "$lg_file" ] && dagecho "$(ls -alF "$lg_file")"
-    
+    function _do_checks() {
+        local xml_cached="$(_get_vm_xml_contents)"
+
+        # memory sufficiency check
+        local vm_mem_required="$( echo "$xml_cached" | _field_number '<memory unit') $( echo "$xml_cached" | _field_value 'memory unit')"
+        [[ "$(virsh domstate "$vm_name")" == 'shut off' && $(to_bytes "$vm_mem_required") -gt "$( _how_much_avail_ram 'b' )" ]]  && { errcho "'$vm_name' requires $vm_mem_required of free RAM, but right now you only have $( _how_much_avail_ram 'k' ) KiB"; return 1; }
+        
+        # shared memory between GPUs
+        local shmem_section="$( echo "$xml_cached" | _get_tag_contents 'shmem')"
+        shmem_name="$( echo "$shmem_section" | _field_value 'name')"
+        [ -z "$shmem_name" ] && { errcho "Couldn't find shmem name (shared-memory for looking glass). If there's no GPU sharing its memory, Looking-Glass can't be used. Exiting."; return 1; }
+        shmem_size="$( echo "$shmem_section" | _field_number 'size unit') $( echo "$shmem_section" | _field_value 'size unit')"
+        
+        # checking that there are no issues with the looking-glass file. If there's an existing file, use it (don't overwrite)
+        local lg_file="/dev/shm/$shmem_name"  # will be created later
+        echo "$(becho 'Creating looking-glass session file:') $lg_file"
+        sudo touch "$lg_file" && sudo chown $(whoami):kvm "$lg_file" && sudo chmod 660 "$lg_file"
+        [ -f "$lg_file" ] && dagecho "$(ls -alF "$lg_file")"
+    }
     
     # ------------------------------------------
     # -----------------Running------------------
     # ------------------------------------------
     
     function _confirm_vm_details() {
-
+        local xml_cached="$(_get_vm_xml_contents)"
+        
         # non-hardware display
         local graphics_section="$( echo "$xml_cached" | _get_tag_contents 'graphics')"
         extra_graphics_type="$( echo "$graphics_section" | _field_value 'graphics type')"
@@ -2914,6 +2940,7 @@ function launch_vm_w_lookingglass () {  ###tags: requires-configuration
     if [ "$vm_state" == "running" ]; then
         gecho "$vm_name is already running."
     elif [ "$vm_state" == "shut off" ]; then
+        _do_checks || return 1
         _confirm_vm_details || return 1
                   
         if _is_dev "$VM_IMG_PARTITION_UUID" ; then  # if there is need for such a device and it's legitimate, try mounting it

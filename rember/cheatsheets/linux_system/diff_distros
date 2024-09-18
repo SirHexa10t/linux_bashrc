@@ -1,9 +1,10 @@
 # Notable Linux distros and their origin + usecase
 
 >> Distros:
-+ A version of Linux (could be a branch of a branch of a branch...) with its own Release Cycle
-+ Basically there are 3 primary groups of desktop distros (which use different package managers): Debian (apt), Arch (pacman), Fedora (dnf)
-*   Some distros come with specially-made UI and customization options, and of-course the maintainers (and their servers) differ too
+! A version of Linux (could be a branch of a branch of a branch...) with its own Release Cycle
+! Basically there are 3 primary groups of desktop distros (which use different package managers): Debian (apt), Arch (pacman), Fedora (dnf)
+!   There are exceptions; OpenSUSE (zypper), Vanilla-OS (apx) 
+!   Some distros come with specially-made UI and customization options, and of-course the maintainers (and their servers) differ too
 
 > Debian
 * Debian - operating simplicity. Has a large community and common program support/compatibility. Debian itself isn't (or just wasn't?) easy to install.
@@ -22,6 +23,7 @@
 *   Parrot - same as Kali but less bloated
 *   Tails - Security/privacy-focused OS that runs off of a USB drive, and doesn't persist information
 *   Raspberry Pi OS - runs RaspberryPi devices
+*   Vanilla OS 2 - an immutable distro that uses 2 alternating root partitions, with containerization (you can run any Linux distro on it, including Android), and some NixOS-ish configuration file setups
 
 > Red Hat
 + stable; business-oriented. Incorporates "SELinux" - Security Enhanced Linux developed by Red Hat and used by the NSA, which has a complicated user-access system.
@@ -40,13 +42,14 @@
 *       Big Linux - has a lot of convenient GUI configurations, and an easy way to switch the Desktop Environment
 *   SteamOS 3 - Steam Deck's OS, used for gaming, runs with KDE Plasma 5 and has a Windows-compatibility layer
 *       HoloISO - SteamOS, adapted to run on Desktop (naturally for gaming)
+*   ChimeraOS - oriented for console-gaming experience
 
 > Enoch
 * Gentoo - Like Arch but somehow more extreme. You have to compile everything yourself. Absolute minimalism and specialization, a good choice for a vending machine or a restaurant's menu.
 *   Chromium OS - for people who don't want a computer, just Google Chrome
 
 > Alpine
-* Alpine - very light and minimalistic (supports run-from-RAM), great for microservices and dockerized server stuff
+* Alpine - very light and minimalistic (supports run-from-RAM), great for microservices and dockerized server stuff. Uses OpenRC instead of systemd
 
 > SuSE Linux 
 + "Software- und System-Entwicklung" (Software and Systems Development) [pronounced "suza"]
@@ -55,6 +58,7 @@
 
 > NixOS
 * NixOS - thanks to declerative package management (programs listed in a file), it supports a lot of packages, has a reproducible-build system, and allows easily rolling back your changes. The Nix package manager is available for other distros.
+*   SnowflakeOS - beginner-oriented NixOS. Uses Snowfall. Still in Alpha.
 
 > Android
 * Android - a mobile-device OS mainly maintained and developed by Google
@@ -104,7 +108,7 @@
 >> Display Servers
 * X11 - a display server. Extremely common, very old, somewhat bloated.
 * Wayland - a display server newer and lighter than X11. Many programs still don't support it. Notably, accepts laptop trackpad gestures.
-
+*   Gamescope (formerly steamcompmgr) - a compositor with XWayland implementation, used by SteamOS
 
 
 >> Window-manager

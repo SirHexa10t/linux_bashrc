@@ -13,12 +13,13 @@
       * https://wiki.archlinux.org/title/NVIDIA
   * AMD's default Open Source drivers are usually enough.
       * https://wiki.archlinux.org/title/AMDGPU
-      * Some programs (like DaVinci Resolve) require proprietary drivers, for which you'll need to install AMDGPU-PRO
+      * Some programs (like DaVinci Resolve) require proprietary drivers, for which you'll need to install AMDGPU-PRO:  after installing the AMD driver off the official website, run: `amdgpu-install --vulkan=pro`
   * Intel GPUs and Intel integrated-graphics work without intervention (no GPU drivers required)
 
 > External GPU tools
-  * GreenWithEnvy   : NVIDIA-GPU monitoring, fan-control, overclocking tool
+  * GreenWithEnvy   : NVIDIA-GPU monitoring, fan-control, overclocking tool 
       * https://gitlab.com/leinardi/gwe
+      * https://github.com/dankamongmen/GreenWithEnvy
 
 > OS optimizations
   + Refer to Platform-Tools section
@@ -95,10 +96,10 @@
 
 > Game Launchers/Libraries (GUI)
   * Steam   : just like in Windows. Works with most other tools, so you'd probably want it installed.
+      ! Read the section about Steam Configuration
+      ! You can run any program, not just games; that includes console emulators
       * https://flathub.org/apps/com.valvesoftware.Steam
       * Thanks to the efforts of the Steam deck, Steam nowadays comes bundled with Proton, and convenient tweaking options.
-      * To modify a game's Proton profile: right-click > "Properties..." > "COMPATIBILITY" > "Force the use of a specific steam Play compatibility tool" > choose an appropriate Proton version
-      + You can run any program, not just games; that includes console emulators
   * Lutris  : gaming platform/manager game-launcher that bridges to other platforms (including ones with no Linux client at all). Requires Steam and Proton.
       * https://lutris.net/downloads    https://linux-gaming.kwindu.eu/index.php?title=Lutris
       * bridges to all major platforms; Steam, Epic, GOG, Humble-Bundle, Ubisoft Connect, Origin (EA), probably also itch.io. For Battle.net (Blizzard), you'll install the client in Lutris, then run and use it like in Windows.
@@ -124,13 +125,15 @@ TODO - cover itch and minigalaxy
 
 
 
->> Steam / Platform Tools
+>> Configuring Steam / Platform Tools
+
+! Linux (Debian/Arch and derivatives) configuration for gaming on Steam:  https://steamcommunity.com/sharedfiles/filedetails/?id=1787799592 
 
 > Basic Steam steps:
   * Make your library display all games (including Windows') and allow running them:  Steam > Settings > Compatibility > [Enable everything]
   * Enable controller: Steam > Settings > Controller > [adjust according to your needs]
   * To modify a game's Proton profile: right-click > "Properties..." > "COMPATIBILITY" > "Force the use of a specific steam Play compatibility tool" > choose an appropriate Proton version
-
+  * You can save update time by skipping Steam's updates of shader caching (Linux generates them quite fast, so does Windows): Steam > Settings > Downloads > (disable) "Enable Shader Pre-caching"
 + The following launch-options suggestions are specified with tilted-quotes (`) for formatting; to distinguish what's the suggestion and what's the command. Don't copy-over the tilted quotes.
 
 > Optimization Steam Launch Options (general convenience)
@@ -174,10 +177,13 @@ TODO - cover SteamTinkerLauncher, DXVK, Gamescope, VR-video-player, Replay-Sorce
 
 > Flavors/distros
   + Technically you don't need a specialized system, but some of them come pre-configured and loaded with relevant apps to help you. Many people just game on Fedora
-  * Nobara                          : (Fedora distro) Gaming-oriented (shortens a bit some simple steps you'd have to do in Fedora), with very-slight improvements in performance over Fedora. No SELinux.
+  * Bazzite                         : (Fedora Atomic distro) A robust OS, comes with the basic gaming software.   https://bazzite.gg/
+  * Nobara                          : (Fedora (Workstation) distro) Gaming-oriented (shortens a bit some simple steps you'd have to do in Fedora), with very-slight improvements in performance over Fedora. No SELinux.
   * Garuda Linux Dragonized Gaming  : (Arch distro)   A lot of flare; a heavy OS. Comes with a lot of gaming-oriented (translation-layer) packages and tools pre-installed.
-  * SteamOS 3 (Arch distro)         : (Arch distro)   Steam Deck's OS, incorporates KDE Plasma 5.
+  * ChimeraOS                       : (Arch distro) handheld/console OS. "If you want Steam in your living room, you want ChimeraOS"
+  * SteamOS 3                       : (Arch distro)   Steam Deck's OS, incorporates KDE Plasma 5.
       * HoloISO                     : (Arch distro)   SteamOS, adapted to run on Desktop
+
   
 > Specialized Kernels (at your own risk)
   + https://wiki.archlinux.org/title/kernel
@@ -189,4 +195,8 @@ TODO - cover SteamTinkerLauncher, DXVK, Gamescope, VR-video-player, Replay-Sorce
       * XanMod Kernel - memory management improvements
   * for Fedora
       * kernel-fsync - adds in various kinds of patches, including Steam-Deck support
+
+
+
+
 

@@ -8,6 +8,8 @@ flags: --prepend: prefix the spaces instead of suffixing them
 # TODO - handle quotes better
 #   lone double-quotes crash the program
 #   maybe user doesn't want the quotes removed (during arg separation evaluation, by shlex.split()) - have a flag that adds-in quotes to "words" with spaces within (needs to be done early)
+# TODO - accept a single space as non-separator (need at least 2, or a tab). That way a formatted table output would be the same as its re-formatting
+
 
 import sys
 import os
@@ -70,7 +72,7 @@ if __name__ == "__main__":
 
     # determining what's the data we'll work with
     input_text = ''
-    if len(sys.argv) == 2 and sys.argv[1]:  # arg 1 is this file
+    if len(sys.argv) == 2 and sys.argv[1]:  # arg 0 is this file
         input_text = sys.argv[1]
         if os.path.isfile(input_text):
             with open(input_text, 'r') as file:
@@ -89,7 +91,7 @@ if __name__ == "__main__":
 import unittest
 
 
-class TestYourFunction(unittest.TestCase):
+class TestingFunctionality(unittest.TestCase):
     SAMPLE_TABLE = """
 num word a b long_word
 1 one

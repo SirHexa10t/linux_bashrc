@@ -1,14 +1,29 @@
 # Snippets and tricks for browsers
 
->> General
+
+>> Choosing browser
+
+> Security / Privacy
+* https://privacytests.org/                         # various metrics 
+* https://sizeof.cat/post/web-browser-telemetry/    # in consideration of telemetry
+
+
+>> Tweaking
+
+> General
 * document.getElementsByTagName("video")[0].playbackRate = 4  # Javascript command to run in console - change youtube playback speed (example here: x4)
 * greasyfork.org  : URL for source of scripts to run on your ViolentMonkey add-on/plugin
 
->> Chromium-based
+> Chromium-based
 * chrome://flags/#hardware-media-key-handling  : URL for advanced operation flags. Specifically media-key-handline - disable this to get rid of the banner that appears when you change audio-volume
+
+
 
 >> Search engines
 
 > Google
 * Clean "Web" search results without extra suggestions and summaries: add the following to the options of the URL / get-request (possibly at the end):   &udm=14
+
+
+
 

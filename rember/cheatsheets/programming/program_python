@@ -1,6 +1,10 @@
 # A quick overview of Python3's syntax, with some examples and common patterns
 
 
+> Look-ups
+* type(my_object)  # check the type of object
+* isinstance(myvar, some_type)  # check if the variable is an instance of a type or its subclass's type 
+
 
 > Writing data into parsed matrix
 ``` for i, row in enumerate(matrix):
@@ -28,16 +32,24 @@
 ``` import re
     if re.match(r'^[A-Z]$', text):   # pattern-match
 
+
+> Loops / Iterations
+
 * iterating on dictionary
 ``` for k, v in my_dict.items():
 
+* for-i
+``` for i, value in enumerate(some_array)
 
 * "any" condition
 ``` if any(word in my_dict for word in re.findall(pattern, text)):  # does any match (of pattern) appear as key in my_dict
 
+* Generators
+``` combinations = itertools.combinations(range(m), n)  # generate all combinations of placing n similar elements in an array of size m (iterate on combinations one by one after that)
 
 
-r"" - for regex, it escapes chars TODO - confirm, and get example
+
+r"" - used for regex; it escapes chars TODO - confirm, and get example
 f"" - f-string, allows referencing variables and code using {}
 TODO - list others
 

@@ -1,0 +1,49 @@
+
+
+
+* TODO - apparmor (limit programs' freedom)
+* or SELinux
+* Use flatseal to limit flatpaks
+* Use FireJail / Firetools to do what Flatseal does, to non-Flatpak apps
+* Portmaster  : monitor and manage (block) app usage of network
+    * Has an open source VPN, called SPN
+
+* Use firewall. Here's a basic setup
+    ``` sudo ufw status             # check firewall status
+    ``` sudo ufw allow 80,443/tcp   # allow HTTP
+    ``` sudo ufw limit 22/tcp       # limit means limited number of connection retries
+    ``` sudo ufw default deny incoming
+    ``` sudo ufw default allow outgoing
+    ``` sudo ufw enable
+
+
+Recommendations
+* close unused open ports
+* If you SSH into your computer, maybe use other port than 22, so the default port isn't open (hackers would check it by default)
+    * make sure ssh connection is done with proper validation (key file)
+    * shouldn't permit root-login (config file: /etc/ssh/sshd_config )
+
+* log connection attempts
+    * also enable rejections (install "fail2ban", and configure/enable it)
+    * also enable alerts, so you know if something happened and can act accordingly
+* disable unused services, such as printing, or Bluetooth (specifically problematic regardless)
+    * check all your systemd services
+
+* Make sure History doesn't contain sensitive information (passwords, addresses)
+
+* Update your software (have the versions that resolve CVEs)
+    * consider removing libraries you're not using
+
+Firmware (from linux.conf.au: https://www.youtube.com/watch?v=gP_9sUfpW_o )
+* Run latest firmware
+    * Management Engine before 12 has no rollback protection
+    * Linux Vendor Firmware Service (LVFS) provides consistent interface
+* Reduce attack surface via firmware
+    * Linuxboot - payload for existing UEFI PEI layers
+    * Yabits - payload for Coreboot, small UEFI implementations
+    * Project Mu - derived from Tiano
+
+
+
+
+

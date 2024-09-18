@@ -731,3 +731,8 @@ fn sum_of_squares(input: &[i32]) -> i32 {
 
 
 
+# TODO - cover Hindley-Milner types
+
+
+
+

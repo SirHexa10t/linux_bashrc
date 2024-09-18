@@ -1,5 +1,5 @@
 # Reminders for linux system tools and command options
-+ Also check packages cheatsheet
+! Also check packages cheatsheet
 
 
 
@@ -8,6 +8,13 @@
 * grub-reboot                   # if you have dual/multi-boot, you can ues this to reboot and determine which OS will be start 
 * sudo systemctl start sshd     # start ssh service for external access
 * sudo service apache2 restart  # restart apache service (if any)
+
+
+>> Process Management
+* If you wonder if a process is "stuck" or wonder how long it would take, you can try to monitor it with pv:
+    ``` sudo ps aux | grep <process-substring>  # find a relevant pid to follow
+        sudo pv -d <relevant-pid>  # monitor progress / pace of process
+* systemctl list-unit-files  # list all systemd service statuses
 
 
 >> Package Management (Debian)
@@ -28,13 +35,16 @@
 *  fwupdmgr get-devices  # get list of updateable devices
 *  fwupdmgr refresh  # download metadata
 *  fwupdmgr update  # get updates
-+ Some vendors don't provide updates through fwupdmgr, you might be able to download an iso-updater, as demonstrated here for Samsung SSDs:
-+  https://blog.quindorian.org/2021/05/firmware-update-samsung-ssd-in-linux.html/
+! Some vendors don't provide updates through fwupdmgr, you might be able to download an iso-updater, as demonstrated here for Samsung SSDs:
+!  https://blog.quindorian.org/2021/05/firmware-update-samsung-ssd-in-linux.html/
 
 
 >> filesystem
+* realpath <filename>  # get file as full-path
+* dirname <filename>  # get the folder path of given file
+* basename <filename>  # the file's name, without its path
 * ln -s <existing_file_to_link> <link_name>  # define soft-link. There are 2 symlink types; soft (denoted with -s, which points to a file's address) and hard (points directly to the data of a file. Editing the data in either "original" or hard-link is the same, and deleting either file alone wouldn't delete the data since it's still pointed to)
-+   soft links don't really utilize permissions - they allow everything and rely on the target to determine access. chmodding a symlink would forward the modification to the target. 
+!   soft links don't really utilize permissions - they allow everything and rely on the target to determine access. chmodding a symlink would forward the modification to the target. 
 *   ln -sr scripts/*.js target/  # create soft-links for all .js files in "scripts/", in "target/" (target/[filename.js] -> scripts/[filename.js]) 
 * cd  # change directory to specified folder. Write no directory to return to home-dir - Equivalent to `cd ~`
 *   cd -  # go back to previous directory
@@ -66,10 +76,10 @@
 
 
 >> Users / Groups
-+ Some people like relocating their HOME dir, for modularity and easy migration. In my modest opinion though, you shouldn't do that;
-+   If you insist on doing that, at least relocate to a volume that's within the same disk as the OS, so you'll be more likely to have it accessible when your OS loads or when you safe-boot.
-+   If you want to do that to preserve your configs, try symlinking the dirs within HOME - that way you only risk your preferences breaking, not everything.
-+       If your configs  are very important to you, periodically save them to a git repository.
+! Some people like relocating their HOME dir, for modularity and easy migration. In my modest opinion though, you shouldn't do that;
+!   If you insist on doing that, at least relocate to a volume that's within the same disk as the OS, so you'll be more likely to have it accessible when your OS loads or when you safe-boot.
+!   If you want to do that to preserve your configs, try symlinking the dirs within HOME - that way you only risk your preferences breaking, not everything.
+!       If your configs  are very important to you, periodically save them to a git repository.
 * groups <username>                                         # display the groups of a user
 * usermod -aG <groupA,groupB,groupC> <username>             # add user to group(s). You can even add to group sudo (makes into superuser in Ubuntu).
 * getent group                                              # list all groups and their user-members
@@ -85,7 +95,7 @@
 >> configurations
 * /etc/default/grub  :  boot configurations
 *   update-grub2  # updates grub for you (comments out old grub configurations).
-+   if you want to setup a new boot partition for (U)EFI, you can just create at the start of your disk a new FAT32 partition with 300MB-1GB storage and boot-flag, using "gparted" (recommended through a live-boot usb-stick). Then run boot-repair (installation: `sudo apt install -y boot-repair`) and update-grub2. Rerun update-grub2 on your actual OS to overwrite the resulting listed "Ubuntu" grub.
+!   if you want to setup a new boot partition for (U)EFI, you can just create at the start of your disk a new FAT32 partition with 300MB-1GB storage and boot-flag, using "gparted" (recommended through a live-boot usb-stick). Then run boot-repair (installation: `sudo apt install -y boot-repair`) and update-grub2. Rerun update-grub2 on your actual OS to overwrite the resulting listed "Ubuntu" grub.
 * /etc/ufw/ufw.conf                 :  UFW (firewall) config-file
 *   /var/log/ufw.log                :  UFW outputs file. To monitor incoming requests, `sudo tail` this file after setting config "LOGLEVEL=debug", applied with `sudo ufw reload` (no-interruption reset; if it won't work run: `sudo service ufw restart`)
 * /etc/modprobe.d/blacklist.conf  :  blacklist modules, such as firmware
@@ -112,7 +122,7 @@
 
 
 >> Logs
-+ to tail a logfile in real-time run: "tail -f <logfile>", or to get last 100 lines: "tail -100 <logfile>"
+! to tail a logfile in real-time run: "tail -f <logfile>", or to get last 100 lines: "tail -100 <logfile>"
 * /var/log/boot.log  :  System boot log
 * /var/log/syslog  :  System-events log (like connection of a USB device)
 * /var/log/auth.log  :  Login-attempts log

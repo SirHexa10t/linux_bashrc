@@ -1,6 +1,9 @@
 # A compilation of resources and techniques for learning Japanese
-+ Thanks to modern AI, it should be easier than ever to get advice and clarifications when needed (though some things are still a matter of culture, which only real humans would know)
-+ Using the language is generally great for learning; you can do that by having a pen-pal (anyone you could talk to on the internet), watching Japanese videos, playing Japanese games, reading manga
+# Thanks to modern AI, it should be easier than ever to get advice and clarifications when needed (though some things are still a matter of culture, which only real humans would know)
+# Using the language is generally great for learning; you can do that by having a pen-pal (anyone you could talk to on the internet), watching Japanese videos, playing Japanese games, reading manga
+
+>> Generally
+* As a total beginner, do some Anki to learn vocabulary, then listen to podcasts and try to make sense of what you're hearing
 
 
 TODO - differences between Hiragana, Katakana, and Kanji
@@ -25,10 +28,11 @@ Hiragana-only is problematic, as words blend together due to Japanese's lack of 
 *   AnkiDroid - Anki on Android
 * Migaku - paid service that uses Anki
 * Duolingo - a paid/commercials language-learning app that teaches basic sentences and common words
-*   Can be helpful to understand the mechanics of the language, but not necessarily internalize/intuit them
-*   Controvertial; various people claim it's a really bad tool
-*       especially now that they removed the community discussions
-*       Duolingo removed many Kanji, so you have to read a clumped mess of Hiragana
++   Can be helpful to understand the mechanics of the language
+-   Not necessarily helpful for internalizing or intuition
+-   Duolingo doesn't understand pitch-accent. Words get altered pronounciation (with different meaning)
+-   Currently, Duolingo has community discussions removed
+-   Many Kanji were removed, so you have to read a clumped mess of Hiragana
 *   Some people consider it a "supplement"
 
 
@@ -44,5 +48,71 @@ Hiragana-only is problematic, as words blend together due to Japanese's lack of 
     * To understand ~100% of the used words you need to know 35,000 words
     + The maker of the linked video says that at a vocabulary of 16,000 words, the main issue with Japanese was too many unknwon words
 
+
+
+>> Specific sources
+
+> Dictionaries/Translations
+* https://jisho.org/
+* https://www.weblio.jp/
+* Yomichan (web browser text deciphering; discontinued)  :  https://foosoft.net/projects/yomichan/index.html#basic-usage
+* Yomitan (Yomichan replacement?)  :  https://chromewebstore.google.com/detail/yomitan/likgccmbimhjbgkjambclfkhldnlhbnn?hl=en
+
+> Youtube channels
+* Matt vs Japan ( https://www.youtube.com/@mattvsjapan/videos ) - talks about the pitfalls of learning Japanese
+
+> Readable guides (PDFs)
+* "A Guide to Japanese Grammar (A Japanese Approach to Learning Japanese Grammar)" by Tae Kim - endorsed by immersion-learners   #  https://www.guidetojapanese.org/grammar_guide.pdf
+
+> Anki
+* https://www.immersionkit.com/dictionary       # Immersion Kit
+* https://jpdb.io/
+* https://ankiweb.net/shared/decks              # Pre-Made Decks
+* https://ankiweb.net/shared/info/2055492159    # Anki Connect Addon
+
+> Places to talk to other Japanese people
+* HelloTalk  (language exchange app)
+* Discord
+* Line
+* VR Chat (going to random Japanese worlds; helps develop speaking)
+
+> Pitch Accent learning
+* https://kotu.io/tests/pitchAccent/minimalPairs 
+* Basics of Japanese Pitch Accent  :  https://www.youtube.com/watch?v=jt04eg9T2sE
+*   By Kaname Naito: https://www.youtube.com/@kanamenaito/videos
+* Japanese pitch-accent & pronunciation playlist  :  https://www.youtube.com/watch?v=O6AoilGEers&list=PLxMXdmBM9wPvsySiMoBzgh8d68xqKz1YP&index=2
+*   By Dogen:  https://www.youtube.com/@Dogen/videos
+* List of listenables:  https://docs.google.com/spreadsheets/d/17P2dBQHnBnHcG3ua_24IO6sP9RDC-5b3WHV9Ri2N5qU
+*   "Nihongo Con Teppei" on youtube is a good example. Talks about random topics in simple language  :  https://www.youtube.com/watch?v=D-l74l-4aRc&list=PLbsmSVzhiwvBLfTzvg6W_DTZ8IFUFm3jL
+* Condensed Audio Catalog:  https://condensedaudiocatalog.com/
+
+> Reading practice
+* ttsu e-reader:    https://reader.ttsu.app/manage
+* Japanese ebooks:  https://itazuraneko.org/
+
+
+
+>> Important notes on learning Japanese (and languages in general)
+> Exposure method
+# Get a lot of input, mimic what you hear. Repeat constantly.
+* Input (exposure to Japanese speech/writing) is much more important than learning syntactic rules
+* For multiple hours a day, listen to podcasts / youtube videos / anime / ... anything in native-Japanese
+*   Passive listening (hearing and trying to understand while doing something else, like preparing food) helps!
+* Use SRS (Spaced Repetition System), like Anki
+*   Learn about 10 words a day. You can do more than that, but it's hardly sustainable.
+*   Anki is a powerful too, but not the main one. You need to hear the words you learn in context.
+*   Create vocabulary cards of your own. There are a lot of tools to do so
+* Learn the sounds before learning to read properly
+*   Unless you're really only interested in reading
+*   You can wait 6-12 months before learning to read, just focusing on learning pronounciations and intonations. And that's still a bit of a rush into reading.
+*       Learn the "pitch accent"
+* Use the language in (digital/typing, not manual) writing
+
+
+
+
+# Used all-in-1 guides / compilations of info sources (non-exhaustive list; there are too many to mention)   
+#   Trenton《トレントン》's video "Learning Japanese Isn't Actually That Hard"  :  https://www.youtube.com/watch?v=7fvCb5_Nzq4
+#   Livakivi's "I Learned 20,000 Japanese Words! (+ My Final Deck)"   :  https://www.youtube.com/watch?v=MYVeyIECCHI
 
 

@@ -78,6 +78,7 @@
 
 >> Reservoir
 + Gets rid of bubbles (make sure that the reservoir is big enough to allow bubbles to rise before getting sucked forward) and eases the refilling of the loop
++   Technically it should be possible to use a large radiator as a reservoir, if you're desperate enough.
 * should be positioned high in the loop, to easily contain the air that bubbles upwards
 *   If the reservoir is connected to the pump, at least try to make the pump below some other components
 * A reservoir-pump combo is convenient, as it takes less space (and tubing effort), and helps make sure that there'd be mostly-air-free cooland feeding into the pump

@@ -1,9 +1,13 @@
 # The fundamentals of Bash programming - basic gimmicks of bash scripting and terminal usage
-+ BASH = "Bourne Again SHell", so naturally the following covers Shell (and beyond)
-+ Bash is barely a language. It's more of an OS API script. You can't have 2D arrays, but you can easily look through files or processes.
-+ Once you understand the gist of this file, go read:
+! BASH = "Bourne Again SHell", so naturally the following covers Shell (and beyond)
+! Bash is barely a language. It's more of an OS API script. You can't have 2D arrays, but you can easily look through files or processes.
+! Once you understand the gist of this file, go read:
 *   packages cheatsheet for useful commands (packages/tools)
 *   linux-admin cheatsheet for common usage of Bash and basic OS operations
+! For similar scripting on terminal, you can:
+!   Use strictly POSIX-complient Shell scripting (better cross-platform compatibility)
+!   Use ZSH
+!   Use Nushell (manual: www.nushell.sh/book/ )
 
 
 
@@ -72,7 +76,7 @@
 ``` [ ! -t 0 ]  # condition that says "stdin isn't empty". You can consume it with `cat`.
 
 > mid-pipe ret values
-+ read above note about PIPESTATUS
+! read above note about PIPESTATUS
 
 
 
@@ -142,8 +146,8 @@
 >> ==========
 
 > Strings
-+ By default everything is string
-+ Single quotes and double quotes are the same except double quotes allow referencing with "$". If you're using a simple string, it's a good habit to use single-quotes, it tells the reader that things are static.
+! By default everything is string
+! Single quotes and double quotes are the same except double quotes allow referencing with "$". If you're using a simple string, it's a good habit to use single-quotes, it tells the reader that things are static.
 ``` echo hi                  # echos 'hi'
 ```     echo "hi"            # echos 'hi'
 ```     echo 'hi'            # echos 'hi'
@@ -166,13 +170,13 @@
 ``` "$(declare -p mylist)"        # get as indexed array; basically conversion to hashmap. Turns (apple, banana, orange) to [0]="apple" [1]="banana" [2]="orange"
 
 > Associative Arrays (similar to hashmap)
-+ Don't use "local" - "declare -A" takes care of the scope issues.
+! Don't use "local" - "declare -A" takes care of the scope issues.
 ``` declare -A colors=( [red]='\033[31m' [green]='\033[32m' [blue]='\033[34m' )   # declaration and assignment
     colors[cyan]='\033[36m'                                                       # assign to key (overwrite if exists) 
     echo -e "${colors[red]}The text is red\033[0m"                                # read via key through ${map[key]}
 ``` num_of_items=${#mymap[@]}                                                     # get count of items
-+ for looping over hashmap, refer to Loops section
-+ see iteration on "hashmaps" in loops section
+! for looping over hashmap, refer to Loops section
+! see iteration on "hashmaps" in loops section
 
 
 
@@ -204,9 +208,9 @@
 >> Loops
 >> =====
 
-+ Some of the following examples are collapsed into single lines so they'd be compact:
+! Some of the following examples are collapsed into single lines so they'd be compact:
 ``` while <condition>; do <command>; done
-+ You CAN (and often should) do it like this :
+! You CAN (and often should) do it like this :
 ``` while <condition>; do
         # code here
     done
@@ -220,7 +224,7 @@
 ```     while [ ! -e "$iso_file_path" ]; do                     # you can also use "not"
 ``` find "$current_dir" -type f | while read -r file; do        # iterate on the results of a different command
 ``` cat "$file" | while IFS= read -r line; do                   # iterate on lines from pipe
-+ Be aware that using a pipe opens a new subshell (so you can't source files, for example), but using `<<<` doesn't present that issue
+! Be aware that using a pipe opens a new subshell (so you can't source files, for example), but using `<<<` doesn't present that issue
 
 > for
 ``` for i in {1..20}; do echo "$i"; done                        # go through numbers 1 to 20 (inclusive)
@@ -248,7 +252,7 @@
 >> String operations
 >> =================
 
-+ Most of what's already covered here is about strings
+! Most of what's already covered here is about strings
 
 > Join
 ``` joined="$(IFS=$sep; echo "${arr[*]}")"                                             # ONLY if your separator is a single char
