@@ -35,6 +35,10 @@
 * docker run --rm <image_name>  # run an image and remove its container when it exits
 
 
+>> Extra utility
+* docker scout cves --format markdown ubuntu:latest  # check if the image is susceptible to known CVEs
+
+
 
 >> Building
 

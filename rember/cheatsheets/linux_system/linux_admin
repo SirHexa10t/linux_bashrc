@@ -45,7 +45,7 @@
 * basename <filename>  # the file's name, without its path
 * ln -s <existing_file_to_link> <link_name>  # define soft-link. There are 2 symlink types; soft (denoted with -s, which points to a file's address) and hard (points directly to the data of a file. Editing the data in either "original" or hard-link is the same, and deleting either file alone wouldn't delete the data since it's still pointed to)
 !   soft links don't really utilize permissions - they allow everything and rely on the target to determine access. chmodding a symlink would forward the modification to the target. 
-*   ln -sr scripts/*.js target/  # create soft-links for all .js files in "scripts/", in "target/" (target/[filename.js] -> scripts/[filename.js]) 
+*   ln -sr scripts/*.js target/  # create soft-links for all .js files within "scripts/", in "target/" (target/[filename.js] -> scripts/[filename.js]) 
 * cd  # change directory to specified folder. Write no directory to return to home-dir - Equivalent to `cd ~`
 *   cd -  # go back to previous directory
 * less <file>  # Read file with up/down controls. Newer and more convenient than `more`.
@@ -56,6 +56,8 @@
 > Own network info
 * ip addr               # display own networking interfaces. A modern safer alternative to: ifconfig
 * sudo netstat -tulpn   # display active network connections and filter by port number
+* iptables -L -n        # list IP-table rules
+* arp                   # see network addresses, interfaces, and modify the ARP cache
 > Seeking addresses
 * dig "amazon.com" +short   # resolve dns address (or addresses, in case content-distribution-networks are involved)
 * ping google.com           # ping address
@@ -110,6 +112,16 @@
 * /usr/local/bin/       : packages directory - things you put here would be added to your terminal's commands
 *   be aware that these won't get updated by package managers
 *   sudo ln -sfn "$program_runnable" "/usr/local/bin/$command"  : define a new command in terminal that'll launch your program
+* xdg-mime default <program> <filetype>  # set default program
+*   xdg-mime query filetype <file>                                                                      # get the filetype that needs to be supported to open specified file
+*   ls /usr/share/applications | grep -i <app-name>                                                     # search for application by name (notice: it could be somewhere else), and get the program name you should specify
+*   xdg-mime default nemo.desktop inode/directory application/x-gnome-saved-search                      # set nemo as file explorer
+*   xdg-mime default xed.desktop text/plain                                                             # set xed as text reader
+*   xdg-mime default xviewer.desktop image/jpeg image/png image/gif image/bmp image/tiff image/webp     # set xviewer as default image viewer
+*   xdg-mime default io.github.celluloid_player.Celluloid.desktop video/mp4 video/webm video/x-matroska # set Celluloid as default video player
+*   xdg-mime default xreader.desktop application/pdf                                                    # set xreader as PDF viewer
+*   xdg-mime default com.vscodium.codium.desktop application/json                                       # set flatpak's vscodium (find package: flatpak list | grep codium) as default json reader
+
 
 >> Configurations (GNOME)
 * ~/.config/autostart/  :  location of startup scripts that run for your own user after startup 

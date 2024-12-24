@@ -112,6 +112,8 @@
 * Ardour                : Sound editing, like Audacity
 
 * kdenlive              : video editor
+* kwave                 : sound editor
+* KDE Connect           : connect computing devices together
 * DaVinci Resolve       : video editor with more features (there's a free version lacking some features)
 
 * GPU Screen Recorder   : like OBS, but without overhead. Might be hard to find outside of Arch
@@ -119,6 +121,8 @@
 * fzf                   : fuzzy-find. Look through file and various strings (like command history).
 ``` fzf -q  # looks through current dir like IDEs look for variables (by char order, but in any index) 
 ``` fzf -e  # exact-match search
+
+* Online tool for keyword lookup within github repositories:  https://grep.app/
 
 * Atuin  : make your command history into a DB and filter interactively through it
 

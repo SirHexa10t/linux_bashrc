@@ -25,11 +25,16 @@
 * Disk (could/should be SSD)
 * PSU
 * Case
-+ Also cables, like DP/HDMI for monitor, or SATA cables for SATA devices
 
-> Building aids
-* Thermal paste
-* Phillips Screwdriver
+> Basic extra devices
+* Monitor
+* Keyboard + Mouse
+* audio output device
+
+> Other items needed for a PC setup
+* thermal paste (if you're using a new CPU cooler it may come pre-pasted, but you should always have some anyway)
+* cables; like DP/HDMI for monitor, or SATA cables for SATA devices
+* Philips Screwdriver
 
 > Compatibility
 * The motherboard and the CPU need to fit each-other; it's a factor of generation and CPU-maker
@@ -38,8 +43,8 @@
 
 > Budgeting
 * Use-case: consider that a lot of things aren't cost-effective a lower prices, or only cost-effective at very-low prices (with possibly unsatisfactory performance)
-*   Case: Need something, right now: look for deals on ebay and get slower disk, weaker GPU. You can make-do without most of the features that turn parts expensive (and get those 2 years later, realatively cheap)
-*   Case: Plan to use long-term: if you want to save money by not buying a new PC more often, consider what you need and buy by parts' value retention. Usually it means buying almost-highest-end.
+*   Case: Need something, right now: look for deals on ebay and get slower disk, weaker GPU. You can make-do without most of the features that turn parts expensive (and get the expensive ones 2 years later, for realatively cheap)
+*   Case: Plan to use long-term: if you want to save money by not buying a new PC often, consider what you need and buy by parts' value retention. Usually it means buying almost-highest-end.
 *       The things that don't improve exponentially over time (coolers/PSU/case) should be bought "right" from the start, so you won't need to re-buy them at all.
 *       It's a generally good strategy. You'll also enjoy higher-than-average performance until your next upgrade.
 *   Case: Ultra-budget
@@ -391,12 +396,15 @@ TODO - refer to PCI in regards to possible allocations
 *   The top one (if not the only one) is usually x16, sometimes the only x16 on the board, and the only one connected to the CPU directly, so if you use a GPU, it should go there to maximize its bandwidth and performance
 TODO - specify chipset: PCI lanes and which ones go to CPU or chipset
 TODO - 3rd-party pressure plates for some types of CPU sockets, for even mounting
-
+TODO - brands
+    ASUS ProArt is great, and significantly cheaper than Asus ROG despite providing the same features
+    Gigabyte Aorus is good, but the same couldn't be said about Gigabyte TUF Gaming (unless they've improved)
 
 
 >> PSU
-* PSUs are passive - they don't adjust the power that they deliver. Whatever the PC components ask for, they provide (if possible)
-* DON'T use one brand's PSU's cable on another brand's PSU!
+! PSUs are passive - they don't adjust the power that they deliver. Whatever the PC components ask for, they provide (if possible)
+! DON'T use one brand's PSU's cable on another brand's PSU!
+
 
 > Interface
 * Modularity (mostly a matter of short-term convenience)
@@ -404,8 +412,10 @@ TODO - 3rd-party pressure plates for some types of CPU sockets, for even mountin
 *   Semi-Modular: like modular, but Motherboard and CPU cables are permanently attached (but you'd need them attached eventually anyway)
 *   Non-modular: No modularity, you get a clutter of cables attached. Could be an issue if your case has no space for all of the cables. Turns cable routing more tedious too.
 * 12VHPWR connector - a 16-pin (12+4) connector in the ATX 3.0 standard (Not to be confused with Motherboard ATX form factor), delivering up to 600W. Basically just for (NVIDIA) GPUs.
+!   Make sure to fully-insert those, because loose contacts at such high power have been observed as fire-starters.
 *   GPUs with such a connector come with an adapter to 2-4 different 8-pin connectors; for older PSUs that don't have a 12VHPWR outlet.  
-+   Make sure to fully-insert those, because loose contacts at such high power have been observed as fire-starters.
+* 12V-2×6 connector - the same as 12VHPWR (exactly the same interface), but with auto shut-off in case the connection comes loose and an improvement (of efficiency) in hold-up time from 12VHPWR's 17ms to 12ms
+*   There is the ATX 3.1 standard, which requires exactly 12ms hold-up delay. This doesn't mean much, so you can forget about it; some ATX3.0 PSUs are actually ATX3.1 compliant.
 
 > Wattage needs
 * PSUs are most efficient (min. amount of power-loss) at around 50% utility. Of-course it's also important that it's able to power the entire system (PC) on full-load 
@@ -490,7 +500,9 @@ TODO - mention RAM clearance
 > Leading products by avg temperature, noise-normalized [fans x size] [Single / Dual-tower] (descending):
 ! As of the end of June 2024, Deepcool were blacklisted by the US government for commerce with Russia. Getting coolers from them can be hard, and in some cases illegal.
 * Thermalight Peerless Assassin 120                 [2x120][D]  : cheap, BEST at 200W and 123W noise-normalized, and BEST (among air-coolers) cooling at 100% fan speed
-* Deepcool Assassin IV                      [1x140 / 1x120][D]  : BEST at 200W 100%-fan, tied at 200W noise-normalized
+* Silentware Titan 120 Performance                  [2x120][D]
+* Deepcool Assassin IV                      [1x140 / 1x120][S]  : BEST at 200W (and above) 100%-fan, tied at 200W noise-normalized
+* Noctua NH-D15 G2                                  [2x140][D]
 * Deepcool AK620                                    [2x120][D]
 * Zalman CNPS20X                                    [2x140][D]
 * Be Quiet! Dark Rock Pro 4                       [135+120][D]
@@ -612,6 +624,8 @@ CoolerMaster
 
 
 >> PC Desktop Screen/Monitor
+! Search by your needs on this website (click the appropriate tags at the upper section on the page):  https://skinflint.co.uk/?cat=monlcd19wide
+
 + If you only want another screen for a TTY prompt or to display a playlist or a git manager or such, only resolution/size should concern you. 
 # Not discussing how things work; only the effects of used technologies
 
@@ -673,7 +687,10 @@ CoolerMaster
         Non-standard: anything that doesn't conform to these, like putting the numpad above the arrow keys, or keyboards that come in more than one piece
     Switches' resistence: if they're light at the start and heavy at the end, they feel "mushy" (generally a bad thing). They should be Linear.
     Make sure that the switches fit into the plate (what kind of square hole do they have) 
+
     models for example: HHKB Pro 1, Leopold FC660C,  Duck Octagon V3, OrtholinearKeyboards Planck (usues Neutrino plate), Tofu96, IQUNIX F96 Knight
+        tecware
+
     Tactile (feedback bump) / Linear (smooth press) / Clicky (clicks on actuation) , silent-tactile / silent-linear
     Spring weights/heaviness (force needed to press)
     brands like Holy Panda, and classic keyboards like Ducky, and HHKB Pro 2, Keychron chasis for full-boards (w numpad)?
@@ -733,24 +750,27 @@ Keyboard maintenance/cleaning:
 
 >> Game-controllers
 ! Test your controller on this webpage:  https://hardwaretester.com/gamepad
+! List of controllers with their respective sampled latency:  https://gamepadla.com/
 
 > Gulikit has controllers with magnetic sticks (no drift) in ~$60 price range.
+! The company that re-brought magnetic stick controllers back to the market (haven't been around since the Dreamcast's controller). Other companies often buy their "Hall-Effect" sticks for their own controllers
+! NOT recommended as a company
 * GuliKit "KingKong2 Pro" (discontinued), mostly NOT recommended - their most known controller. Handles like the official Nintendo Switch's "Pro Controller"
-+   Has swappable thumb-buttons (XBOX or other console configuration), Amiibo reader, rumble, motion (orientation) sensor, and recordable/repeatable input
 -   The keys start squeaking and getting stuck at some point, requiring a full teardown for oiling/greasing the keys' switches
++   Has swappable thumb-buttons (XBOX or other console configuration), Amiibo reader, rumble (not HD rumble), motion (orientation) sensor, and recordable/repeatable input
 *   The buttons feel like MX Blue or Brown, very clicky. Supposedly rotating the switches' housing by 90 degrees would cause the bump to be ignored, acting more like MX Red
 -   Good luck getting support for this controller once the shoulder-button breaks or starts squeaking / scraping against the backside
 * GuliKit "KK3 Max", NOT recommended - a replacement for KK2 Pro. Similar in a lot of ways
+-   Silicone-membrane keys (despite LIES in advertisement)
+-       Those get stuck and squeak over time too!!
+-       Buttons are heavy to press, and don't push back as much as KK2's (you can't press them as rapidly)
+-       Keys sometimes trigger without being pressed by user (specifically the B button)
 +   Has 4 reprogrammable back-buttons
 -       Back-buttons can't do sequenced macros, just remap to another key (which is helpful if you often need to press X / Y alongside A and B, but leaves out all of the automation options)
 +   Better recording options 
 +       Longer playable presses recording time
 +       Recording saves the vector of the sticks, not just the direction (though not having that was just a flaw on KK2's part, not something to be proud to have)
 +   Physical toggle between analog and digital (shallower) shoulder buttons
--   Silicone-membrane keys (despite LIES in advertisement)
--       Those get stuck and squeak over time too!!
--       Buttons are heavy to press, and don't push back as much as KK2's (you can't press them as rapidly)
--       Keys sometimes trigger without being pressed by user (specifically the B button)
 -   Software issues galore
 -       On the Switch Pro profile, once rumble starts it doesn't stop
 -   The LED rings around the sticks are of a type of plastic that rubs with high friction, feeling unsatisfying and doing extra noise during regular use of the sticks

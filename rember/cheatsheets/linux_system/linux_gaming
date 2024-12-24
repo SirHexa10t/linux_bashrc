@@ -182,7 +182,7 @@ TODO - cover SteamTinkerLauncher, DXVK, Gamescope, VR-video-player, Replay-Sorce
   * Garuda Linux Dragonized Gaming  : (Arch distro)   A lot of flare; a heavy OS. Comes with a lot of gaming-oriented (translation-layer) packages and tools pre-installed.
   * ChimeraOS                       : (Arch distro) handheld/console OS. "If you want Steam in your living room, you want ChimeraOS"
   * SteamOS 3                       : (Arch distro)   Steam Deck's OS, incorporates KDE Plasma 5.
-      * HoloISO                     : (Arch distro)   SteamOS, adapted to run on Desktop
+      * HoloISO                     : (Arch distro)   SteamOS, adapted to run on Desktop (unofficial)
 
   
 > Specialized Kernels (at your own risk)

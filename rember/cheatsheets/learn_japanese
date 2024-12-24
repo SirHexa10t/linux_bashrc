@@ -65,10 +65,26 @@ Hiragana-only is problematic, as words blend together due to Japanese's lack of 
 * "A Guide to Japanese Grammar (A Japanese Approach to Learning Japanese Grammar)" by Tae Kim - endorsed by immersion-learners   #  https://www.guidetojapanese.org/grammar_guide.pdf
 
 > Anki
+# A flash-card program, for memorizing words
+# Works with SRS - Spaced Repetition System; optimizes frequency at which words appear for you to learn
+! Not a substitute for language-exposure. It helps you understand sentences you come across; doesn't cement your understanding on its own.
 * https://www.immersionkit.com/dictionary       # Immersion Kit
 * https://jpdb.io/
 * https://ankiweb.net/shared/decks              # Pre-Made Decks
 * https://ankiweb.net/shared/info/2055492159    # Anki Connect Addon
+* Method
+*   use a pre-made deck of common 1k-2k words, with about 10 new words every day
+*   Use vocab cards for plain nouns, and sentence cards (word within sentence, for context) for nuanced words
+*   Switch to FSRS algorithm (a more advanced algorithm, from 2023)
+*       Trenton recommends: "Desired retention": 0.85, "New cards/day": 10, "Maximum reviews/day": 9999, "Interday learning/review order": "Mix with reviews", "Leech action": "Tag Only" (if you don't want continuously failed words to be suspended)
+*   Go to AnkiWeb and get some popular starter decks  https://ankiweb.net/shared/decks
+*       like the "Tango", "paid refold"(?), "Core 2k / 6k", "Kaishi 1.5k" (relatively recent, very easy to understand)
+*   Use addons relevant to you
+*       Custom Background and Gear Icon (optional)
+*       Review Heatmap (github-like activity tracking)
+*       Kanji Grid Kuuube (show a heatmap of all the kanji you learned)
+*       Image Resizer (define a constant image size for images you save - helps save on space, and makes the quality more consistent)
+*       AnkiConnect (works with Yomichan/Yomitan; download a dictionary (and maybe pitch-accent dictionary) to shift+click words for a pop-up menu in browser that lets you create cards)
 
 > Places to talk to other Japanese people
 * HelloTalk  (language exchange app)
@@ -93,9 +109,10 @@ Hiragana-only is problematic, as words blend together due to Japanese's lack of 
 
 
 >> Important notes on learning Japanese (and languages in general)
-> Exposure method
+> Exposure method (and Listening Comprehension)
 # Get a lot of input, mimic what you hear. Repeat constantly.
 * Input (exposure to Japanese speech/writing) is much more important than learning syntactic rules
+*   Listening is better than reading at least at the beginning - you won't get the intonations right from reading
 * For multiple hours a day, listen to podcasts / youtube videos / anime / ... anything in native-Japanese
 *   Passive listening (hearing and trying to understand while doing something else, like preparing food) helps!
 * Use SRS (Spaced Repetition System), like Anki
@@ -106,7 +123,9 @@ Hiragana-only is problematic, as words blend together due to Japanese's lack of 
 *   Unless you're really only interested in reading
 *   You can wait 6-12 months before learning to read, just focusing on learning pronounciations and intonations. And that's still a bit of a rush into reading.
 *       Learn the "pitch accent"
+*           You can practice with this site:  https://kotu.io/tests/pitchAccent/minimalPairs
 * Use the language in (digital/typing, not manual) writing
+
 
 
 

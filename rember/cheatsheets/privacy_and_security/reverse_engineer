@@ -24,6 +24,8 @@
 * strings <my_executable.exe> | less  # list used strings. See if any URLs are being used.
 * objdump -d -Minterl <program_file>  # using Intel syntax, describe the program as a list of assembly instructions
 * checksec --file=<file_to_check> --output=json | jq  # check which security features (if any) are active for the specified file, for things like buffer overflow
+* exploitable  # get classification for bugs in a program - whether they're exploitable  https://github.com/jfoote/exploitable/blob/master/exploitable/exploitable.py
+* afl-gcc <file.c>  # American Fuzzy Lop Fuzzer - you can gcc (compile C) with added alerts within branches, so you can explore which if-statements are reached and cause crashes (or exploits) through a fuzzying campaign
 
 > Live-testing 
 * x64dbg        : program for monitoring runtime (during usage)   [ https://x64dbg.com/ , https://github.com/x64dbg/x64dbg ]

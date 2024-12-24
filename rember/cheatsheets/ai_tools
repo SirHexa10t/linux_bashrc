@@ -6,9 +6,11 @@
 * https://ollama.com/
 
 
+
 >> Guides / indexes
 >> ================
 * https://rentry.org/sdg-link    # 4chan /g/ AI resource page
+
 
 
 >> Creation tools
@@ -16,6 +18,17 @@
 * ComfyUI ( https://github.com/comfyanonymous/ComfyUI )
   * installation guide: https://rentry.org/comfyui
 * text-generation webUI ( https://github.com/oobabooga/text-generation-webui )
+
+
+>> Coding/Programming
+>> ==================
+
+> IDEs
+* Cursor (Visual Studio with Microsoft's ChatGPT):  ( https://www.cursor.com/ )
+
+> CI/CD
+* CodeRabbit (help with code reviews and merge request, free for open-source use):   ( https://www.coderabbit.ai/ )
+
 
 
 >> Audio
@@ -27,19 +40,26 @@
 > text to speech
 * https://github.com/fishaudio/fish-speech
 
+> Background-noise removal
+* RTX Voice:  https://www.nvidia.com/en-us/geforce/guides/nvidia-rtx-voice-setup-guide/
 
 
->> Image creation
->> ==============
 
-* 
+>> 3D Models
+>> =========
+
+> From 2D image
+* NVIDIA Edify:  https://www.nvidia.com/en-us/gpu-cloud/edify/
+
+
+
+>> Image
+>> =====
+
+> Image creation
 * Stable Diffusion ( https://github.com/automatic1111/stable-diffusion-webui )
   * fork:  https://github.com/lllyasviel/stable-diffusion-webui-forge
   * samplers guide:  https://stable-diffusion-art.com/samplers/
-
-
->> Image in-fill
->> =============
 
 > Imagine/Speculate/Fill contents of missing part within an image
 * https://github.com/Acly/comfyui-inpaint-nodes
@@ -59,6 +79,15 @@
 
 > Local files search/summary
 * Nvidia Chat with RTX: https://www.nvidia.com/en-us/ai-on-rtx/chat-with-rtx-generative-ai/   :  Works on Windows 11 (maybe also Windows 10?) on RTX-30 series and above
+
+
+
+>> Document creation
+>> =================
+
+> Presentations
+* https://gamma.app/
+
 
 
 
