@@ -430,7 +430,7 @@ class TestYourFunction(unittest.TestCase):
         self.assertTrue(literal in Matcher.split_by_matches(regex, f"aaaa{literal}bbbb"))
 
         literal = '\x1b[0m'
-        regex = '\x1b\[0m'
+        regex = r'\x1b\[0m'
         self.assertTrue(literal in Matcher.split_by_matches(regex, f"aaaa{literal}bbbb"))
 
     def test_formatting(self):

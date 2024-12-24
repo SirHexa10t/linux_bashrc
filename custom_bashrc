@@ -1088,6 +1088,51 @@ function spellcheck () {
     
 }
 
+# get string in a version that's safe as a URL arg
+# arg1: string to escape (make safe)
+function url_safe () {
+    perl -MURI::Escape -e 'print uri_escape($ARGV[0]);' "$1"
+}
+
+# get private-browsing (3rd party) site alternative for given links
+# arg1: content link
+function browse () {
+
+    function _print_instances() { echo "$(becho 'If the link is broken, check other proxy instances:') $1"; }
+
+    local regex_not_part_of_domain='(^|[^a-zA-Z0-9]+)'
+    if [[ "$1" =~ ${regex_not_part_of_domain}reddit.com/ ]]; then
+        local alt_domain='redlib.northboot.xyz'  # formerly libreddit. Redlib repo: https://github.com/redlib-org/redlib
+        local relevant_subreddit="${1#*'reddit.com/'}"
+        echo "https://$alt_domain/$relevant_subreddit"
+        _print_instances 'https://greasyfork.org/en/scripts/470864-new-instance-button-for-redlib/code'
+    elif [[ "$1" =~ ${regex_not_part_of_domain}x.com/ || "$1" =~ ${regex_not_part_of_domain}twitter.com/ || \
+            "$1" =~ ${regex_not_part_of_domain}vxtwitter.com/ || "$1" =~ ${regex_not_part_of_domain}fxtwitter.com/ || "$1" =~ ${regex_not_part_of_domain}fixupx.com/ ]]; then
+        echo "If your content is nsfw, you probably won't be able to see it. Some semi-private posts are problematic too."
+        local alt_domain='xcancel.com'  # Nitter repo: https://github.com/zedeus/nitter/
+        local tweet_url="${1#*'.com/'}"
+        local encoded_string=$(url_safe "x.com/$tweet_url")  # make it url-arg friendly
+        echo "https://$alt_domain/search?f=tweets&q=$encoded_string&since=&until=&near="
+        _print_instances 'https://github.com/zedeus/nitter/wiki/Instances'
+    elif [[ "$1" =~ ${regex_not_part_of_domain}tiktok.com/ || \
+            "$1" =~ ${regex_not_part_of_domain}vxtiktok.com/ ]]; then
+        echo "Not tested enough (because I'm not interacting much with the cancer that is tiktok). Know that you can't use the same URL more than once in every 5 or 15 minutes or so."
+
+        local alt_domain='proxitok.pabloferreiro.es'  # ProxiTok repo: https://github.com/pablouser1/ProxiTok
+        local video_key="${1#*'/.com/'}"
+        echo "https://$alt_domain/@placeholder/video/$video_key"
+        _print_instances 'https://github.com/pablouser1/ProxiTok/wiki/Public-instances'
+
+    else
+        echo "Sorry, I don't know how to handle this URL's domain"
+    fi
+
+    # TODO - maybe replace youtube with lbry, bitchute, Odysee
+    # TODO - if Instagram is still a thing, you can use bibliogram: https://git.sr.ht/~cadence/bibliogram   https://github.com/Booteille/bibliogram
+
+}
+
+
 # man grep - find word in manual, with a bit of context (lines above/below).
 # arg 1: man's target, arg 2: word to find
 function mang () {
@@ -1606,8 +1651,10 @@ function iommu_find () {
 
     local lookup="$1"
     if [ -z "$lookup" ]; then
-        errcho "You didn't specify a device substring/word to look-up (Example: \"USB\"). So here are all IOMMUs/devices and connected USB peripherals:"
+        errcho "You didn't specify a device substring/word to look-up (Example: \"USB\"). So here are all IOMMUs/devices and connected USB peripherals:"      
+        recho 'Format of PCI ID is: <Domain>:<Bus>:<Device>.<Function>'  
         echo "$all_iommu_devices"
+        errcho 'And here are the USB devices (from command: `lsusb`)'
         lsusb
         return 0 
     fi
@@ -1861,6 +1908,29 @@ function prepare_ntfs_for_writable_mount () {
 # Filesystem
 # ==========
 
+# rename a .torrent using the name hidden within its contents as its new name's prefix
+# arg1: filename
+function rename_torrent_file () {
+    [ -e "$1" ] || { errcho 'You need to provide an existing .torrent file!' ; return 1; }
+    local torrent_name="$(python3 - "$@" << EOF
+import bencodepy
+import sys
+
+with open(sys.argv[1], 'rb') as file:  # Open and read the .torrent file in binary mode
+    torrent_data = file.read()
+
+decoded_data = bencodepy.decode(torrent_data)  # Decode the Bencoded data
+title = decoded_data[b'info'][b'name'].decode('utf-8')  # Extract the title from the 'info' section
+
+print(title)
+EOF
+)"
+    # rewriting, safely (should word even if you're in a different dir)
+    local directory="$(dirname "$1")"
+    local filename="$(basename "$1")"
+    mv -i "$1" "$directory/$torrent_name-$filename"
+}
+
 # get filename suffixed, before ext (if relevant)
 # arg 1: filepath , arg 2: suffix-to-add
 function _add_suffix () {
@@ -2107,6 +2177,20 @@ function revoke_exe_mod () {
             _sudo_if_necessary chmod -x "$file" && echo "file no longer executable: $file"
         fi
     done <<< "$files"
+}
+
+# Make a local copy of current dir's symlinks' targets (DELETES EXISTING FILES WITH SAME NAME!!!). The symlinks must start with "Link to " (there are many naming complications, this prevents some of them).
+function backup_symlinks () {
+    local prefix='Link to '
+    found_links="$(find . -maxdepth 1 -type l -name "$prefix*")"
+    
+    while IFS= read -r link; do
+        name_to_save_as="${link#"./"}"  # found links are all local, so they start with "./" (but we're doing this step separately to make it optional)
+        name_to_save_as="${name_to_save_as#"$prefix"}"
+        rm -rf "$name_to_save_as"  # remove if already exists (quite a dangerous line)
+        cp "$(readlink -f "$link")" "./$name_to_save_as"  # copy target to current dir
+        recho "deleted and copied over: $name_to_save_as"
+    done <<< "$found_links"
 }
 
 

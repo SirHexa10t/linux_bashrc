@@ -6,6 +6,17 @@
 * https://ollama.com/
 
 
+>> Guides / indexes
+>> ================
+* https://rentry.org/sdg-link    # 4chan /g/ AI resource page
+
+
+>> Creation tools
+>> ==============
+* ComfyUI ( https://github.com/comfyanonymous/ComfyUI )
+  * installation guide: https://rentry.org/comfyui
+* text-generation webUI ( https://github.com/oobabooga/text-generation-webui )
+
 
 >> Audio
 >> =====
@@ -13,6 +24,18 @@
 > song vocals remover
 * https://github.com/Anjok07/ultimatevocalremovergui
 
+> text to speech
+* https://github.com/fishaudio/fish-speech
+
+
+
+>> Image creation
+>> ==============
+
+* 
+* Stable Diffusion ( https://github.com/automatic1111/stable-diffusion-webui )
+  * fork:  https://github.com/lllyasviel/stable-diffusion-webui-forge
+  * samplers guide:  https://stable-diffusion-art.com/samplers/
 
 
 >> Image in-fill

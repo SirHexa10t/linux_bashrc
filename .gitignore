@@ -12,3 +12,5 @@ external_programs/*
 
 *poetry.lock
 
+
+*.pyc

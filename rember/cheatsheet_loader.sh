@@ -12,6 +12,7 @@ CHSH_FLAGS['-e']='xdg-open'
 CHSH_FLAGS['--fp']='echo'  # file-path printing
 CHSH_FLAGS['--cd']='cd'  # change-dir to file location (uses custom_bashrc's cd override)
 [ -n "$(which codium)" ] && CHSH_FLAGS['-c']='codium'  # open with VSCodium (only if available)
+[ -n "$(flatpak list | grep -i vscodium)" ] && CHSH_FLAGS['-c']='flatpak run com.vscodium.codium'  # open with VSCodium (only if available)
 CHEATSHEET_PLACEHOLDER='chsh_file'
 
 # TODO ? -g for grep, maybe --cat for cat and changing fp to --echo
