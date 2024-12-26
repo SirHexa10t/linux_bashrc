@@ -25,9 +25,11 @@ def get_wishlist_content():
             return json.load(file).get('rgWishlist', [])
             
     except FileNotFoundError:
-        print(f"Couldn't find '{WISHLIST_FILE}' in current directory. Please create and paste your wishlist app-IDs json into it: https://store.steampowered.com/dynamicstore/userdata/")
+        print(f"Couldn't find '{WISHLIST_FILE}' in current directory. Please create it and paste inside your wishlist app-IDs json, from: https://store.steampowered.com/dynamicstore/userdata/")
+        exit()
     except json.JSONDecodeError:
         print(f"'{WISHLIST_FILE}' isn't proper json. Populate it with the contents of your wishlist, as can be found here: https://store.steampowered.com/dynamicstore/userdata/")
+        exit()
 
 def query_steam():
     ids = get_wishlist_content()
@@ -77,6 +79,8 @@ def fetch_app_data(app_id):
             data[label] = dt.text.strip()
         elif label in ["Developer", "Publisher"]:
             data[label] = dt.find('a').text.strip() if dt.find('a') else "N/A"
+        elif label in ["Developers", "Publishers"]:
+            data[label.removesuffix('s')] = [a.text.strip() for a in dt.find_all('a')] if dt.find('a') else ["N/A"]
         elif label == "Genres":
             data["Tags"] = [genre.strip() for genre in dt.text.strip().split(',')] if dt.text.strip() else []
 
